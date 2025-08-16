@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏢 Sistema Completo CFDI - Gestión Profesional</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            padding: 20px;
+        }
+        .hero-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 60px;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        .hero-title {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        .hero-subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .feature {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        .feature-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .feature-desc {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 180px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .comparison {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px solid #e9ecef;
+        }
+        .comparison-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            text-align: left;
+        }
+        .comparison-item {
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+        .comparison-item.basic {
+            background: #f8f9fa;
+        }
+        .comparison-item.complete {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border-color: #007bff;
+        }
+        .comparison-header {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .comparison-features {
+            list-style: none;
+        }
+        .comparison-features li {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .check { color: #28a745; }
+        .cross { color: #dc3545; }
+        @media (max-width: 768px) {
+            .hero-container { padding: 40px 30px; }
+            .hero-title { font-size: 2rem; }
+            .cta-buttons { flex-direction: column; align-items: center; }
+            .comparison-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-container">
+        <div class="logo">🏢</div>
+        <h1 class="hero-title">Sistema Completo CFDI</h1>
+        <p class="hero-subtitle">
+            Plataforma profesional para la gestión integral de Comprobantes Fiscales Digitales. 
+            Incluye autenticación, almacenamiento seguro, gestión de emisores y certificados digitales.
+        </p>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">🔐</div>
+                <div class="feature-title">Acceso Seguro</div>
+                <div class="feature-desc">Sistema de login con JWT y encriptación de datos</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🏢</div>
+                <div class="feature-title">Gestión de Emisores</div>
+                <div class="feature-desc">CRUD completo con almacenamiento de CSDs</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📄</div>
+                <div class="feature-title">Historial de XMLs</div>
+                <div class="feature-desc">Almacenamiento y gestión de todos tus CFDIs</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔑</div>
+                <div class="feature-title">Certificados CSD</div>
+                <div class="feature-desc">Subida y almacenamiento seguro de certificados</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Dashboard</div>
+                <div class="feature-desc">Estadísticas y análisis de tu actividad</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔮</div>
+                <div class="feature-title">Sellado Digital</div>
+                <div class="feature-desc">Próximamente: Firma automática con CSD</div>
+            </div>
+        </div>
+
+        <div class="cta-buttons">
+            <a href="/login" class="btn btn-primary">🚀 Acceder al Sistema</a>
+            <a href="/generator" class="btn btn-secondary">⚡ Generador Rápido</a>
+        </div>
+
+        <div class="comparison">
+            <h2 class="comparison-title">Comparación de Versiones</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item basic">
+                    <div class="comparison-header">
+                        ⚡ Generador Básico
+                    </div>
+                    <ul class="comparison-features">
+                        <li><span class="check">✅</span> Generación de XML CFDI 3.3 y 4.0</li>
+                        <li><span class="check">✅</span> Catálogos oficiales SAT</li>
+                        <li><span class="check">✅</span> Descarga inmediata</li>
+                        <li><span class="check">✅</span> Sin registro requerido</li>
+                        <li><span class="cross">❌</span> Sin almacenamiento</li>
+                        <li><span class="cross">❌</span> Sin gestión de emisores</li>
+                        <li><span class="cross">❌</span> Sin certificados CSD</li>
+                        <li><span class="cross">❌</span> Sin sellado digital</li>
+                    </ul>
+                </div>
+                <div class="comparison-item complete">
+                    <div class="comparison-header">
+                        🏢 Sistema Completo
+                    </div>
+                    <ul class="comparison-features">
+                        <li><span class="check">✅</span> Todo lo del generador básico</li>
+                        <li><span class="check">✅</span> Cuentas de usuario seguras</li>
+                        <li><span class="check">✅</span> Historial completo de XMLs</li>
+                        <li><span class="check">✅</span> Gestión de múltiples emisores</li>
+                        <li><span class="check">✅</span> Almacenamiento de CSDs</li>
+                        <li><span class="check">✅</span> Dashboard con estadísticas</li>
+                        <li><span class="check">✅</span> Sellado digital (próximamente)</li>
+                        <li><span class="check">✅</span> Timbrado SAT (futuro)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar si ya está logueado
+        const token = localStorage.getItem('cfdi_token');
+        if (token) {
+            // Verificar token válido
+            fetch('/.netlify/functions/auth', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ action: 'verify' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    // Mostrar botón para ir al dashboard
+                    const ctaButtons = document.querySelector('.cta-buttons');
+                    ctaButtons.innerHTML = `
+                        <a href="/dashboard" class="btn btn-primary">📊 Ir al Dashboard</a>
+                        <a href="/generator" class="btn btn-secondary">⚡ Generador Rápido</a>
+                    `;
+                }
+            })
+            .catch(() => {
+                // Token inválido, limpiar
+                localStorage.removeItem('cfdi_token');
+                localStorage.removeItem('cfdi_user');
+            });
+        }
+    </script>
+</body>
+</html>

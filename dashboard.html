@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Dashboard - Sistema Completo CFDI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f8f9fa; 
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn:hover { transform: translateY(-1px); }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            background: white;
+            color: #007bff;
+        }
+        .tab-content {
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            min-height: 400px;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .quick-action {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .quick-action:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: inherit;
+        }
+        .quick-action-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .quick-action-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📊 Dashboard - Sistema Completo CFDI</h1>
+            <div class="user-info">
+                <span id="userName">Cargando...</span>
+                <a href="/generator" class="btn btn-success">🚀 Generar CFDI</a>
+                <button onclick="logout()" class="btn btn-danger">🚪 Salir</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Acciones Rápidas -->
+        <div class="quick-actions">
+            <a href="/generator" class="quick-action">
+                <div class="quick-action-icon">🚀</div>
+                <div class="quick-action-title">Generar CFDI</div>
+            </a>
+            <a href="#" onclick="showEmisorModal()" class="quick-action">
+                <div class="quick-action-icon">🏢</div>
+                <div class="quick-action-title">Nuevo Emisor</div>
+            </a>
+            <a href="#" onclick="showTab('xmls')" class="quick-action">
+                <div class="quick-action-icon">📄</div>
+                <div class="quick-action-title">Ver XMLs</div>
+            </a>
+            <a href="#" onclick="showTab('emisores')" class="quick-action">
+                <div class="quick-action-icon">⚙️</div>
+                <div class="quick-action-title">Gestionar Emisores</div>
+            </a>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalXmls">0</div>
+                <div class="stat-label">XMLs Generados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalEmisores">0</div>
+                <div class="stat-label">Emisores Registrados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="xmlsEsteMes">0</div>
+                <div class="stat-label">XMLs Este Mes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="emisoresActivos">0</div>
+                <div class="stat-label">Emisores Activos</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('xmls')">📄 XMLs Generados</button>
+            <button class="tab" onclick="showTab('emisores')">🏢 Emisores</button>
+        </div>
+
+        <div class="tab-content">
+            <!-- Tab XMLs -->
+            <div id="xmlsTab" class="tab-pane active">
+                <div class="actions">
+                    <a href="/generator" class="btn btn-primary">➕ Generar Nuevo XML</a>
+                </div>
+                
+                <!-- Filtros y Búsqueda -->
+                <div class="filters-section" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="margin-bottom: 15px; color: #2c3e50;">🔍 Filtros y Búsqueda</h4>
+                    
+                    <!-- Filtros por Fecha -->
+                    <div class="form-row" style="margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label>Período</label>
+                            <select id="filtroFecha" onchange="aplicarFiltros()">
+                                <option value="todos">Todos los períodos</option>
+                                <option value="hoy">Hoy</option>
+                                <option value="esta_semana">Esta semana</option>
+                                <option value="este_mes" selected>Este mes</option>
+                                <option value="mes_anterior">Mes anterior</option>
+                                <option value="ultimos_3_meses">Últimos 3 meses</option>
+                                <option value="este_ano">Este año</option>
+                                <option value="personalizado">Rango personalizado</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="rangoPersonalizado" style="display: none;">
+                            <label>Desde</label>
+                            <input type="date" id="fechaDesde" onchange="aplicarFiltros()">
+                        </div>
+                        <div class="form-group" id="rangoPersonalizadoHasta" style="display: none;">
+                            <label>Hasta</label>
+                            <input type="date" id="fechaHasta" onchange="aplicarFiltros()">
+                        </div>
+                    </div>
+                    
+                    <!-- Búsqueda por Campos -->
+                    <div class="form-row" style="margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label>Buscar por</label>
+                            <select id="tipoBusqueda">
+                                <option value="folio">Folio</option>
+                                <option value="serie">Serie</option>
+                                <option value="uuid">UUID</option>
+                                <option value="emisor_rfc">RFC Emisor</option>
+                                <option value="receptor_rfc">RFC Receptor</option>
+                                <option value="emisor_nombre">Nombre Emisor</option>
+                                <option value="receptor_nombre">Nombre Receptor</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Término de búsqueda</label>
+                            <input type="text" id="terminoBusqueda" placeholder="Ingrese término..." onkeyup="buscarEnTiempoReal()">
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select id="filtroEstado" onchange="aplicarFiltros()">
+                                <option value="todos">Todos los estados</option>
+                                <option value="generado">Generado</option>
+                                <option value="sellado">Sellado</option>
+                                <option value="timbrado">Timbrado</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros Adicionales -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Versión CFDI</label>
+                            <select id="filtroVersion" onchange="aplicarFiltros()">
+                                <option value="todas">Todas las versiones</option>
+                                <option value="4.0">CFDI 4.0</option>
+                                <option value="3.3">CFDI 3.3</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Emisor</label>
+                            <select id="filtroEmisor" onchange="aplicarFiltros()">
+                                <option value="todos">Todos los emisores</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Rango de Total</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="totalMinimo" placeholder="Mín" step="0.01" onchange="aplicarFiltros()" style="width: 50%;">
+                                <input type="number" id="totalMaximo" placeholder="Máx" step="0.01" onchange="aplicarFiltros()" style="width: 50%;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de Acción -->
+                    <div class="actions" style="margin-top: 15px;">
+                        <button onclick="limpiarFiltros()" class="btn btn-secondary">🧹 Limpiar Filtros</button>
+                        <button onclick="exportarXMLs()" class="btn btn-success">📊 Exportar Resultados</button>
+                        <span id="contadorResultados" style="margin-left: 15px; color: #6c757d;"></span>
+                    </div>
+                </div>
+                
+                <div id="xmlsContent" class="loading">
+                    Cargando XMLs...
+                </div>
+            </div>
+
+            <!-- Tab Emisores -->
+            <div id="emisoresTab" class="tab-pane">
+                <div class="actions">
+                    <button onclick="showEmisorModal()" class="btn btn-primary">➕ Agregar Emisor</button>
+                </div>
+                <div id="emisoresContent" class="loading">
+                    Cargando emisores...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Emisor -->
+    <div id="emisorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="emisorModalTitle">Agregar Emisor</h2>
+                <span class="close" onclick="closeEmisorModal()">&times;</span>
+            </div>
+            <form id="emisorForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emisorRfc">RFC *</label>
+                        <input type="text" id="emisorRfc" required maxlength="13">
+                    </div>
+                    <div class="form-group">
+                        <label for="emisorNombre">Nombre/Razón Social *</label>
+                        <input type="text" id="emisorNombre" required maxlength="300">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emisorCodigoPostal">Código Postal *</label>
+                        <input type="text" id="emisorCodigoPostal" required maxlength="5" pattern="[0-9]{5}">
+                    </div>
+                    <div class="form-group">
+                        <label for="emisorRegimenFiscal">Régimen Fiscal *</label>
+                        <select id="emisorRegimenFiscal" required>
+                            <option value="">Seleccionar régimen</option>
+                            <option value="601">601 - General de Ley Personas Morales</option>
+                            <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
+                            <option value="621">621 - Incorporación Fiscal</option>
+                            <option value="626">626 - Régimen Simplificado de Confianza</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="certificadoCer">Certificado (.cer)</label>
+                    <input type="file" id="certificadoCer" accept=".cer">
+                </div>
+                <div class="form-group">
+                    <label for="certificadoKey">Llave Privada (.key)</label>
+                    <input type="file" id="certificadoKey" accept=".key">
+                </div>
+                <div class="form-group">
+                    <label for="passwordKey">Contraseña del Certificado</label>
+                    <input type="password" id="passwordKey">
+                </div>
+                <div class="actions">
+                    <button type="button" onclick="closeEmisorModal()" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let xmls = [];
+        let emisores = [];
+        let editingEmisorId = null;
+
+        // Verificar autenticación al cargar
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('cfdi_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ action: 'verify' })
+                });
+
+                const data = await response.json();
+                if (!data.valid) {
+                    localStorage.removeItem('cfdi_token');
+                    localStorage.removeItem('cfdi_user');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                currentUser = data.user;
+                document.getElementById('userName').textContent = currentUser.nombre;
+                
+                await loadData();
+            } catch (error) {
+                console.error('Auth error:', error);
+                window.location.href = '/login';
+            }
+        };
+
+        // Variables globales para filtros
+        let todosLosXMLs = [];
+        let xmlsFiltrados = [];
+        let timeoutBusqueda = null;
+
+        async function loadData() {
+            await Promise.all([cargarXMLs(), loadEmisores()]);
+            updateStats();
+        }
+
+        async function cargarXMLs() {
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                const response = await fetch('/.netlify/functions/xmls', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    todosLosXMLs = await response.json();
+                    xmls = [...todosLosXMLs]; // Mantener compatibilidad
+                    xmlsFiltrados = [...todosLosXMLs];
+                    aplicarFiltros();
+                    cargarEmisoresEnFiltro();
+                } else {
+                    document.getElementById('xmlsContent').innerHTML = '<p>Error cargando XMLs</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('xmlsContent').innerHTML = '<p>Error cargando XMLs</p>';
+            }
+        }
+
+        function cargarEmisoresEnFiltro() {
+            const emisoresUnicos = [...new Set(todosLosXMLs.map(xml => xml.emisor_rfc))]
+                .filter(rfc => rfc)
+                .sort();
+            
+            const selectEmisor = document.getElementById('filtroEmisor');
+            selectEmisor.innerHTML = '<option value="todos">Todos los emisores</option>';
+            
+            emisoresUnicos.forEach(rfc => {
+                const option = document.createElement('option');
+                option.value = rfc;
+                const nombre = todosLosXMLs.find(xml => xml.emisor_rfc === rfc)?.emisor_nombre || '';
+                option.textContent = `${rfc} - ${nombre}`;
+                selectEmisor.appendChild(option);
+            });
+        }
+
+        async function loadEmisores() {
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                const response = await fetch('/.netlify/functions/emisores', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                emisores = data.emisores || [];
+                renderEmisores();
+            } catch (error) {
+                console.error('Error loading emisores:', error);
+                document.getElementById('emisoresContent').innerHTML = 
+                    '<div class="empty-state">Error al cargar emisores</div>';
+            }
+        }
+
+        function renderXMLs() {
+            const container = document.getElementById('xmlsContent');
+            
+            if (xmls.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No hay XMLs generados</h3>
+                        <p>Comienza generando tu primer CFDI</p>
+                        <a href="/generator" class="btn btn-primary">Generar CFDI</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const table = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Emisor</th>
+                            <th>Receptor</th>
+                            <th>Serie-Folio</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${xmls.map(xml => `
+                            <tr>
+                                <td>${new Date(xml.created_at).toLocaleDateString()}</td>
+                                <td>${xml.emisor_nombre}</td>
+                                <td>${xml.receptor_nombre}</td>
+                                <td>${xml.serie || ''}-${xml.folio}</td>
+                                <td>$${parseFloat(xml.total).toFixed(2)}</td>
+                                <td><span class="badge badge-${getEstadoBadgeClass(xml.estado)}">${xml.estado}</span></td>
+                                <td>
+                                    <button onclick="downloadXML('${xml.id}')" class="btn btn-primary">📥</button>
+                                    <button onclick="deleteXML('${xml.id}')" class="btn btn-danger">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = table;
+        }
+
+        function renderEmisores() {
+            const container = document.getElementById('emisoresContent');
+            
+            if (emisores.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No hay emisores registrados</h3>
+                        <p>Agrega un emisor para comenzar</p>
+                        <button onclick="showEmisorModal()" class="btn btn-primary">Agregar Emisor</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const table = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>RFC</th>
+                            <th>Nombre</th>
+                            <th>Código Postal</th>
+                            <th>Régimen</th>
+                            <th>CSD</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${emisores.map(emisor => `
+                            <tr>
+                                <td>${emisor.rfc}</td>
+                                <td>${emisor.nombre}</td>
+                                <td>${emisor.codigo_postal}</td>
+                                <td>${emisor.regimen_fiscal}</td>
+                                <td><span class="badge badge-${emisor.certificado_cer ? 'success' : 'warning'}">${emisor.certificado_cer ? 'Configurado' : 'Pendiente'}</span></td>
+                                <td><span class="badge badge-${emisor.activo ? 'success' : 'warning'}">${emisor.activo ? 'Activo' : 'Inactivo'}</span></td>
+                                <td>
+                                    <button onclick="editEmisor('${emisor.id}')" class="btn btn-primary">✏️</button>
+                                    <button onclick="deleteEmisor('${emisor.id}')" class="btn btn-danger">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = table;
+        }
+
+        function updateStats() {
+            document.getElementById('totalXMLs').textContent = xmls.length;
+            document.getElementById('totalEmisores').textContent = emisores.length;
+            
+            const thisMonth = xmls.filter(xml => {
+                const xmlDate = new Date(xml.fecha_creacion);
+                const now = new Date();
+                return xmlDate.getMonth() === now.getMonth() && 
+                       xmlDate.getFullYear() === now.getFullYear();
+            }).length;
+            
+            document.getElementById('xmlsThisMonth').textContent = thisMonth;
+        }
+
+        // Funciones de filtros y búsqueda
+        function aplicarFiltros() {
+            let xmlsFiltradosTemp = [...todosLosXMLs];
+
+            // Filtro por fecha
+            const filtroFecha = document.getElementById('filtroFecha').value;
+            if (filtroFecha !== 'todos') {
+                xmlsFiltradosTemp = filtrarPorFecha(xmlsFiltradosTemp, filtroFecha);
+            }
+
+            // Filtro por estado
+            const filtroEstado = document.getElementById('filtroEstado').value;
+            if (filtroEstado !== 'todos') {
+                xmlsFiltradosTemp = xmlsFiltradosTemp.filter(xml => 
+                    (xml.estado || 'generado') === filtroEstado
+                );
+            }
+
+            // Filtro por versión
+            const filtroVersion = document.getElementById('filtroVersion').value;
+            if (filtroVersion !== 'todas') {
+                xmlsFiltradosTemp = xmlsFiltradosTemp.filter(xml => 
+                    xml.version_cfdi === filtroVersion
+                );
+            }
+
+            // Filtro por emisor
+            const filtroEmisor = document.getElementById('filtroEmisor').value;
+            if (filtroEmisor !== 'todos') {
+                xmlsFiltradosTemp = xmlsFiltradosTemp.filter(xml => 
+                    xml.emisor_rfc === filtroEmisor
+                );
+            }
+
+            // Filtro por rango de total
+            const totalMinimo = parseFloat(document.getElementById('totalMinimo').value);
+            const totalMaximo = parseFloat(document.getElementById('totalMaximo').value);
+            
+            if (!isNaN(totalMinimo)) {
+                xmlsFiltradosTemp = xmlsFiltradosTemp.filter(xml => 
+                    parseFloat(xml.total) >= totalMinimo
+                );
+            }
+            
+            if (!isNaN(totalMaximo)) {
+                xmlsFiltradosTemp = xmlsFiltradosTemp.filter(xml => 
+                    parseFloat(xml.total) <= totalMaximo
+                );
+            }
+
+            // Aplicar búsqueda por término
+            const terminoBusqueda = document.getElementById('terminoBusqueda').value.trim();
+            if (terminoBusqueda) {
+                const tipoBusqueda = document.getElementById('tipoBusqueda').value;
+                xmlsFiltradosTemp = filtrarPorTermino(xmlsFiltradosTemp, terminoBusqueda, tipoBusqueda);
+            }
+
+            xmlsFiltrados = xmlsFiltradosTemp;
+            mostrarXMLs(xmlsFiltrados);
+            actualizarContadorResultados();
+        }
+
+        function filtrarPorFecha(xmls, filtro) {
+            const ahora = new Date();
+            const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+            
+            switch (filtro) {
+                case 'hoy':
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        return fechaXml >= hoy;
+                    });
+                    
+                case 'esta_semana':
+                    const inicioSemana = new Date(hoy);
+                    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        return fechaXml >= inicioSemana;
+                    });
+                    
+                case 'este_mes':
+                    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        return fechaXml >= inicioMes;
+                    });
+                    
+                case 'mes_anterior':
+                    const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+                    const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0);
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        return fechaXml >= inicioMesAnterior && fechaXml <= finMesAnterior;
+                    });
+                    
+                case 'ultimos_3_meses':
+                    const hace3Meses = new Date(ahora.getFullYear(), ahora.getMonth() - 3, 1);
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        return fechaXml >= hace3Meses;
+                    });
+                    
+                case 'este_ano':
+                    const inicioAno = new Date(ahora.getFullYear(), 0, 1);
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        return fechaXml >= inicioAno;
+                    });
+                    
+                case 'personalizado':
+                    const fechaDesde = document.getElementById('fechaDesde').value;
+                    const fechaHasta = document.getElementById('fechaHasta').value;
+                    
+                    if (!fechaDesde && !fechaHasta) return xmls;
+                    
+                    return xmls.filter(xml => {
+                        const fechaXml = new Date(xml.fecha_creacion);
+                        const cumpleDesde = !fechaDesde || fechaXml >= new Date(fechaDesde);
+                        const cumpleHasta = !fechaHasta || fechaXml <= new Date(fechaHasta + 'T23:59:59');
+                        return cumpleDesde && cumpleHasta;
+                    });
+                    
+                default:
+                    return xmls;
+            }
+        }
+
+        function filtrarPorTermino(xmls, termino, tipo) {
+            const terminoLower = termino.toLowerCase();
+            
+            return xmls.filter(xml => {
+                const valor = (xml[tipo] || '').toString().toLowerCase();
+                return valor.includes(terminoLower);
+            });
+        }
+
+        function buscarEnTiempoReal() {
+            clearTimeout(timeoutBusqueda);
+            timeoutBusqueda = setTimeout(() => {
+                aplicarFiltros();
+            }, 300);
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('filtroFecha').value = 'este_mes';
+            document.getElementById('tipoBusqueda').value = 'folio';
+            document.getElementById('terminoBusqueda').value = '';
+            document.getElementById('filtroEstado').value = 'todos';
+            document.getElementById('filtroVersion').value = 'todas';
+            document.getElementById('filtroEmisor').value = 'todos';
+            document.getElementById('totalMinimo').value = '';
+            document.getElementById('totalMaximo').value = '';
+            document.getElementById('fechaDesde').value = '';
+            document.getElementById('fechaHasta').value = '';
+            
+            // Ocultar campos de rango personalizado
+            document.getElementById('rangoPersonalizado').style.display = 'none';
+            document.getElementById('rangoPersonalizadoHasta').style.display = 'none';
+            
+            aplicarFiltros();
+        }
+
+        function actualizarContadorResultados() {
+            const contador = document.getElementById('contadorResultados');
+            const total = todosLosXMLs.length;
+            const filtrados = xmlsFiltrados.length;
+            
+            if (filtrados === total) {
+                contador.textContent = `Mostrando ${total} XMLs`;
+            } else {
+                contador.textContent = `Mostrando ${filtrados} de ${total} XMLs`;
+            }
+        }
+
+        function mostrarXMLs(xmlsParaMostrar) {
+            xmls = xmlsParaMostrar; // Actualizar la variable global para compatibilidad
+            renderXMLs();
+        }
+
+        function exportarXMLs() {
+            if (xmlsFiltrados.length === 0) {
+                alert('No hay XMLs para exportar');
+                return;
+            }
+
+            const datosExport = xmlsFiltrados.map(xml => ({
+                'Fecha': new Date(xml.fecha_creacion).toLocaleDateString(),
+                'Serie': xml.serie || '',
+                'Folio': xml.folio,
+                'UUID': xml.uuid || '',
+                'Versión': xml.version_cfdi,
+                'RFC Emisor': xml.emisor_rfc,
+                'Nombre Emisor': xml.emisor_nombre,
+                'RFC Receptor': xml.receptor_rfc,
+                'Nombre Receptor': xml.receptor_nombre,
+                'Total': `$${parseFloat(xml.total).toFixed(2)}`,
+                'Estado': xml.estado || 'generado'
+            }));
+
+            const csv = convertirACSV(datosExport);
+            descargarCSV(csv, `XMLs_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        function convertirACSV(datos) {
+            if (datos.length === 0) return '';
+            
+            const headers = Object.keys(datos[0]);
+            const csvContent = [
+                headers.join(','),
+                ...datos.map(row => 
+                    headers.map(header => 
+                        `"${(row[header] || '').toString().replace(/"/g, '""')}"`
+                    ).join(',')
+                )
+            ].join('\n');
+            
+            return csvContent;
+        }
+
+        function descargarCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Event listener para mostrar/ocultar campos de fecha personalizada
+        document.addEventListener('DOMContentLoaded', function() {
+            const filtroFecha = document.getElementById('filtroFecha');
+            if (filtroFecha) {
+                filtroFecha.addEventListener('change', function() {
+                    const rangoPersonalizado = document.getElementById('rangoPersonalizado');
+                    const rangoPersonalizadoHasta = document.getElementById('rangoPersonalizadoHasta');
+                    
+                    if (this.value === 'personalizado') {
+                        rangoPersonalizado.style.display = 'block';
+                        rangoPersonalizadoHasta.style.display = 'block';
+                    } else {
+                        rangoPersonalizado.style.display = 'none';
+                        rangoPersonalizadoHasta.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function showEmisorModal(emisorId = null) {
+            editingEmisorId = emisorId;
+            const modal = document.getElementById('emisorModal');
+            const title = document.getElementById('emisorModalTitle');
+            const form = document.getElementById('emisorForm');
+            
+            if (emisorId) {
+                title.textContent = 'Editar Emisor';
+                const emisor = emisores.find(e => e.id === emisorId);
+                if (emisor) {
+                    document.getElementById('emisorRfc').value = emisor.rfc;
+                    document.getElementById('emisorNombre').value = emisor.nombre;
+                    document.getElementById('emisorCodigoPostal').value = emisor.codigo_postal;
+                    document.getElementById('emisorRegimenFiscal').value = emisor.regimen_fiscal;
+                }
+            } else {
+                title.textContent = 'Agregar Emisor';
+                form.reset();
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeEmisorModal() {
+            document.getElementById('emisorModal').style.display = 'none';
+            editingEmisorId = null;
+        }
+
+        function getEstadoBadgeClass(estado) {
+            switch (estado) {
+                case 'generado': return 'info';
+                case 'sellado': return 'warning';
+                case 'timbrado': return 'success';
+                default: return 'info';
+            }
+        }
+
+        async function downloadXML(xmlId) {
+            const xml = xmls.find(x => x.id === xmlId);
+            if (!xml) return;
+
+            const blob = new Blob([xml.xml_content], { type: 'application/xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CFDI_${xml.version_cfdi}_${xml.emisor_rfc}_${xml.serie || ''}-${xml.folio}.xml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        async function deleteXML(xmlId) {
+            if (!confirm('¿Está seguro de eliminar este XML?')) return;
+
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                const response = await fetch(`/.netlify/functions/xmls?id=${xmlId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    await loadXMLs();
+                    updateStats();
+                } else {
+                    alert('Error al eliminar XML');
+                }
+            } catch (error) {
+                console.error('Error deleting XML:', error);
+                alert('Error al eliminar XML');
+            }
+        }
+
+        function editEmisor(emisorId) {
+            showEmisorModal(emisorId);
+        }
+
+        async function deleteEmisor(emisorId) {
+            if (!confirm('¿Está seguro de eliminar este emisor?')) return;
+
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                const response = await fetch(`/.netlify/functions/emisores?id=${emisorId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    await loadEmisores();
+                    updateStats();
+                } else {
+                    alert('Error al eliminar emisor');
+                }
+            } catch (error) {
+                console.error('Error deleting emisor:', error);
+                alert('Error al eliminar emisor');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('cfdi_token');
+            localStorage.removeItem('cfdi_user');
+            window.location.href = '/';
+        }
+
+        // Manejar formulario de emisor
+        document.getElementById('emisorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                rfc: document.getElementById('emisorRfc').value,
+                nombre: document.getElementById('emisorNombre').value,
+                codigo_postal: document.getElementById('emisorCodigoPostal').value,
+                regimen_fiscal: document.getElementById('emisorRegimenFiscal').value
+            };
+
+            // Manejar archivos de certificado
+            const cerFile = document.getElementById('certificadoCer').files[0];
+            const keyFile = document.getElementById('certificadoKey').files[0];
+            const password = document.getElementById('passwordKey').value;
+
+            if (cerFile) {
+                formData.certificado_cer = await fileToBase64(cerFile);
+            }
+            if (keyFile) {
+                formData.certificado_key = await fileToBase64(keyFile);
+            }
+            if (password) {
+                formData.password_key = password;
+            }
+
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                const url = editingEmisorId 
+                    ? `/.netlify/functions/emisores?id=${editingEmisorId}`
+                    : '/.netlify/functions/emisores';
+                
+                const response = await fetch(url, {
+                    method: editingEmisorId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    closeEmisorModal();
+                    await loadEmisores();
+                    updateStats();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Error al guardar emisor');
+                }
+            } catch (error) {
+                console.error('Error saving emisor:', error);
+                alert('Error al guardar emisor');
+            }
+        });
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('emisorModal');
+            if (event.target === modal) {
+                closeEmisorModal();
+            }
+        }
+    </script>
+</body>
+</html>
