@@ -1223,11 +1223,11 @@
             
             if (version === '4.0') {
                 xml = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(6)}" Moneda="MXN" Total="${total.toFixed(6)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${metodoPago}" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(2)}" Moneda="MXN" Total="${total.toFixed(2)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${metodoPago}" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
 `;
             } else {
                 xml = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv33.xsd" Version="3.3" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(6)}" Moneda="MXN" Total="${total.toFixed(6)}" TipoDeComprobante="I" MetodoPago="${metodoPago}" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv33.xsd" Version="3.3" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(2)}" Moneda="MXN" Total="${total.toFixed(2)}" TipoDeComprobante="I" MetodoPago="${metodoPago}" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
 `;
             }
             
@@ -1250,13 +1250,13 @@
             conceptos.forEach(concepto => {
                 // ObjetoImp por concepto (CFDI 4.0) - Corregido según especificaciones SAT
                 const objetoImpAttr = version === '4.0' && concepto.objetoImp ? ` ObjetoImp="${concepto.objetoImp}"` : '';
-                xml += `    <cfdi:Concepto ClaveProdServ="${concepto.claveProducto}" Cantidad="${concepto.cantidad}" ClaveUnidad="${concepto.claveUnidad}" Descripcion="${concepto.descripcion}" ValorUnitario="${concepto.valorUnitario.toFixed(6)}" Importe="${concepto.importe.toFixed(6)}"${objetoImpAttr}`;
+                xml += `    <cfdi:Concepto ClaveProdServ="${concepto.claveProducto}" Cantidad="${concepto.cantidad}" ClaveUnidad="${concepto.claveUnidad}" Descripcion="${concepto.descripcion}" ValorUnitario="${concepto.valorUnitario.toFixed(2)}" Importe="${concepto.importe.toFixed(2)}"${objetoImpAttr}`;
                 
                 if (concepto.impuesto) {
                     xml += `>
       <cfdi:Impuestos>
         <cfdi:Traslados>
-          <cfdi:Traslado Base="${concepto.importe.toFixed(6)}" Impuesto="${concepto.impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${concepto.impuesto.tasa.toFixed(6)}" Importe="${concepto.impuesto.importe.toFixed(6)}"/>
+          <cfdi:Traslado Base="${concepto.importe.toFixed(2)}" Impuesto="${concepto.impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${concepto.impuesto.tasa.toFixed(6)}" Importe="${concepto.impuesto.importe.toFixed(2)}"/>
         </cfdi:Traslados>
       </cfdi:Impuestos>
     </cfdi:Concepto>
@@ -1295,7 +1295,7 @@
                 });
                 
                 Object.values(impuestosAgrupados).forEach(impuesto => {
-                    xml += `      <cfdi:Traslado Base="${impuesto.base.toFixed(6)}" Impuesto="${impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${impuesto.tasa.toFixed(6)}" Importe="${impuesto.importe.toFixed(6)}"/>
+                    xml += `      <cfdi:Traslado Base="${impuesto.base.toFixed(2)}" Impuesto="${impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${impuesto.tasa.toFixed(6)}" Importe="${impuesto.importe.toFixed(2)}"/>
 `;
                 });
                 
