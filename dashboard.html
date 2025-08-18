@@ -1075,11 +1075,43 @@
         
         // Función para refrescar lista de emisores
         async function refreshEmisorList() {
+            console.log('🔄 CFDI SYSTEM: Refrescando lista de emisores...');
             try {
-                await cargarEmisores();
+                // Cargar emisores desde localStorage
+                await loadLocalEmisores();
+                
+                // Actualizar UI
+                renderEmisores();
                 updateStats();
+                cargarEmisoresEnFiltro();
+                
+                console.log('✅ Lista de emisores refrescada exitosamente');
             } catch (error) {
-                console.error('Error refrescando emisores:', error);
+                console.error('❌ Error refrescando emisores:', error);
+                showValidationError(
+                    'Error cargando lista de emisores',
+                    'SYSTEM_ERROR',
+                    error.message
+                );
+            }
+        }
+        
+        // Función para cargar emisores desde localStorage
+        async function loadLocalEmisores() {
+            console.log('💾 Cargando emisores desde localStorage...');
+            try {
+                const emisoresGuardados = localStorage.getItem('cfdi_emisores');
+                if (emisoresGuardados) {
+                    emisores = JSON.parse(emisoresGuardados);
+                    console.log(`✅ ${emisores.length} emisores cargados desde localStorage`);
+                } else {
+                    emisores = [];
+                    console.log('📄 No hay emisores guardados, inicializando array vacío');
+                }
+            } catch (error) {
+                console.error('❌ Error parseando emisores desde localStorage:', error);
+                emisores = [];
+                throw error;
             }
         }
 
