@@ -258,7 +258,7 @@
                 <div class="quick-action-icon">🚀</div>
                 <div class="quick-action-title">Generar CFDI</div>
             </a>
-            <a href="#" onclick="showEmisorModal()" class="quick-action">
+            <a href="#" onclick="openEmisorModal()" class="quick-action">
                 <div class="quick-action-icon">🏢</div>
                 <div class="quick-action-title">Nuevo Emisor</div>
             </a>
@@ -469,6 +469,19 @@
     </div>
 
     <script>
+        // Función simple para abrir modal de emisor
+        function openEmisorModal() {
+            console.log('🏢 Abriendo modal de emisor...');
+            const modal = document.getElementById('emisorModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Modal abierto');
+            } else {
+                console.error('❌ Modal no encontrado');
+                alert('Error: No se pudo abrir el modal del emisor');
+            }
+        }
+
         let currentUser = null;
         let xmls = [];
         let emisores = [];
