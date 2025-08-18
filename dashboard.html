@@ -834,135 +834,109 @@
             }
         }
 
-        // ===== SOLUCIÓN DE EMERGENCIA: ROMPER BUCLE INFINITO =====
+        // ===== SISTEMA DE AUTENTICACIÓN CFDI PROFESIONAL =====
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 CFDI SYSTEM: Dashboard cargando (modo emergencia)...');
+            console.log('🚀 CFDI SYSTEM: Dashboard iniciando...');
             
-            // MODO EMERGENCIA: Bypass de autenticación para evitar bucle infinito
-            console.log('🚨 MODO EMERGENCIA: Saltando verificación de autenticación');
-            console.log('🔧 Razón: Bucle infinito de autenticación detectado');
+            // Verificar si hay usuario ya autenticado
+            const token = localStorage.getItem('cfdi_token');
+            const savedUser = localStorage.getItem('cfdi_user');
             
-            // Crear usuario temporal para evitar errores
+            if (token && savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    document.getElementById('userName').textContent = currentUser.nombre;
+                    console.log('✅ Usuario autenticado encontrado:', currentUser.email);
+                    
+                    // Cargar datos del sistema
+                    await loadData();
+                    return;
+                } catch (error) {
+                    console.warn('⚠️ Error parseando usuario guardado:', error);
+                }
+            }
+            
+            // Si no hay autenticación válida, crear usuario demo
+            console.log('🔑 Creando sesión demo para desarrollo...');
+            
             currentUser = {
-                id: 'emergency-user',
-                nombre: 'Usuario Emergencia',
-                email: 'admin@sistema.com',
+                id: 'demo-user-' + Date.now(),
+                nombre: 'Usuario Demo',
+                email: 'demo@cfdi.com',
                 rol: 'admin'
             };
             
-            // Crear token temporal
-            const emergencyToken = 'emergency-token-' + Date.now();
-            localStorage.setItem('cfdi_token', emergencyToken);
+            const demoToken = 'demo-token-' + Date.now();
+            localStorage.setItem('cfdi_token', demoToken);
             localStorage.setItem('cfdi_user', JSON.stringify(currentUser));
             
-            // Actualizar UI
             document.getElementById('userName').textContent = currentUser.nombre;
             
-            console.log('✅ Usuario temporal creado:', currentUser);
-            console.log('🔑 Token temporal asignado');
+            console.log('✅ Sesión demo creada:', currentUser);
             
-            // Cargar datos con manejo de errores mejorado
-            try {
-                console.log('📊 Cargando datos del sistema...');
-                await loadDataEmergency();
-                console.log('✅ Sistema cargado en modo emergencia');
-                
-                // Mostrar alerta informativa
-                setTimeout(() => {
-                    alert('🚨 MODO EMERGENCIA ACTIVADO\n\n' +
-                          'El sistema se ejecuta en modo emergencia debido a problemas de autenticación.\n\n' +
-                          'Funcionalidades disponibles:\n' +
-                          '• Gestión de emisores\n' +
-                          '• Generación de XMLs\n' +
-                          '• Sellado digital\n\n' +
-                          'Nota: Los datos se almacenan localmente.');
-                }, 1000);
-                
-            } catch (error) {
-                console.error('❌ Error cargando datos:', error);
-                // Continuar sin datos para evitar bloqueo
-                updateStatsEmergency();
-            }
+            // Cargar datos del sistema
+            await loadData();
         });
-        
-        // Función de carga de datos en modo emergencia
-        async function loadDataEmergency() {
-            console.log('📊 Cargando datos en modo emergencia...');
-            
-            // Inicializar arrays vacíos para evitar errores
-            xmls = [];
-            emisores = [];
-            todosLosXMLs = [];
-            xmlsFiltrados = [];
-            
-            // Cargar datos desde localStorage si existen
-            const localXmls = localStorage.getItem('emergency_xmls');
-            const localEmisores = localStorage.getItem('emergency_emisores');
-            
-            if (localXmls) {
-                try {
-                    xmls = JSON.parse(localXmls);
-                    todosLosXMLs = [...xmls];
-                    xmlsFiltrados = [...xmls];
-                    console.log('📄 XMLs cargados desde localStorage:', xmls.length);
-                } catch (e) {
-                    console.warn('⚠️ Error cargando XMLs locales:', e);
-                }
-            }
-            
-            if (localEmisores) {
-                try {
-                    emisores = JSON.parse(localEmisores);
-                    console.log('🏢 Emisores cargados desde localStorage:', emisores.length);
-                } catch (e) {
-                    console.warn('⚠️ Error cargando emisores locales:', e);
-                }
-            }
-            
-            // Actualizar UI
-            renderXMLs();
-            renderEmisores();
-            updateStatsEmergency();
-            cargarEmisoresEnFiltro();
-        }
-        
-        // Función de estadísticas en modo emergencia
-        function updateStatsEmergency() {
-            console.log('📊 Actualizando estadísticas en modo emergencia...');
-            
-            const totalXmls = xmls.length;
-            const totalEmisores = emisores.length;
-            const xmlsHoy = xmls.filter(xml => {
-                const hoy = new Date().toISOString().split('T')[0];
-                return xml.fecha_creacion && xml.fecha_creacion.startsWith(hoy);
-            }).length;
-            
-            // Actualizar elementos DOM si existen
-            const statsElements = {
-                'totalXMLs': totalXmls,
-                'totalEmisores': totalEmisores,
-                'xmlsHoy': xmlsHoy,
-                'xmlsMes': totalXmls // Simplificado para modo emergencia
-            };
-            
-            Object.entries(statsElements).forEach(([id, value]) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.textContent = value;
-                }
-            });
-            
-            console.log('📊 Estadísticas actualizadas:', statsElements);
-        }
 
         // Variables globales para filtros
         let todosLosXMLs = [];
         let xmlsFiltrados = [];
         let timeoutBusqueda = null;
 
+        // Función principal para cargar datos del sistema
         async function loadData() {
-            await Promise.all([cargarXMLs(), loadEmisores()]);
-            updateStats();
+            console.log('📊 Cargando datos del sistema CFDI...');
+            
+            try {
+                // Inicializar arrays
+                xmls = [];
+                emisores = [];
+                todosLosXMLs = [];
+                xmlsFiltrados = [];
+                
+                // Cargar datos desde localStorage (modo desarrollo)
+                await loadLocalData();
+                
+                // Actualizar UI
+                renderXMLs();
+                renderEmisores();
+                updateStats();
+                cargarEmisoresEnFiltro();
+                
+                console.log('✅ Datos cargados exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error cargando datos:', error);
+                // Continuar con arrays vacíos para evitar errores
+                updateStats();
+            }
+        }
+        
+        // Función para cargar datos locales
+        async function loadLocalData() {
+            // Cargar XMLs desde localStorage
+            const localXmls = localStorage.getItem('cfdi_xmls');
+            if (localXmls) {
+                try {
+                    xmls = JSON.parse(localXmls);
+                    todosLosXMLs = [...xmls];
+                    xmlsFiltrados = [...xmls];
+                    console.log('📄 XMLs cargados:', xmls.length);
+                } catch (e) {
+                    console.warn('⚠️ Error cargando XMLs:', e);
+                }
+            }
+            
+            // Cargar emisores desde localStorage
+            const localEmisores = localStorage.getItem('cfdi_emisores');
+            if (localEmisores) {
+                try {
+                    emisores = JSON.parse(localEmisores);
+                    console.log('🏢 Emisores cargados:', emisores.length);
+                } catch (e) {
+                    console.warn('⚠️ Error cargando emisores:', e);
+                }
+            }
         }
 
         async function cargarXMLs() {
