@@ -1011,37 +1011,106 @@
                 return;
             }
 
-            // Validar campos obligatorios
-            const camposRequeridos = [
-                { id: 'emisorRfc', nombre: 'RFC del Emisor' },
-                { id: 'emisorNombre', nombre: 'Nombre del Emisor' },
-                { id: 'emisorCodigoPostal', nombre: 'Código Postal del Emisor' },
-                { id: 'emisorRegimenFiscal', nombre: 'Régimen Fiscal del Emisor' },
-                { id: 'receptorRfc', nombre: 'RFC del Receptor' },
-                { id: 'receptorNombre', nombre: 'Nombre del Receptor' },
-                { id: 'receptorCodigoPostal', nombre: 'Código Postal del Receptor' },
-                { id: 'receptorRegimenFiscal', nombre: 'Régimen Fiscal del Receptor' },
-                { id: 'usoCfdi', nombre: 'Uso de CFDI' },
-                { id: 'formaPago', nombre: 'Forma de Pago' },
-                { id: 'folio', nombre: 'Folio' },
-                { id: 'fecha', nombre: 'Fecha' }
-            ];
-
+            // SISTEMA ROBUSTO DE VALIDACIÓN Y CONTROL DE ERRORES
+            console.log('🔍 INICIANDO VALIDACIÓN COMPLETA DE CAMPOS...');
+            
+            const erroresValidacion = [];
             const version = document.getElementById('versionCfdi').value;
-            if (version === '4.0') {
-                camposRequeridos.push({ id: 'objetoImp', nombre: 'Objeto de Impuesto' });
+            
+            // 1. VALIDAR DATOS GENERALES
+            console.log('🔍 Validando Datos Generales...');
+            const serie = document.getElementById('serie').value.trim();
+            const folio = document.getElementById('folio').value.trim();
+            const fecha = document.getElementById('fecha').value.trim();
+            const metodoPago = document.getElementById('metodoPago').value.trim();
+            const formaPago = document.getElementById('formaPago').value.trim();
+            
+            if (!folio) erroresValidacion.push('❌ Folio es obligatorio');
+            if (!fecha) erroresValidacion.push('❌ Fecha es obligatoria');
+            if (!metodoPago) erroresValidacion.push('❌ Método de Pago es obligatorio');
+            if (!formaPago) erroresValidacion.push('❌ Forma de Pago es obligatoria');
+            
+            // 2. VALIDAR DATOS DEL EMISOR
+            console.log('🔍 Validando Datos del Emisor...');
+            const emisorRfc = document.getElementById('emisorRfc').value.trim();
+            const emisorNombre = document.getElementById('emisorNombre').value.trim();
+            const emisorCP = document.getElementById('emisorCodigoPostal').value.trim();
+            const emisorRegimen = document.getElementById('emisorRegimenFiscal').value.trim();
+            
+            if (!emisorRfc) {
+                erroresValidacion.push('❌ RFC del Emisor es obligatorio');
+            } else if (!/^[A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3}$/.test(emisorRfc)) {
+                erroresValidacion.push('❌ RFC del Emisor tiene formato inválido');
             }
-
-            const camposFaltantes = camposRequeridos.filter(campo => {
-                const valor = document.getElementById(campo.id).value.trim();
-                return !valor;
-            });
-
-            if (camposFaltantes.length > 0) {
-                const listaCampos = camposFaltantes.map(c => c.nombre).join(', ');
-                showAlert(`⚠️ Complete los siguientes campos obligatorios: ${listaCampos}`, 'error');
+            
+            if (!emisorNombre) erroresValidacion.push('❌ Nombre del Emisor es obligatorio');
+            
+            if (!emisorCP) {
+                erroresValidacion.push('❌ Código Postal del Emisor es obligatorio');
+            } else if (!/^[0-9]{5}$/.test(emisorCP)) {
+                erroresValidacion.push('❌ Código Postal del Emisor debe tener 5 dígitos');
+            }
+            
+            if (!emisorRegimen) erroresValidacion.push('❌ Régimen Fiscal del Emisor es obligatorio');
+            
+            // 3. VALIDAR DATOS DEL RECEPTOR
+            console.log('🔍 Validando Datos del Receptor...');
+            const receptorRfc = document.getElementById('receptorRfc').value.trim();
+            const receptorNombre = document.getElementById('receptorNombre').value.trim();
+            const receptorCP = document.getElementById('receptorCodigoPostal').value.trim();
+            const receptorRegimen = document.getElementById('receptorRegimenFiscal').value.trim();
+            const usoCfdi = document.getElementById('usoCfdi').value.trim();
+            
+            if (!receptorRfc) {
+                erroresValidacion.push('❌ RFC del Receptor es obligatorio');
+            } else if (!/^[A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3}$/.test(receptorRfc)) {
+                erroresValidacion.push('❌ RFC del Receptor tiene formato inválido');
+            }
+            
+            if (!receptorNombre) erroresValidacion.push('❌ Nombre del Receptor es obligatorio');
+            
+            if (!receptorCP) {
+                erroresValidacion.push('❌ Código Postal del Receptor es obligatorio');
+            } else if (!/^[0-9]{5}$/.test(receptorCP)) {
+                erroresValidacion.push('❌ Código Postal del Receptor debe tener 5 dígitos');
+            }
+            
+            if (!receptorRegimen) erroresValidacion.push('❌ Régimen Fiscal del Receptor es obligatorio');
+            if (!usoCfdi) erroresValidacion.push('❌ Uso de CFDI es obligatorio');
+            
+            // 4. VALIDAR CONCEPTOS
+            console.log('🔍 Validando Conceptos...');
+            if (conceptos.length === 0) {
+                erroresValidacion.push('❌ Debe agregar al menos un concepto');
+            } else {
+                // Validar cada concepto
+                conceptos.forEach((concepto, index) => {
+                    if (!concepto.descripcion) erroresValidacion.push(`❌ Concepto ${index + 1}: Descripción faltante`);
+                    if (!concepto.cantidad || concepto.cantidad <= 0) erroresValidacion.push(`❌ Concepto ${index + 1}: Cantidad inválida`);
+                    if (!concepto.valorUnitario || concepto.valorUnitario <= 0) erroresValidacion.push(`❌ Concepto ${index + 1}: Valor unitario inválido`);
+                    if (!concepto.claveUnidad) erroresValidacion.push(`❌ Concepto ${index + 1}: Clave de unidad faltante`);
+                    if (!concepto.claveProducto) erroresValidacion.push(`❌ Concepto ${index + 1}: Clave de producto faltante`);
+                    
+                    // Validar ObjetoImp para CFDI 4.0
+                    if (version === '4.0' && !concepto.objetoImp) {
+                        erroresValidacion.push(`❌ Concepto ${index + 1}: Objeto de Impuesto es obligatorio para CFDI 4.0`);
+                    }
+                });
+            }
+            
+            // 5. MOSTRAR ERRORES SI EXISTEN
+            if (erroresValidacion.length > 0) {
+                console.error('❌ ERRORES DE VALIDACIÓN ENCONTRADOS:', erroresValidacion);
+                const mensajeError = `😨 NO SE PUEDE GENERAR EL XML\n\nERRORES ENCONTRADOS (${erroresValidacion.length}):\n\n` +
+                    erroresValidacion.map((error, i) => `${i + 1}. ${error}`).join('\n') +
+                    '\n\nℹ️ Por favor corrija estos errores e intente nuevamente.';
+                
+                showAlert(mensajeError, 'error');
                 return;
             }
+            
+            console.log('✅ TODAS LAS VALIDACIONES PASARON EXITOSAMENTE');
+            
 
             try {
                 // Generar XML base
