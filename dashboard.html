@@ -533,14 +533,37 @@
                     todosLosXMLs = await response.json();
                     xmls = [...todosLosXMLs]; // Mantener compatibilidad
                     xmlsFiltrados = [...todosLosXMLs];
-                    aplicarFiltros();
+                    
+                    if (todosLosXMLs.length === 0) {
+                        document.getElementById('xmlsContent').innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                                <h3>📄 No hay XMLs generados</h3>
+                                <p>Aún no has generado ningún XML CFDI.</p>
+                                <a href="/generator.html" class="btn btn-primary" style="margin-top: 15px;">➕ Generar Primer XML</a>
+                            </div>
+                        `;
+                    } else {
+                        aplicarFiltros();
+                    }
                     cargarEmisoresEnFiltro();
                 } else {
-                    document.getElementById('xmlsContent').innerHTML = '<p>Error cargando XMLs</p>';
+                    document.getElementById('xmlsContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #dc3545;">
+                            <h3>⚠️ Error cargando XMLs</h3>
+                            <p>No se pudieron cargar los XMLs. Verifica tu conexión.</p>
+                            <button onclick="cargarXMLs()" class="btn btn-secondary" style="margin-top: 15px;">🔄 Reintentar</button>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('xmlsContent').innerHTML = '<p>Error cargando XMLs</p>';
+                document.getElementById('xmlsContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #dc3545;">
+                        <h3>⚠️ Error de conexión</h3>
+                        <p>No se pudo conectar con el servidor.</p>
+                        <button onclick="cargarXMLs()" class="btn btn-secondary" style="margin-top: 15px;">🔄 Reintentar</button>
+                    </div>
+                `;
             }
         }
 
@@ -677,14 +700,24 @@
         }
 
         function updateStats() {
-            document.getElementById('totalXMLs').textContent = xmls.length;
-            document.getElementById('totalEmisores').textContent = emisores.length;
+            // Asegurar que las variables estén inicializadas
+            const xmlsCount = (typeof xmls !== 'undefined' && xmls) ? xmls.length : (todosLosXMLs ? todosLosXMLs.length : 0);
+            const emisoresCount = (typeof emisores !== 'undefined' && emisores) ? emisores.length : 0;
             
-            const thisMonth = xmls.filter(xml => {
-                const xmlDate = new Date(xml.fecha_creacion);
-                const now = new Date();
-                return xmlDate.getMonth() === now.getMonth() && 
-                       xmlDate.getFullYear() === now.getFullYear();
+            document.getElementById('totalXMLs').textContent = xmlsCount;
+            document.getElementById('totalEmisores').textContent = emisoresCount;
+            
+            // Calcular XMLs de este mes
+            const xmlsArray = xmls || todosLosXMLs || [];
+            const thisMonth = xmlsArray.filter(xml => {
+                try {
+                    const xmlDate = new Date(xml.fecha_creacion);
+                    const now = new Date();
+                    return xmlDate.getMonth() === now.getMonth() && 
+                           xmlDate.getFullYear() === now.getFullYear();
+                } catch (error) {
+                    return false;
+                }
             }).length;
             
             document.getElementById('xmlsThisMonth').textContent = thisMonth;
