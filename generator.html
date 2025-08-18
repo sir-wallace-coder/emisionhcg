@@ -791,19 +791,58 @@
             }
 
             try {
-                // Generar XML
+                // Generar XML base
                 const xmlContent = construirXML();
-                xmlGenerado = xmlContent;
+                let xmlFinal = xmlContent;
+                let sellado = false;
+                let infoSellado = null;
 
-                // Mostrar XML
-                document.getElementById('xmlOutput').textContent = xmlContent;
+                // Verificar si hay un emisor seleccionado para sellado automático
+                const emisorSeleccionado = document.getElementById('emisorSelect').value;
+                if (emisorSeleccionado && currentUser) {
+                    try {
+                        showAlert('🔐 Procesando sellado digital...', 'info');
+                        
+                        // Llamar a la función de sellado
+                        const resultadoSellado = await sellarXMLConEmisor(xmlContent, emisorSeleccionado, version);
+                        
+                        if (resultadoSellado.exito) {
+                            xmlFinal = resultadoSellado.xmlSellado;
+                            sellado = true;
+                            infoSellado = {
+                                selloDigital: resultadoSellado.selloDigital,
+                                numeroCertificado: resultadoSellado.numeroCertificado,
+                                emisor: resultadoSellado.emisor
+                            };
+                            showAlert('✅ XML generado y sellado digitalmente', 'success');
+                        } else {
+                            showAlert('⚠️ XML generado sin sellar: ' + resultadoSellado.error, 'warning');
+                        }
+                    } catch (selladoError) {
+                        console.error('Error en sellado:', selladoError);
+                        showAlert('⚠️ XML generado sin sellar: Error en el proceso de sellado', 'warning');
+                    }
+                } else {
+                    showAlert('✅ XML generado exitosamente (sin sellar)', 'success');
+                }
+
+                // Actualizar variable global
+                xmlGenerado = xmlFinal;
+
+                // Mostrar XML final
+                document.getElementById('xmlOutput').textContent = xmlFinal;
                 document.getElementById('xmlOutput').style.display = 'block';
                 document.getElementById('btnDescargar').style.display = 'inline-block';
+
+                // Mostrar información del sellado si aplica
+                if (sellado && infoSellado) {
+                    mostrarInfoSellado(infoSellado);
+                }
 
                 // Guardar automáticamente si está habilitado y el usuario está logueado
                 const autoSave = document.getElementById('autoSave').checked;
                 if (autoSave && currentUser) {
-                    await guardarXMLEnBD(xmlContent);
+                    await guardarXMLEnBD(xmlFinal, sellado, infoSellado);
                 }
 
                 // Descargar automáticamente si está habilitado
@@ -812,7 +851,6 @@
                     descargarXML();
                 }
 
-                showAlert('✅ XML generado exitosamente', 'success');
             } catch (error) {
                 console.error('Error generando XML:', error);
                 showAlert('❌ Error al generar XML: ' + error.message, 'error');
@@ -1001,6 +1039,79 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+        }
+
+        // Función para sellar XML con emisor
+        async function sellarXMLConEmisor(xmlContent, emisorId, version) {
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                const response = await fetch('/.netlify/functions/sellar-cfdi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        xmlContent: xmlContent,
+                        emisorId: emisorId,
+                        version: version
+                    })
+                });
+
+                if (response.ok) {
+                    const resultado = await response.json();
+                    return {
+                        exito: true,
+                        xmlSellado: resultado.xmlSellado,
+                        selloDigital: resultado.selloDigital,
+                        numeroCertificado: resultado.numeroCertificado,
+                        emisor: resultado.emisor
+                    };
+                } else {
+                    const error = await response.json();
+                    return {
+                        exito: false,
+                        error: error.error || 'Error desconocido en el sellado'
+                    };
+                }
+            } catch (error) {
+                console.error('Error en sellado:', error);
+                return {
+                    exito: false,
+                    error: 'Error de conexión durante el sellado'
+                };
+            }
+        }
+
+        // Función para mostrar información del sellado
+        function mostrarInfoSellado(infoSellado) {
+            const infoDiv = document.getElementById('selladoInfo') || crearDivInfoSellado();
+            
+            infoDiv.innerHTML = `
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <h4 style="color: #155724; margin-bottom: 10px;">🔐 Información del Sellado Digital</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; font-size: 14px;">
+                        <div><strong>Emisor:</strong> ${infoSellado.emisor.rfc} - ${infoSellado.emisor.nombre}</div>
+                        <div><strong>Certificado:</strong> ${infoSellado.numeroCertificado}</div>
+                        <div><strong>Sello:</strong> ${infoSellado.selloDigital.substring(0, 20)}...</div>
+                        <div><strong>Estado:</strong> <span style="color: #28a745;">✅ Sellado Válido</span></div>
+                    </div>
+                </div>
+            `;
+            
+            infoDiv.style.display = 'block';
+        }
+
+        // Función para crear div de información de sellado
+        function crearDivInfoSellado() {
+            const infoDiv = document.createElement('div');
+            infoDiv.id = 'selladoInfo';
+            infoDiv.style.display = 'none';
+            
+            const xmlOutput = document.getElementById('xmlOutput');
+            xmlOutput.parentNode.insertBefore(infoDiv, xmlOutput);
+            
+            return infoDiv;
         }
 
         // Función para limpiar formulario

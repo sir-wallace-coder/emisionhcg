@@ -1,5 +1,12 @@
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
+const { 
+  procesarCertificado, 
+  validarLlavePrivada, 
+  validarParCertificadoLlave,
+  validarRFC,
+  validarCodigoPostal 
+} = require('./utils/csd-processor');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -98,12 +105,34 @@ async function createEmisor(userId, data, headers) {
       password_key
     } = data;
 
-    // Validar RFC único por usuario
+    console.log('🔧 EMISOR: Creando emisor con validaciones CSD...');
+
+    // 1. Validar RFC
+    const validacionRFC = validarRFC(rfc);
+    if (!validacionRFC.valido) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: validacionRFC.mensaje })
+      };
+    }
+
+    // 2. Validar código postal
+    const validacionCP = validarCodigoPostal(codigo_postal);
+    if (!validacionCP.valido) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: validacionCP.mensaje })
+      };
+    }
+
+    // 3. Validar RFC único por usuario
     const { data: existingEmisor } = await supabase
       .from('emisores')
       .select('id')
       .eq('usuario_id', userId)
-      .eq('rfc', rfc)
+      .eq('rfc', validacionRFC.rfc)
       .single();
 
     if (existingEmisor) {
@@ -114,19 +143,104 @@ async function createEmisor(userId, data, headers) {
       };
     }
 
-    // Crear emisor
+    // 4. Procesar certificados CSD si se proporcionan
+    let infoCertificado = null;
+    let llavePrivadaPem = null;
+    let certificadoPem = null;
+    let numeroCertificado = null;
+    let vigenciaDesde = null;
+    let vigenciaHasta = null;
+
+    if (certificado_cer && certificado_key && password_key) {
+      console.log('🔧 EMISOR: Procesando certificados CSD...');
+      
+      try {
+        // Procesar certificado .cer
+        infoCertificado = procesarCertificado(certificado_cer);
+        console.log('🔧 EMISOR: Certificado procesado:', {
+          rfc: infoCertificado.rfc,
+          vigente: infoCertificado.vigente,
+          numeroCertificado: infoCertificado.numeroCertificado
+        });
+
+        // Validar que el RFC del certificado coincida
+        if (infoCertificado.rfc !== validacionRFC.rfc) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: `El RFC del certificado (${infoCertificado.rfc}) no coincide con el RFC proporcionado (${validacionRFC.rfc})` 
+            })
+          };
+        }
+
+        // Validar que el certificado esté vigente
+        if (!infoCertificado.vigente) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: `El certificado no está vigente. Vigencia: ${infoCertificado.vigenciaDesde} - ${infoCertificado.vigenciaHasta}` 
+            })
+          };
+        }
+
+        // Validar llave privada
+        const validacionLlave = validarLlavePrivada(certificado_key, password_key);
+        if (!validacionLlave.valida) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: validacionLlave.mensaje })
+          };
+        }
+
+        // Validar que certificado y llave privada coincidan
+        const parValido = validarParCertificadoLlave(infoCertificado.certificadoPem, validacionLlave.llavePrivadaPem);
+        if (!parValido) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'El certificado y la llave privada no coinciden' })
+          };
+        }
+
+        // Guardar información procesada
+        llavePrivadaPem = validacionLlave.llavePrivadaPem;
+        certificadoPem = infoCertificado.certificadoPem;
+        numeroCertificado = infoCertificado.numeroCertificado;
+        vigenciaDesde = infoCertificado.vigenciaDesde;
+        vigenciaHasta = infoCertificado.vigenciaHasta;
+
+        console.log('🔧 EMISOR: Certificados CSD validados exitosamente');
+
+      } catch (error) {
+        console.error('🔧 EMISOR: Error procesando certificados:', error);
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Error procesando certificados: ' + error.message })
+        };
+      }
+    }
+
+    // 5. Crear emisor en la base de datos
+    console.log('🔧 EMISOR: Insertando en base de datos...');
     const { data: emisor, error } = await supabase
       .from('emisores')
       .insert([
         {
           usuario_id: userId,
-          rfc,
-          nombre,
-          codigo_postal,
+          rfc: validacionRFC.rfc,
+          nombre: nombre.trim(),
+          codigo_postal: validacionCP.codigoPostal,
           regimen_fiscal,
           certificado_cer: certificado_cer || null,
-          certificado_key: certificado_key || null,
-          password_key: password_key || null,
+          certificado_key: llavePrivadaPem || null, // Guardamos la llave en formato PEM
+          password_key: password_key || null, // Guardamos la contraseña (debería encriptarse)
+          numero_certificado: numeroCertificado,
+          vigencia_desde: vigenciaDesde,
+          vigencia_hasta: vigenciaHasta,
           activo: true,
           created_at: new Date().toISOString()
         }
@@ -134,9 +248,14 @@ async function createEmisor(userId, data, headers) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('🔧 EMISOR: Error insertando en BD:', error);
+      throw error;
+    }
 
-    // No devolver datos sensibles
+    console.log('🔧 EMISOR: Emisor creado exitosamente:', emisor.id);
+
+    // 6. No devolver datos sensibles
     const { certificado_key: _, password_key: __, ...safeEmisor } = emisor;
 
     return {
@@ -144,15 +263,23 @@ async function createEmisor(userId, data, headers) {
       headers,
       body: JSON.stringify({
         message: 'Emisor creado exitosamente',
-        emisor: safeEmisor
+        emisor: {
+          ...safeEmisor,
+          certificado_info: infoCertificado ? {
+            vigente: infoCertificado.vigente,
+            vigencia_desde: infoCertificado.vigenciaDesde,
+            vigencia_hasta: infoCertificado.vigenciaHasta,
+            numero_certificado: infoCertificado.numeroCertificado
+          } : null
+        }
       })
     };
   } catch (error) {
-    console.error('Create emisor error:', error);
+    console.error('🔧 EMISOR: Error general:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Error al crear emisor' })
+      body: JSON.stringify({ error: 'Error al crear emisor: ' + error.message })
     };
   }
 }

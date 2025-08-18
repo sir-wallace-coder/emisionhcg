@@ -13,7 +13,7 @@ async function createAdminUser() {
         // Datos del usuario admin
         const adminData = {
             email: 'admin@cfdi-sistema.com',
-            password: 'Admin123!',
+            password: 'AdminCFDI2024!@#$',
             nombre: 'Administrador',
             apellido: 'Sistema',
             empresa: 'CFDI Sistema Completo',
@@ -24,42 +24,69 @@ async function createAdminUser() {
         // Hash de la contraseña
         const hashedPassword = await bcrypt.hash(adminData.password, 10);
 
-        // Crear usuario en Supabase Auth
-        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        // Intentar crear usuario en Supabase Auth o obtener existente
+        let authUser;
+        const { data: newAuthUser, error: authError } = await supabase.auth.admin.createUser({
             email: adminData.email,
             password: adminData.password,
             email_confirm: true
         });
 
-        if (authError) {
+        if (authError && authError.code === 'email_exists') {
+            console.log('⚠️ Usuario ya existe en Auth, obteniendo información...');
+            // Obtener usuario existente
+            const { data: existingUsers } = await supabase.auth.admin.listUsers();
+            const existingUser = existingUsers.users.find(u => u.email === adminData.email);
+            if (existingUser) {
+                authUser = { user: existingUser };
+                console.log('✅ Usuario encontrado en Auth:', existingUser.id);
+            } else {
+                console.error('❌ No se pudo encontrar el usuario existente');
+                return;
+            }
+        } else if (authError) {
             console.error('❌ Error creando usuario en Auth:', authError);
             return;
+        } else {
+            authUser = newAuthUser;
+            console.log('✅ Usuario creado en Auth:', authUser.user.id);
         }
 
-        console.log('✅ Usuario creado en Auth:', authUser.user.id);
-
-        // Crear registro en la tabla usuarios
-        const { data: dbUser, error: dbError } = await supabase
+        // Verificar si el usuario ya existe en la tabla
+        const { data: existingUser } = await supabase
             .from('usuarios')
-            .insert([
-                {
-                    id: authUser.user.id,
-                    email: adminData.email,
-                    password_hash: hashedPassword,
-                    nombre: adminData.nombre,
-                    apellido: adminData.apellido,
-                    empresa: adminData.empresa,
-                    telefono: adminData.telefono,
-                    rol: adminData.rol,
-                    activo: true,
-                    email_verificado: true
-                }
-            ])
-            .select();
+            .select('id')
+            .eq('id', authUser.user.id)
+            .single();
 
-        if (dbError) {
-            console.error('❌ Error creando usuario en BD:', dbError);
-            return;
+        if (existingUser) {
+            console.log('✅ Usuario ya existe en la base de datos');
+        } else {
+            // Crear registro en la tabla usuarios
+            const { data: dbUser, error: dbError } = await supabase
+                .from('usuarios')
+                .insert([
+                    {
+                        id: authUser.user.id,
+                        email: adminData.email,
+                        password_hash: hashedPassword,
+                        nombre: adminData.nombre,
+                        apellido: adminData.apellido,
+                        empresa: adminData.empresa,
+                        telefono: adminData.telefono,
+                        rol: adminData.rol,
+                        activo: true,
+                        email_verificado: true
+                    }
+                ])
+                .select();
+
+            if (dbError) {
+                console.error('❌ Error creando usuario en BD:', dbError);
+                return;
+            }
+
+            console.log('✅ Usuario creado en la base de datos');
         }
 
         console.log('✅ Usuario administrador creado exitosamente:');

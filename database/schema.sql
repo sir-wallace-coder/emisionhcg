@@ -2,9 +2,14 @@
 CREATE TABLE IF NOT EXISTS usuarios (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     nombre VARCHAR(255) NOT NULL,
+    apellido VARCHAR(255),
+    empresa VARCHAR(300),
+    telefono VARCHAR(20),
+    rol VARCHAR(20) DEFAULT 'user',
     activo BOOLEAN DEFAULT true,
+    email_verificado BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -71,6 +76,10 @@ CREATE POLICY "Usuarios pueden ver sus propios datos" ON usuarios
 
 CREATE POLICY "Usuarios pueden actualizar sus propios datos" ON usuarios
     FOR UPDATE USING (auth.uid()::text = id::text);
+
+-- Política para permitir registro de nuevos usuarios (INSERT público)
+CREATE POLICY "Permitir registro de nuevos usuarios" ON usuarios
+    FOR INSERT WITH CHECK (true);
 
 -- Políticas de seguridad para emisores
 CREATE POLICY "Usuarios pueden ver sus propios emisores" ON emisores
