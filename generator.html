@@ -245,7 +245,9 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <button type="button" class="btn btn-primary" onclick="agregarConcepto()">➕ Agregar Concepto</button>
+                    <!-- BOTÓN DE PRUEBA TEMPORAL -->
+                    <button type="button" class="btn btn-secondary" onclick="testFunction()" style="margin-right: 10px;">🔧 Test JS</button>
+                    <button type="button" class="btn btn-primary" onclick="agregarConcepto()">➥ Agregar Concepto</button>
                 </div>
 
                 <div class="conceptos-container" id="conceptosContainer">
@@ -647,8 +649,14 @@
             actualizarRegimenesFiscales();
         }
 
-        // Función para agregar concepto
-        function agregarConcepto() {
+        // FUNCIÓN DE EMERGENCIA PARA TESTING
+        window.testFunction = function() {
+            alert('✅ JavaScript funciona correctamente!');
+            console.log('✅ Función de prueba ejecutada');
+        };
+        
+        // Función para agregar concepto - DISPONIBLE GLOBALMENTE
+        window.agregarConcepto = function agregarConcepto() {
             console.log('🔧 DIAGNÓSTICO: Iniciando agregarConcepto()');
             
             // Verificar elementos del DOM
