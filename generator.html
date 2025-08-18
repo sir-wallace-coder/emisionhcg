@@ -103,6 +103,22 @@
                         <input type="datetime-local" id="fecha" required>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="metodoPago">Método de Pago *</label>
+                        <select id="metodoPago" required>
+                            <option value="">Seleccionar método de pago</option>
+                            <option value="PUE">PUE - Pago en una sola exhibición</option>
+                            <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="formaPago">Forma de Pago *</label>
+                        <select id="formaPago" required>
+                            <option value="">Seleccionar forma de pago</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <!-- Datos del Emisor -->
@@ -176,15 +192,9 @@
             </div>
 
             <!-- Datos Adicionales -->
-            <div class="form-section">
+            <div class="form-section" id="datosAdicionalesSection" style="display: none;">
                 <h3>📄 Datos Adicionales</h3>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="formaPago">Forma de Pago *</label>
-                        <select id="formaPago" required>
-                            <option value="">Seleccionar forma de pago</option>
-                        </select>
-                    </div>
                     <div class="form-group" id="objetoImpGroup">
                         <label for="objetoImp">Objeto de Impuesto *</label>
                         <select id="objetoImp" required>
@@ -625,7 +635,8 @@
         // Función para cambiar versión CFDI
         function cambiarVersionCfdi() {
             const version = document.getElementById('versionCfdi').value;
-            const objetoImpGroup = document.getElementById('objetoImpGroup'); // Campo global (obsoleto)
+            const datosAdicionalesSection = document.getElementById('datosAdicionalesSection');
+            const objetoImpGroup = document.getElementById('objetoImpGroup');
             const conceptoObjetoImpGroup = document.getElementById('conceptoObjetoImpGroup'); // Campo por concepto
             const versionWarning = document.getElementById('versionWarning');
             const mainTitle = document.getElementById('mainTitle');
@@ -634,21 +645,23 @@
             console.log(`🔧 CFDI GENERATOR: Cambiando versión a ${version}`);
             
             if (version === '3.3') {
-                // CFDI 3.3: Ocultar ObjetoImp (no existe en 3.3)
+                // CFDI 3.3: Ocultar toda la sección de Datos Adicionales (ObjetoImp no existe en 3.3)
+                if (datosAdicionalesSection) datosAdicionalesSection.style.display = 'none';
                 if (objetoImpGroup) objetoImpGroup.style.display = 'none';
                 if (conceptoObjetoImpGroup) conceptoObjetoImpGroup.style.display = 'none';
                 versionWarning.style.display = 'block';
                 mainTitle.textContent = '📄 Generador CFDI 3.3 - Sistema Completo';
                 pageTitle.textContent = '📄 Generador CFDI 3.3 - Sistema Completo';
-                console.log('✅ CFDI 3.3: ObjetoImp oculto (no aplica)');
+                console.log('✅ CFDI 3.3: Datos Adicionales ocultos (ObjetoImp no aplica)');
             } else {
-                // CFDI 4.0: Mostrar ObjetoImp por concepto
-                if (objetoImpGroup) objetoImpGroup.style.display = 'none'; // Ocultar campo global obsoleto
+                // CFDI 4.0: Mostrar sección de Datos Adicionales con ObjetoImp
+                if (datosAdicionalesSection) datosAdicionalesSection.style.display = 'block';
+                if (objetoImpGroup) objetoImpGroup.style.display = 'block'; // Mostrar campo ObjetoImp
                 if (conceptoObjetoImpGroup) conceptoObjetoImpGroup.style.display = 'block'; // Mostrar campo por concepto
                 versionWarning.style.display = 'none';
                 mainTitle.textContent = '🚀 Generador CFDI 4.0 - Sistema Completo';
                 pageTitle.textContent = '🚀 Generador CFDI 4.0 - Sistema Completo';
-                console.log('✅ CFDI 4.0: ObjetoImp por concepto habilitado');
+                console.log('✅ CFDI 4.0: Datos Adicionales y ObjetoImp habilitados');
             }
             
             actualizarRegimenesFiscales();
@@ -920,7 +933,8 @@
             const receptorRegimenFiscal = document.getElementById('receptorRegimenFiscal').value;
             const usoCfdi = document.getElementById('usoCfdi').value;
             
-            // Datos adicionales
+            // Datos de pago (ahora en Datos Generales)
+            const metodoPago = document.getElementById('metodoPago').value;
             const formaPago = document.getElementById('formaPago').value;
             const objetoImp = document.getElementById('objetoImp').value;
             
@@ -934,11 +948,11 @@
             
             if (version === '4.0') {
                 xml = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(6)}" Moneda="MXN" Total="${total.toFixed(6)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(6)}" Moneda="MXN" Total="${total.toFixed(6)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${metodoPago}" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
 `;
             } else {
                 xml = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv33.xsd" Version="3.3" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(6)}" Moneda="MXN" Total="${total.toFixed(6)}" TipoDeComprobante="I" MetodoPago="PUE" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv33.xsd" Version="3.3" Fecha="${fecha}" Sello="" FormaPago="${formaPago}" NoCertificado="" Certificado="" SubTotal="${subtotal.toFixed(6)}" Moneda="MXN" Total="${total.toFixed(6)}" TipoDeComprobante="I" MetodoPago="${metodoPago}" LugarExpedicion="${emisorCodigoPostal}"${serie ? ` Serie="${serie}"` : ''} Folio="${folio}">
 `;
             }
             
