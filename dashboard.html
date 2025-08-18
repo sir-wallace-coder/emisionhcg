@@ -469,23 +469,328 @@
     </div>
 
     <script>
-        // Función simple para abrir modal de emisor
-        function openEmisorModal() {
-            console.log('🏢 Abriendo modal de emisor...');
-            const modal = document.getElementById('emisorModal');
-            if (modal) {
-                modal.style.display = 'block';
-                console.log('✅ Modal abierto');
-            } else {
-                console.error('❌ Modal no encontrado');
-                alert('Error: No se pudo abrir el modal del emisor');
-            }
-        }
-
+        // ===== SISTEMA CFDI PROFESIONAL - GESTIÓN DE EMISORES =====
+        
+        // Variables globales del sistema
         let currentUser = null;
         let xmls = [];
         let emisores = [];
         let editingEmisorId = null;
+        let isAuthenticated = false;
+        
+        // Función principal para abrir modal de emisor (CFDI Expert Implementation)
+        function openEmisorModal(emisorId = null) {
+            console.log('🔐 CFDI SYSTEM: Iniciando apertura de modal emisor');
+            console.log('📋 Emisor ID:', emisorId || 'NUEVO');
+            
+            try {
+                // 1. Verificar autenticación
+                const token = localStorage.getItem('cfdi_token');
+                if (!token) {
+                    console.warn('⚠️ Usuario no autenticado, redirigiendo...');
+                    showAuthAlert();
+                    return false;
+                }
+                
+                // 2. Verificar elementos DOM
+                const modal = document.getElementById('emisorModal');
+                const form = document.getElementById('emisorForm');
+                const title = document.getElementById('emisorModalTitle');
+                
+                if (!modal || !form || !title) {
+                    console.error('❌ Elementos DOM faltantes:', { modal: !!modal, form: !!form, title: !!title });
+                    showSystemError('Elementos del modal no encontrados');
+                    return false;
+                }
+                
+                // 3. Configurar modal según modo (nuevo/editar)
+                editingEmisorId = emisorId;
+                
+                if (emisorId) {
+                    // Modo edición
+                    title.textContent = 'Editar Emisor';
+                    loadEmisorData(emisorId);
+                } else {
+                    // Modo nuevo
+                    title.textContent = 'Registrar Nuevo Emisor';
+                    resetEmisorForm();
+                }
+                
+                // 4. Mostrar modal con animación
+                modal.style.display = 'block';
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.style.opacity = '1';
+                    modal.style.transition = 'opacity 0.3s ease';
+                }, 10);
+                
+                // 5. Focus en primer campo
+                const firstInput = form.querySelector('input');
+                if (firstInput) {
+                    setTimeout(() => firstInput.focus(), 100);
+                }
+                
+                console.log('✅ Modal de emisor abierto exitosamente');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error crítico en openEmisorModal:', error);
+                showSystemError('Error al abrir modal: ' + error.message);
+                return false;
+            }
+        }
+        
+        // Función para mostrar alerta de autenticación
+        function showAuthAlert() {
+            const alertMsg = `🔐 ACCESO REQUERIDO\n\n` +
+                           `Para gestionar emisores necesitas estar autenticado.\n\n` +
+                           `Credenciales de acceso:\n` +
+                           `• Usuario: admin@sistema.com\n` +
+                           `• Contraseña: password\n\n` +
+                           `¿Deseas ir al login ahora?`;
+                           
+            if (confirm(alertMsg)) {
+                window.location.href = '/login';
+            }
+        }
+        
+        // Función para mostrar errores del sistema
+        function showSystemError(message) {
+            const errorMsg = `❌ ERROR DEL SISTEMA CFDI\n\n${message}\n\nPor favor, refresca la página e intenta nuevamente.`;
+            alert(errorMsg);
+        }
+        
+        // Función para resetear formulario de emisor
+        function resetEmisorForm() {
+            const form = document.getElementById('emisorForm');
+            if (form) {
+                form.reset();
+                // Limpiar archivos subidos
+                const fileInputs = form.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => input.value = '');
+            }
+        }
+        
+        // Función para cargar datos de emisor (modo edición)
+        function loadEmisorData(emisorId) {
+            const emisor = emisores.find(e => e.id === emisorId);
+            if (emisor) {
+                document.getElementById('emisorRfc').value = emisor.rfc || '';
+                document.getElementById('emisorNombre').value = emisor.nombre || '';
+                document.getElementById('emisorCodigoPostal').value = emisor.codigo_postal || '';
+                document.getElementById('emisorRegimenFiscal').value = emisor.regimen_fiscal || '';
+            }
+        }
+        
+        // Función para cerrar modal de emisor
+        function closeEmisorModal() {
+            const modal = document.getElementById('emisorModal');
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    editingEmisorId = null;
+                }, 300);
+            }
+        }
+        
+        // ===== VALIDACIONES CFDI PROFESIONALES =====
+        
+        // Función para validar RFC según reglas SAT
+        function validateRFC(rfc) {
+            if (!rfc) return { valid: false, message: 'RFC es requerido' };
+            
+            // Limpiar RFC
+            rfc = rfc.toUpperCase().trim();
+            
+            // Validar formato básico
+            const rfcPattern = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+            if (!rfcPattern.test(rfc)) {
+                return { valid: false, message: 'Formato de RFC inválido' };
+            }
+            
+            return { valid: true, rfc: rfc };
+        }
+        
+        // Función para validar código postal mexicano
+        function validateCodigoPostal(cp) {
+            if (!cp) return { valid: false, message: 'Código postal es requerido' };
+            
+            const cpPattern = /^[0-9]{5}$/;
+            if (!cpPattern.test(cp)) {
+                return { valid: false, message: 'Código postal debe tener 5 dígitos' };
+            }
+            
+            return { valid: true, cp: cp };
+        }
+        
+        // ===== MANEJO DE FORMULARIO EMISOR =====
+        
+        // Event listener para envío de formulario
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('emisorForm');
+            if (form) {
+                form.addEventListener('submit', handleEmisorSubmit);
+            }
+        });
+        
+        // Función principal para manejar envío de formulario emisor
+        async function handleEmisorSubmit(event) {
+            event.preventDefault();
+            console.log('📝 CFDI SYSTEM: Procesando formulario de emisor');
+            
+            try {
+                // 1. Obtener datos del formulario
+                const formData = getEmisorFormData();
+                
+                // 2. Validar datos
+                const validation = validateEmisorData(formData);
+                if (!validation.valid) {
+                    showValidationError(validation.message);
+                    return;
+                }
+                
+                // 3. Mostrar indicador de carga
+                showLoadingState(true);
+                
+                // 4. Enviar datos al servidor
+                const result = await submitEmisorData(formData);
+                
+                if (result.success) {
+                    showSuccessMessage('Emisor guardado exitosamente');
+                    closeEmisorModal();
+                    await refreshEmisorList();
+                } else {
+                    showValidationError(result.message || 'Error al guardar emisor');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en handleEmisorSubmit:', error);
+                showSystemError('Error al procesar formulario: ' + error.message);
+            } finally {
+                showLoadingState(false);
+            }
+        }
+        
+        // Función para obtener datos del formulario
+        function getEmisorFormData() {
+            return {
+                rfc: document.getElementById('emisorRfc').value.trim(),
+                nombre: document.getElementById('emisorNombre').value.trim(),
+                codigoPostal: document.getElementById('emisorCodigoPostal').value.trim(),
+                regimenFiscal: document.getElementById('emisorRegimenFiscal').value,
+                certificadoCer: document.getElementById('certificadoCer').files[0],
+                certificadoKey: document.getElementById('certificadoKey').files[0],
+                passwordKey: document.getElementById('passwordKey').value
+            };
+        }
+        
+        // Función para validar datos del emisor
+        function validateEmisorData(data) {
+            // Validar RFC
+            const rfcValidation = validateRFC(data.rfc);
+            if (!rfcValidation.valid) {
+                return { valid: false, message: rfcValidation.message };
+            }
+            
+            // Validar nombre
+            if (!data.nombre || data.nombre.length < 3) {
+                return { valid: false, message: 'Nombre/Razón Social debe tener al menos 3 caracteres' };
+            }
+            
+            // Validar código postal
+            const cpValidation = validateCodigoPostal(data.codigoPostal);
+            if (!cpValidation.valid) {
+                return { valid: false, message: cpValidation.message };
+            }
+            
+            // Validar régimen fiscal
+            if (!data.regimenFiscal) {
+                return { valid: false, message: 'Régimen fiscal es requerido' };
+            }
+            
+            // Validar certificados CSD (si se proporcionan)
+            if (data.certificadoCer || data.certificadoKey || data.passwordKey) {
+                if (!data.certificadoCer) {
+                    return { valid: false, message: 'Archivo .cer es requerido para CSD' };
+                }
+                if (!data.certificadoKey) {
+                    return { valid: false, message: 'Archivo .key es requerido para CSD' };
+                }
+                if (!data.passwordKey) {
+                    return { valid: false, message: 'Contraseña del certificado es requerida para CSD' };
+                }
+            }
+            
+            return { valid: true };
+        }
+        
+        // Función para enviar datos al servidor
+        async function submitEmisorData(formData) {
+            const token = localStorage.getItem('cfdi_token');
+            
+            // Preparar FormData para archivos
+            const submitData = new FormData();
+            submitData.append('rfc', formData.rfc.toUpperCase());
+            submitData.append('nombre', formData.nombre);
+            submitData.append('codigo_postal', formData.codigoPostal);
+            submitData.append('regimen_fiscal', formData.regimenFiscal);
+            
+            if (formData.certificadoCer) {
+                submitData.append('certificado_cer', formData.certificadoCer);
+            }
+            if (formData.certificadoKey) {
+                submitData.append('certificado_key', formData.certificadoKey);
+            }
+            if (formData.passwordKey) {
+                submitData.append('password_key', formData.passwordKey);
+            }
+            
+            const response = await fetch('/.netlify/functions/emisores', {
+                method: editingEmisorId ? 'PUT' : 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: submitData
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                return { success: true, data: result };
+            } else {
+                const error = await response.json();
+                return { success: false, message: error.error || 'Error del servidor' };
+            }
+        }
+        
+        // Funciones de UI
+        function showLoadingState(show) {
+            const submitBtn = document.querySelector('#emisorForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = show;
+                submitBtn.textContent = show ? 'Guardando...' : 'Guardar';
+            }
+        }
+        
+        function showValidationError(message) {
+            alert(`⚠️ ERROR DE VALIDACIÓN\n\n${message}`);
+        }
+        
+        function showSuccessMessage(message) {
+            alert(`✅ ÉXITO\n\n${message}`);
+        }
+        
+        // Función para refrescar lista de emisores
+        async function refreshEmisorList() {
+            try {
+                await cargarEmisores();
+                updateStats();
+            } catch (error) {
+                console.error('Error refrescando emisores:', error);
+            }
+        }
+
+        // Variables ya definidas arriba
 
         // Función de diagnóstico completo para el botón Nuevo Emisor
         function testEmisorButton() {
