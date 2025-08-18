@@ -694,21 +694,61 @@
                 claveProducto, impuesto, objetoImp, version
             });
             
-            if (!descripcion || !cantidad || !valorUnitario || !claveUnidad || !claveProducto) {
-                showAlert('⚠️ Complete todos los campos obligatorios del concepto', 'error');
+            // VALIDACIÓN DETALLADA CON LOGS
+            console.log('🔍 VALIDANDO CAMPOS OBLIGATORIOS...');
+            
+            if (!descripcion) {
+                console.error('❌ FALLA: Descripción vacía');
+                showAlert('⚠️ Complete la descripción del concepto', 'error');
                 return;
             }
             
-            if (claveProducto.length !== 8 || !/^[0-9]{8}$/.test(claveProducto)) {
+            if (!cantidad || isNaN(cantidad)) {
+                console.error('❌ FALLA: Cantidad inválida:', cantidad);
+                showAlert('⚠️ Complete la cantidad del concepto', 'error');
+                return;
+            }
+            
+            if (!valorUnitario || isNaN(valorUnitario)) {
+                console.error('❌ FALLA: Valor unitario inválido:', valorUnitario);
+                showAlert('⚠️ Complete el valor unitario del concepto', 'error');
+                return;
+            }
+            
+            if (!claveUnidad) {
+                console.error('❌ FALLA: Clave unidad vacía');
+                showAlert('⚠️ Seleccione la clave de unidad', 'error');
+                return;
+            }
+            
+            if (!claveProducto) {
+                console.error('❌ FALLA: Clave producto vacía');
+                showAlert('⚠️ Complete la clave de producto/servicio', 'error');
+                return;
+            }
+            
+            console.log('🔍 VALIDANDO CLAVE DE PRODUCTO...');
+            if (claveProducto.length !== 8) {
+                console.error('❌ FALLA: Clave producto longitud incorrecta:', claveProducto.length, 'caracteres');
                 showAlert('⚠️ La clave de producto/servicio debe tener exactamente 8 dígitos', 'error');
                 return;
             }
             
-            // Validar ObjetoImp para CFDI 4.0
+            if (!/^[0-9]{8}$/.test(claveProducto)) {
+                console.error('❌ FALLA: Clave producto formato incorrecto:', claveProducto);
+                showAlert('⚠️ La clave de producto/servicio debe contener solo números', 'error');
+                return;
+            }
+            
+            console.log('🔍 VALIDANDO OBJETO DE IMPUESTO...');
             if (version === '4.0' && !objetoImp) {
+                console.error('❌ FALLA: ObjetoImp requerido para CFDI 4.0');
                 showAlert('⚠️ Objeto de Impuesto es obligatorio para CFDI 4.0', 'error');
                 return;
             }
+            
+            console.log('✅ TODAS LAS VALIDACIONES PASARON');
+            
             
             const importe = cantidad * valorUnitario;
             let impuestoInfo = null;
