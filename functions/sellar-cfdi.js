@@ -77,25 +77,9 @@ exports.handler = async (event, context) => {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: 'El emisor no tiene certificados CSD configurados. Por favor, sube los certificados primero.' 
+          error: 'Por favor, sube los certificados primero.' 
         })
       };
-    }
-
-    // 3. Verificar vigencia del certificado
-    if (emisor.vigencia_hasta) {
-      const vigenciaHasta = new Date(emisor.vigencia_hasta);
-      const ahora = new Date();
-      
-      if (ahora > vigenciaHasta) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ 
-            error: `El certificado del emisor ha expirado. Vigencia hasta: ${vigenciaHasta.toLocaleDateString()}` 
-          })
-        };
-      }
     }
 
     console.log('🔐 SELLADO: Emisor válido con certificados CSD');
