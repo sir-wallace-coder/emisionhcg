@@ -1354,53 +1354,11 @@
             document.getElementById(tabName + 'Tab').classList.add('active');
         }
 
-        function showEmisorModal(emisorId = null) {
-            console.log('🔧 DEBUG: showEmisorModal called with emisorId:', emisorId);
-            console.log('🔧 DEBUG: currentUser:', currentUser);
-            console.log('🔧 DEBUG: emisores array:', emisores);
-            
-            try {
-                editingEmisorId = emisorId;
-                const modal = document.getElementById('emisorModal');
-                const title = document.getElementById('emisorModalTitle');
-                const form = document.getElementById('emisorForm');
-                
-                console.log('🔧 DEBUG: Modal element found:', modal);
-                console.log('🔧 DEBUG: Title element found:', title);
-                console.log('🔧 DEBUG: Form element found:', form);
-                
-                if (!modal) {
-                    console.error('❌ ERROR: Modal element not found!');
-                    alert('Error: No se pudo encontrar el modal del emisor');
-                    return;
-                }
-                
-                if (emisorId) {
-                    title.textContent = 'Editar Emisor';
-                    const emisor = emisores.find(e => e.id === emisorId);
-                    if (emisor) {
-                        document.getElementById('emisorRfc').value = emisor.rfc;
-                        document.getElementById('emisorNombre').value = emisor.nombre;
-                        document.getElementById('emisorCodigoPostal').value = emisor.codigo_postal;
-                        document.getElementById('emisorRegimenFiscal').value = emisor.regimen_fiscal;
-                    }
-                } else {
-                    title.textContent = 'Agregar Emisor';
-                    form.reset();
-                }
-                
-                console.log('🔧 DEBUG: About to show modal');
-                modal.style.display = 'block';
-                console.log('✅ DEBUG: Modal should now be visible');
-                
-            } catch (error) {
-                console.error('❌ ERROR in showEmisorModal:', error);
-                alert('Error al abrir el modal: ' + error.message);
-            }
-        }
-
+        // ===== FUNCIONES DE UTILIDAD ADICIONALES =====
+        
+        // Función de emergencia para mostrar modal (solo para debugging)
         function forceShowModal() {
-            console.log('🚨 EMERGENCIA: Forzando mostrar modal sin verificaciones');
+            console.log('🚨 EMERGENCIA: Forzando mostrar modal');
             const modal = document.getElementById('emisorModal');
             if (modal) {
                 modal.style.display = 'block';
@@ -1411,10 +1369,7 @@
             }
         }
 
-        function closeEmisorModal() {
-            document.getElementById('emisorModal').style.display = 'none';
-            editingEmisorId = null;
-        }
+        // FUNCIÓN DUPLICADA ELIMINADA - Se usa closeEmisorModal() definida arriba
 
         function getEstadoBadgeClass(estado) {
             switch (estado) {
