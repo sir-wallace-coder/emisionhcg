@@ -643,10 +643,14 @@
                 // 1. Obtener datos del formulario
                 const formData = getEmisorFormData();
                 
-                // 2. Validar datos
+                // 2. Validar datos con errores detallados
                 const validation = validateEmisorData(formData);
                 if (!validation.valid) {
-                    showValidationError(validation.message);
+                    showValidationError(
+                        validation.message,
+                        validation.errorType,
+                        validation.details
+                    );
                     return;
                 }
                 
@@ -690,43 +694,136 @@
             };
         }
         
-        // Función para validar datos del emisor
+        // Función para validar datos del emisor con errores detallados
         function validateEmisorData(data) {
+            console.log('🔍 CFDI SYSTEM: Validando datos del emisor...');
+            
             // Validar RFC
             const rfcValidation = validateRFC(data.rfc);
             if (!rfcValidation.valid) {
-                return { valid: false, message: rfcValidation.message };
+                return { 
+                    valid: false, 
+                    message: rfcValidation.message,
+                    errorType: 'VALIDATION_ERROR',
+                    details: 'Verifique que el RFC tenga el formato correcto (3-4 letras + 6 dígitos + 3 caracteres)'
+                };
             }
             
             // Validar nombre
             if (!data.nombre || data.nombre.length < 3) {
-                return { valid: false, message: 'Nombre/Razón Social debe tener al menos 3 caracteres' };
+                return { 
+                    valid: false, 
+                    message: 'Nombre/Razón Social debe tener al menos 3 caracteres',
+                    errorType: 'VALIDATION_ERROR',
+                    details: 'El nombre o razón social es obligatorio y debe ser descriptivo'
+                };
             }
             
             // Validar código postal
             const cpValidation = validateCodigoPostal(data.codigoPostal);
             if (!cpValidation.valid) {
-                return { valid: false, message: cpValidation.message };
+                return { 
+                    valid: false, 
+                    message: cpValidation.message,
+                    errorType: 'VALIDATION_ERROR',
+                    details: 'El código postal debe ser un número de 5 dígitos válido en México'
+                };
             }
             
             // Validar régimen fiscal
             if (!data.regimenFiscal) {
-                return { valid: false, message: 'Régimen fiscal es requerido' };
+                return { 
+                    valid: false, 
+                    message: 'Régimen fiscal es requerido',
+                    errorType: 'VALIDATION_ERROR',
+                    details: 'Debe seleccionar un régimen fiscal del catálogo SAT'
+                };
             }
             
-            // Validar certificados CSD (si se proporcionan)
+            // Validación detallada de certificados CSD
             if (data.certificadoCer || data.certificadoKey || data.passwordKey) {
+                console.log('🔐 Validando certificados CSD...');
+                
+                // Validar que se proporcionen todos los archivos CSD
                 if (!data.certificadoCer) {
-                    return { valid: false, message: 'Archivo .cer es requerido para CSD' };
+                    return {
+                        valid: false,
+                        message: 'Archivo de certificado (.cer) faltante',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: 'Debe seleccionar el archivo .cer del certificado de sello digital'
+                    };
                 }
+                
                 if (!data.certificadoKey) {
-                    return { valid: false, message: 'Archivo .key es requerido para CSD' };
+                    return {
+                        valid: false,
+                        message: 'Archivo de llave privada (.key) faltante',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: 'Debe seleccionar el archivo .key de la llave privada del certificado'
+                    };
                 }
+                
                 if (!data.passwordKey) {
-                    return { valid: false, message: 'Contraseña del certificado es requerida para CSD' };
+                    return {
+                        valid: false,
+                        message: 'Contraseña del certificado requerida',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: 'Debe ingresar la contraseña para desencriptar la llave privada'
+                    };
                 }
+                
+                // Validar extensiones de archivos
+                if (!data.certificadoCer.name.toLowerCase().endsWith('.cer')) {
+                    return {
+                        valid: false,
+                        message: 'Archivo de certificado inválido',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: `El archivo seleccionado "${data.certificadoCer.name}" no tiene extensión .cer`
+                    };
+                }
+                
+                if (!data.certificadoKey.name.toLowerCase().endsWith('.key')) {
+                    return {
+                        valid: false,
+                        message: 'Archivo de llave privada inválido',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: `El archivo seleccionado "${data.certificadoKey.name}" no tiene extensión .key`
+                    };
+                }
+                
+                // Validar tamaños de archivos
+                if (data.certificadoCer.size > 10 * 1024 * 1024) {
+                    return {
+                        valid: false,
+                        message: 'Archivo de certificado demasiado grande',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: `El archivo .cer (${(data.certificadoCer.size / 1024 / 1024).toFixed(2)}MB) excede el límite de 10MB`
+                    };
+                }
+                
+                if (data.certificadoKey.size > 10 * 1024 * 1024) {
+                    return {
+                        valid: false,
+                        message: 'Archivo de llave privada demasiado grande',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: `El archivo .key (${(data.certificadoKey.size / 1024 / 1024).toFixed(2)}MB) excede el límite de 10MB`
+                    };
+                }
+                
+                // Validar contraseña
+                if (data.passwordKey.length < 4) {
+                    return {
+                        valid: false,
+                        message: 'Contraseña del certificado muy corta',
+                        errorType: 'CSD_PROCESSING_ERROR',
+                        details: 'La contraseña debe tener al menos 4 caracteres'
+                    };
+                }
+                
+                console.log('✅ Validación inicial de CSD exitosa');
             }
             
+            console.log('✅ Validación de datos completada');
             return { valid: true };
         }
         
