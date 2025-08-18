@@ -237,6 +237,102 @@
             font-weight: 600;
             color: #2c3e50;
         }
+        
+        /* Estilos para folio editable */
+        .folio-editable {
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+            transition: all 0.3s ease;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .folio-editable:hover {
+            background-color: #e3f2fd;
+            color: #0056b3;
+            transform: scale(1.05);
+        }
+        
+        /* Mejoras en la tabla */
+        .table th:first-child {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .table td:first-child {
+            background-color: #fafbfc;
+        }
+        
+        /* Tooltips mejorados para botones */
+        .btn[title] {
+            position: relative;
+        }
+        
+        .btn[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            opacity: 0;
+            animation: fadeInTooltip 0.3s ease forwards;
+            max-width: 250px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        
+        .btn[title]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(2px);
+            border: 5px solid transparent;
+            border-top-color: #333;
+            z-index: 1000;
+            opacity: 0;
+            animation: fadeInTooltip 0.3s ease forwards;
+        }
+        
+        @keyframes fadeInTooltip {
+            from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        /* Estilos para estados de XML */
+        .badge-generado { background-color: #28a745; }
+        .badge-importado { background-color: #17a2b8; }
+        .badge-sellado { background-color: #6f42c1; }
+        .badge-timbrado { background-color: #fd7e14; }
+        .badge-cancelado { background-color: #dc3545; }
+        
+        /* Mejoras visuales para la tabla */
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+        
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* Modal mejorado para ver XML */
+        .modal-content pre {
+            font-family: 'Courier New', monospace;
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -1367,30 +1463,65 @@
                 <table class="table">
                     <thead>
                         <tr>
+                            <th>Serie-Folio</th>
                             <th>Fecha</th>
                             <th>Emisor</th>
                             <th>Receptor</th>
-                            <th>Serie-Folio</th>
                             <th>Total</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${xmls.map(xml => `
-                            <tr>
-                                <td>${new Date(xml.created_at).toLocaleDateString()}</td>
-                                <td>${xml.emisor_nombre}</td>
-                                <td>${xml.receptor_nombre}</td>
-                                <td>${xml.serie || ''}-${xml.folio}</td>
-                                <td>$${parseFloat(xml.total).toFixed(2)}</td>
-                                <td><span class="badge badge-${getEstadoBadgeClass(xml.estado)}">${xml.estado}</span></td>
-                                <td>
-                                    <button onclick="downloadXML('${xml.id}')" class="btn btn-primary">📥</button>
-                                    <button onclick="deleteXML('${xml.id}')" class="btn btn-danger">🗑️</button>
-                                </td>
-                            </tr>
-                        `).join('')}
+                        ${xmls.map(xml => {
+                            // Procesar fecha correctamente
+                            let fechaMostrar = 'Sin fecha';
+                            try {
+                                if (xml.fecha_creacion) {
+                                    fechaMostrar = new Date(xml.fecha_creacion).toLocaleDateString('es-MX', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                } else if (xml.created_at) {
+                                    fechaMostrar = new Date(xml.created_at).toLocaleDateString('es-MX', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                }
+                            } catch (e) {
+                                console.warn('⚠️ Error procesando fecha para mostrar:', e);
+                                fechaMostrar = 'Fecha inválida';
+                            }
+                            
+                            // Determinar si se puede editar (no sellado)
+                            const puedeEditar = xml.estado !== 'sellado';
+                            const folioEditable = puedeEditar ? 
+                                `<span class="folio-editable" onclick="editarFolio('${xml.id}', '${xml.folio}')" title="Clic para editar folio">${xml.folio}</span>` : 
+                                xml.folio;
+                            
+                            return `
+                                <tr>
+                                    <td><strong>${xml.serie || ''}-${folioEditable}</strong></td>
+                                    <td>${fechaMostrar}</td>
+                                    <td>${xml.emisor_nombre || 'Sin emisor'}</td>
+                                    <td>${xml.receptor_nombre || 'Sin receptor'}</td>
+                                    <td><strong>$${parseFloat(xml.total || 0).toFixed(2)}</strong></td>
+                                    <td><span class="badge badge-${getEstadoBadgeClass(xml.estado)}">${xml.estado || 'generado'}</span></td>
+                                    <td>
+                                        <button onclick="downloadXML('${xml.id}')" class="btn btn-primary" title="Descargar XML - Descarga el archivo XML generado a tu computadora">📥</button>
+                                        <button onclick="viewXML('${xml.id}')" class="btn btn-info" title="Ver XML - Muestra el contenido del XML en una ventana emergente">👁️</button>
+                                        ${puedeEditar ? `<button onclick="editXML('${xml.id}')" class="btn btn-warning" title="Editar XML - Permite modificar los datos del CFDI (solo si no está sellado)">✏️</button>` : ''}
+                                        <button onclick="deleteXML('${xml.id}')" class="btn btn-danger" title="Eliminar XML - Borra permanentemente este CFDI del sistema">🗑️</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
             `;
@@ -2092,12 +2223,27 @@
                     nombre: receptorNode ? receptorNode.getAttribute('Nombre') : ''
                 };
                 
+                // Procesar fecha correctamente (formato SAT: YYYY-MM-DDTHH:mm:ss)
+                let fechaProcesada = fecha;
+                if (fecha) {
+                    try {
+                        // La fecha del SAT viene en formato ISO, convertir a fecha legible
+                        const fechaObj = new Date(fecha);
+                        if (!isNaN(fechaObj.getTime())) {
+                            fechaProcesada = fechaObj.toISOString();
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error procesando fecha:', fecha, e);
+                        fechaProcesada = new Date().toISOString(); // Fecha actual como fallback
+                    }
+                }
+                
                 return {
                     valido: true,
                     version,
                     serie,
                     folio,
-                    fecha,
+                    fecha: fechaProcesada,
                     total,
                     emisor,
                     receptor
@@ -2163,6 +2309,108 @@
                 console.error('❌ Error guardando XML importado:', error);
                 return { success: false, message: error.message };
             }
+        }
+        
+        // Función para editar folio (solo si no está sellado)
+        function editarFolio(xmlId, folioActual) {
+            const nuevoFolio = prompt(`Editar folio del CFDI:\n\nFolio actual: ${folioActual}\n\nIngrese el nuevo folio:`, folioActual);
+            
+            if (nuevoFolio && nuevoFolio !== folioActual) {
+                // Validar que el folio no esté vacío
+                if (nuevoFolio.trim() === '') {
+                    showAlert('⚠️ El folio no puede estar vacío', 'error');
+                    return;
+                }
+                
+                // Buscar y actualizar el XML
+                const xmlIndex = xmls.findIndex(xml => xml.id === xmlId);
+                if (xmlIndex !== -1) {
+                    xmls[xmlIndex].folio = nuevoFolio.trim();
+                    
+                    // Actualizar en localStorage
+                    localStorage.setItem('cfdi_xmls', JSON.stringify(xmls));
+                    
+                    // Actualizar variables globales
+                    todosLosXMLs = [...xmls];
+                    xmlsFiltrados = [...xmls];
+                    
+                    // Recargar tabla
+                    renderXMLs();
+                    
+                    showAlert(`✅ Folio actualizado correctamente: ${nuevoFolio}`, 'success');
+                    console.log(`📝 Folio actualizado para XML ${xmlId}: ${folioActual} → ${nuevoFolio}`);
+                } else {
+                    showAlert('❌ Error: No se encontró el XML para actualizar', 'error');
+                }
+            }
+        }
+        
+        // Función para ver contenido del XML
+        function viewXML(xmlId) {
+            const xml = xmls.find(x => x.id === xmlId);
+            if (!xml) {
+                showAlert('❌ Error: XML no encontrado', 'error');
+                return;
+            }
+            
+            // Crear modal para mostrar el XML
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 80%; max-height: 80%;">
+                    <div class="modal-header">
+                        <h2>📄 Contenido XML - ${xml.serie || ''}-${xml.folio}</h2>
+                        <span class="close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 500px; overflow-y: auto;">
+                            <pre style="white-space: pre-wrap; font-size: 12px; margin: 0;">${xml.xml_content || 'Contenido XML no disponible'}</pre>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center;">
+                            <button onclick="copyToClipboard('${xml.xml_content ? xml.xml_content.replace(/'/g, "\\'") : ''}')" class="btn btn-info">📋 Copiar XML</button>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-secondary">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        // Función para editar XML (redirigir al generador)
+        function editXML(xmlId) {
+            const xml = xmls.find(x => x.id === xmlId);
+            if (!xml) {
+                showAlert('❌ Error: XML no encontrado', 'error');
+                return;
+            }
+            
+            if (xml.estado === 'sellado') {
+                showAlert('⚠️ No se puede editar un XML sellado', 'warning');
+                return;
+            }
+            
+            // Guardar datos del XML en localStorage para cargar en el generador
+            localStorage.setItem('cfdi_edit_data', JSON.stringify(xml));
+            
+            // Redirigir al generador
+            window.location.href = '/generator?edit=' + xmlId;
+        }
+        
+        // Función auxiliar para copiar al portapapeles
+        function copyToClipboard(text) {
+            if (!text) {
+                showAlert('❌ No hay contenido para copiar', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('✅ XML copiado al portapapeles', 'success');
+            }).catch(err => {
+                console.error('Error copiando al portapapeles:', err);
+                showAlert('⚠️ Error copiando al portapapeles', 'warning');
+            });
         }
     </script>
     
