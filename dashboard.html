@@ -333,6 +333,117 @@
             padding: 15px;
             overflow-x: auto;
         }
+        
+        /* Estilos para el editor de XML */
+        .xml-editor-form {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 1.2em;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        .concepto-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .totales-display {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .total-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .total-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .total-item label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .total-item span {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        /* Responsive design para el editor */
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .form-group {
+                min-width: 100%;
+            }
+            
+            .modal-content {
+                max-width: 95% !important;
+                margin: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1502,7 +1613,7 @@
                             // Determinar si se puede editar (no sellado)
                             const puedeEditar = xml.estado !== 'sellado';
                             const folioEditable = puedeEditar ? 
-                                `<span class="folio-editable" onclick="editarFolio('${xml.id}', '${xml.folio}')" title="Clic para editar folio">${xml.folio}</span>` : 
+                                `<span class="folio-editable" onclick="abrirEditorXML('${xml.id}')" title="Clic para editar XML completo">${xml.folio}</span>` : 
                                 xml.folio;
                             
                             return `
@@ -2311,38 +2422,277 @@
             }
         }
         
-        // Función para editar folio (solo si no está sellado)
-        function editarFolio(xmlId, folioActual) {
-            const nuevoFolio = prompt(`Editar folio del CFDI:\n\nFolio actual: ${folioActual}\n\nIngrese el nuevo folio:`, folioActual);
+        // Función para abrir el editor completo de XML
+        function abrirEditorXML(xmlId) {
+            const xml = xmls.find(x => x.id === xmlId);
+            if (!xml) {
+                showAlert('❌ Error: XML no encontrado', 'error');
+                return;
+            }
             
-            if (nuevoFolio && nuevoFolio !== folioActual) {
-                // Validar que el folio no esté vacío
-                if (nuevoFolio.trim() === '') {
-                    showAlert('⚠️ El folio no puede estar vacío', 'error');
+            if (xml.estado === 'sellado') {
+                showAlert('⚠️ No se puede editar un XML sellado', 'warning');
+                return;
+            }
+            
+            console.log('📝 Abriendo editor completo para XML:', xmlId);
+            
+            // Crear modal de edición completa
+            const modal = document.createElement('div');
+            modal.id = 'xmlEditorModal';
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 95%; max-height: 95%; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2>✏️ Editar XML CFDI - ${xml.serie || ''}-${xml.folio}</h2>
+                        <span class="close" onclick="cerrarEditorXML()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="xml-editor-container">
+                            ${crearFormularioEdicion(xml)}
+                        </div>
+                        <div class="modal-actions" style="margin-top: 20px; text-align: center;">
+                            <button type="button" class="btn btn-success" onclick="guardarCambiosXML('${xmlId}')">
+                                💾 Guardar Cambios
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="cerrarEditorXML()">
+                                ❌ Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Cargar catálogos si es necesario
+            cargarCatalogosEditor();
+        }
+        
+        // Función para crear el formulario de edición completo
+        function crearFormularioEdicion(xml) {
+            return `
+                <form id="xmlEditorForm" class="xml-editor-form">
+                    <!-- Información General -->
+                    <div class="form-section">
+                        <h3>📋 Información General</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Versión CFDI:</label>
+                                <select id="editVersionCfdi" class="form-control" onchange="cambiarVersionEdicion()">
+                                    <option value="3.3" ${xml.version_cfdi === '3.3' ? 'selected' : ''}>CFDI 3.3</option>
+                                    <option value="4.0" ${xml.version_cfdi === '4.0' ? 'selected' : ''}>CFDI 4.0</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Serie:</label>
+                                <input type="text" id="editSerie" class="form-control" value="${xml.serie || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Folio:</label>
+                                <input type="text" id="editFolio" class="form-control" value="${xml.folio || ''}" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fecha:</label>
+                                <input type="datetime-local" id="editFecha" class="form-control" value="${formatearFechaParaInput(xml.fecha_creacion)}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Método de Pago:</label>
+                                <select id="editMetodoPago" class="form-control" required>
+                                    <option value="">Seleccionar método de pago</option>
+                                    <option value="PUE" ${xml.metodo_pago === 'PUE' ? 'selected' : ''}>PUE - Pago en una sola exhibición</option>
+                                    <option value="PPD" ${xml.metodo_pago === 'PPD' ? 'selected' : ''}>PPD - Pago en parcialidades o diferido</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Emisor -->
+                    <div class="form-section">
+                        <h3>🏢 Datos del Emisor</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>RFC Emisor:</label>
+                                <input type="text" id="editEmisorRfc" class="form-control" value="${xml.emisor_rfc || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre/Razón Social:</label>
+                                <input type="text" id="editEmisorNombre" class="form-control" value="${xml.emisor_nombre || ''}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Receptor -->
+                    <div class="form-section">
+                        <h3>👤 Datos del Receptor</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>RFC Receptor:</label>
+                                <input type="text" id="editReceptorRfc" class="form-control" value="${xml.receptor_rfc || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre/Razón Social:</label>
+                                <input type="text" id="editReceptorNombre" class="form-control" value="${xml.receptor_nombre || ''}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Conceptos -->
+                    <div class="form-section">
+                        <h3>📦 Conceptos</h3>
+                        <div id="editConceptosContainer">
+                            ${crearConceptosEdicion(xml)}
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="agregarConceptoEdicion()">
+                            ➕ Agregar Concepto
+                        </button>
+                    </div>
+                    
+                    <!-- Totales -->
+                    <div class="form-section">
+                        <h3>💰 Totales</h3>
+                        <div class="totales-display">
+                            <div class="total-item">
+                                <label>Subtotal:</label>
+                                <span id="editSubtotal">$0.00</span>
+                            </div>
+                            <div class="total-item">
+                                <label>IVA:</label>
+                                <span id="editIva">$0.00</span>
+                            </div>
+                            <div class="total-item">
+                                <label>Total:</label>
+                                <span id="editTotal">$${parseFloat(xml.total || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            `;
+        }
+        
+        // Función para formatear fecha para input datetime-local
+        function formatearFechaParaInput(fecha) {
+            if (!fecha) return '';
+            try {
+                const fechaObj = new Date(fecha);
+                return fechaObj.toISOString().slice(0, 16);
+            } catch (e) {
+                return '';
+            }
+        }
+        
+        // Función para crear conceptos en modo edición
+        function crearConceptosEdicion(xml) {
+            // Por ahora, crear un concepto básico
+            // En una implementación completa, aquí se cargarían los conceptos del XML
+            return `
+                <div class="concepto-item" data-concepto-id="1">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Descripción:</label>
+                            <input type="text" class="form-control concepto-descripcion" value="Producto/Servicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad:</label>
+                            <input type="number" class="form-control concepto-cantidad" value="1" min="1" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Unitario:</label>
+                            <input type="number" class="form-control concepto-valor" value="${xml.total || 0}" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-danger" onclick="eliminarConceptoEdicion(this)">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Función para cerrar el editor
+        function cerrarEditorXML() {
+            const modal = document.getElementById('xmlEditorModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Función para guardar cambios del XML
+        function guardarCambiosXML(xmlId) {
+            try {
+                const xmlIndex = xmls.findIndex(xml => xml.id === xmlId);
+                if (xmlIndex === -1) {
+                    showAlert('❌ Error: XML no encontrado', 'error');
                     return;
                 }
                 
-                // Buscar y actualizar el XML
-                const xmlIndex = xmls.findIndex(xml => xml.id === xmlId);
-                if (xmlIndex !== -1) {
-                    xmls[xmlIndex].folio = nuevoFolio.trim();
-                    
-                    // Actualizar en localStorage
-                    localStorage.setItem('cfdi_xmls', JSON.stringify(xmls));
-                    
-                    // Actualizar variables globales
-                    todosLosXMLs = [...xmls];
-                    xmlsFiltrados = [...xmls];
-                    
-                    // Recargar tabla
-                    renderXMLs();
-                    
-                    showAlert(`✅ Folio actualizado correctamente: ${nuevoFolio}`, 'success');
-                    console.log(`📝 Folio actualizado para XML ${xmlId}: ${folioActual} → ${nuevoFolio}`);
-                } else {
-                    showAlert('❌ Error: No se encontró el XML para actualizar', 'error');
+                // Obtener datos del formulario
+                const datosActualizados = {
+                    version_cfdi: document.getElementById('editVersionCfdi').value,
+                    serie: document.getElementById('editSerie').value,
+                    folio: document.getElementById('editFolio').value,
+                    fecha_creacion: new Date(document.getElementById('editFecha').value).toISOString(),
+                    metodo_pago: document.getElementById('editMetodoPago').value,
+                    emisor_rfc: document.getElementById('editEmisorRfc').value,
+                    emisor_nombre: document.getElementById('editEmisorNombre').value,
+                    receptor_rfc: document.getElementById('editReceptorRfc').value,
+                    receptor_nombre: document.getElementById('editReceptorNombre').value,
+                    total: document.getElementById('editTotal').textContent.replace('$', '')
+                };
+                
+                // Validar campos obligatorios
+                if (!datosActualizados.folio || !datosActualizados.emisor_rfc || !datosActualizados.receptor_rfc) {
+                    showAlert('⚠️ Complete todos los campos obligatorios', 'error');
+                    return;
                 }
+                
+                // Actualizar XML
+                Object.assign(xmls[xmlIndex], datosActualizados);
+                
+                // Guardar en localStorage
+                localStorage.setItem('cfdi_xmls', JSON.stringify(xmls));
+                
+                // Actualizar variables globales
+                todosLosXMLs = [...xmls];
+                xmlsFiltrados = [...xmls];
+                
+                // Recargar tabla
+                renderXMLs();
+                
+                // Cerrar modal
+                cerrarEditorXML();
+                
+                showAlert('✅ XML actualizado correctamente', 'success');
+                console.log('📝 XML actualizado:', xmlId);
+                
+            } catch (error) {
+                console.error('❌ Error guardando cambios:', error);
+                showAlert('❌ Error guardando cambios: ' + error.message, 'error');
             }
+        }
+        
+        // Funciones auxiliares para el editor
+        function cambiarVersionEdicion() {
+            // Lógica para cambiar campos según versión
+            console.log('🔄 Cambiando versión en editor');
+        }
+        
+        function cargarCatalogosEditor() {
+            // Cargar catálogos necesarios para el editor
+            console.log('📚 Cargando catálogos para editor');
+        }
+        
+        function agregarConceptoEdicion() {
+            showAlert('🔧 Función en desarrollo', 'info');
+        }
+        
+        function eliminarConceptoEdicion(button) {
+            button.closest('.concepto-item').remove();
         }
         
         // Función para ver contenido del XML
