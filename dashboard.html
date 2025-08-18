@@ -258,7 +258,7 @@
                 <div class="quick-action-icon">🚀</div>
                 <div class="quick-action-title">Generar CFDI</div>
             </a>
-            <a href="#" onclick="showEmisorModal()" class="quick-action">
+            <a href="#" onclick="testEmisorButton()" class="quick-action">
                 <div class="quick-action-icon">🏢</div>
                 <div class="quick-action-title">Nuevo Emisor</div>
             </a>
@@ -474,14 +474,63 @@
         let emisores = [];
         let editingEmisorId = null;
 
+        // Función de diagnóstico completo para el botón Nuevo Emisor
+        function testEmisorButton() {
+            console.log('🚨 DIAGNÓSTICO COMPLETO: Botón Nuevo Emisor presionado');
+            
+            // 1. Verificar autenticación
+            const token = localStorage.getItem('cfdi_token');
+            console.log('🔑 Token encontrado:', token ? 'SÍ' : 'NO');
+            console.log('🔑 Token value:', token ? token.substring(0, 20) + '...' : 'null');
+            
+            // 2. Verificar estado del usuario
+            console.log('👤 currentUser:', currentUser);
+            
+            // 3. Verificar elementos del DOM
+            const modal = document.getElementById('emisorModal');
+            console.log('🏗️ Modal element:', modal);
+            
+            if (!token) {
+                alert('⚠️ ERROR: No estás autenticado.\n\nPor favor:\n1. Ve a /login\n2. Ingresa: admin@sistema.com\n3. Contraseña: password');
+                window.location.href = '/login';
+                return;
+            }
+            
+            if (!modal) {
+                alert('❌ ERROR: Modal no encontrado en el DOM');
+                return;
+            }
+            
+            // 4. Forzar mostrar modal directamente
+            console.log('🔧 FORZANDO mostrar modal...');
+            modal.style.display = 'block';
+            modal.style.zIndex = '9999';
+            
+            // 5. También llamar a la función original
+            console.log('📝 Llamando showEmisorModal...');
+            try {
+                showEmisorModal();
+            } catch (error) {
+                console.error('❌ Error en showEmisorModal:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
         // Verificar autenticación al cargar
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Dashboard cargando...');
+            
             const token = localStorage.getItem('cfdi_token');
+            console.log('🔑 Token en localStorage:', token ? 'ENCONTRADO' : 'NO ENCONTRADO');
+            
             if (!token) {
+                console.log('⚠️ Sin token, redirigiendo a login');
                 window.location.href = '/login';
                 return;
             }
 
+            console.log('🔍 Verificando autenticación con el servidor...');
+            
             try {
                 const response = await fetch('/.netlify/functions/auth', {
                     method: 'POST',
@@ -989,6 +1038,8 @@
 
         function showEmisorModal(emisorId = null) {
             console.log('🔧 DEBUG: showEmisorModal called with emisorId:', emisorId);
+            console.log('🔧 DEBUG: currentUser:', currentUser);
+            console.log('🔧 DEBUG: emisores array:', emisores);
             
             try {
                 editingEmisorId = emisorId;
@@ -1027,6 +1078,18 @@
             } catch (error) {
                 console.error('❌ ERROR in showEmisorModal:', error);
                 alert('Error al abrir el modal: ' + error.message);
+            }
+        }
+
+        function forceShowModal() {
+            console.log('🚨 EMERGENCIA: Forzando mostrar modal sin verificaciones');
+            const modal = document.getElementById('emisorModal');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.style.zIndex = '9999';
+                console.log('✅ Modal forzado a mostrar');
+            } else {
+                console.error('❌ Modal no encontrado');
             }
         }
 
@@ -1153,6 +1216,8 @@
                     },
                     body: JSON.stringify(formData)
                 });
+
+                console.log('📡 Respuesta del servidor:', response.status, response.statusText);
 
                 if (response.ok) {
                     closeEmisorModal();
