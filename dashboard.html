@@ -1998,11 +1998,24 @@
                         </div>
                     `;
                     
-                    // Actualizar lista de XMLs
+                    // Actualizar lista de XMLs inmediatamente
+                    console.log('🔄 Actualizando lista de XMLs tras importación...');
+                    
+                    // Recargar XMLs desde localStorage y actualizar variables globales
+                    const xmlsActualizados = JSON.parse(localStorage.getItem('cfdi_xmls') || '[]');
+                    xmls = xmlsActualizados;
+                    todosLosXMLs = [...xmlsActualizados];
+                    xmlsFiltrados = [...xmlsActualizados];
+                    
+                    // Actualizar UI inmediatamente
+                    renderXMLs();
+                    updateStats();
+                    
+                    console.log('✅ Lista de XMLs actualizada:', xmls.length, 'XMLs encontrados');
+                    
                     setTimeout(() => {
                         closeImportXMLModal();
                         showTab('xmls');
-                        loadData(); // Recargar datos
                     }, 2000);
                 } else {
                     resultDiv.innerHTML = `<div class="alert alert-error">❌ Error guardando XML: ${xmlGuardado.message}</div>`;
