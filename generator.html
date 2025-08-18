@@ -159,6 +159,20 @@
             <!-- Datos del Receptor -->
             <div class="form-section">
                 <h3>🏢 Datos del Receptor</h3>
+                
+                <!-- Selector de Receptor Guardado -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="receptorGuardado">Receptor Guardado</label>
+                        <select id="receptorGuardado" onchange="cargarReceptorGuardado()">
+                            <option value="">Seleccionar receptor guardado o capturar manualmente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-info" onclick="gestionarReceptores()" style="margin-top: 25px;">📋 Gestionar Receptores</button>
+                    </div>
+                </div>
+                
                 <div class="form-row">
                     <div class="form-group">
                         <label for="receptorRfc">RFC del Receptor *</label>
@@ -554,6 +568,10 @@
             }
             const fechaISO = now.toISOString().slice(0, 19);
             document.getElementById('fecha').value = fechaISO;
+            cargarCatalogos();
+            cargarEmisores();
+            cargarListaReceptores(); // Cargar receptores guardados
+            cambiarVersionCfdi();
         }
 
         // Función para cargar catálogos en los selects
@@ -664,6 +682,96 @@
             console.log('- generarXML:', typeof window.generarXML);
             console.log('- conceptos array:', conceptos ? conceptos.length : 'undefined');
             alert('✅ Verificación completa - Ver consola para detalles');
+        };
+        
+        // SISTEMA DE RECEPTORES GUARDADOS
+        let receptoresGuardados = JSON.parse(localStorage.getItem('receptoresGuardados') || '[]');
+        
+        // Función para cargar receptores guardados en el selector
+        function cargarListaReceptores() {
+            const selector = document.getElementById('receptorGuardado');
+            selector.innerHTML = '<option value="">Seleccionar receptor guardado o capturar manualmente</option>';
+            
+            receptoresGuardados.forEach((receptor, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${receptor.rfc} - ${receptor.nombre}`;
+                selector.appendChild(option);
+            });
+            
+            console.log('📋 Receptores cargados:', receptoresGuardados.length);
+        }
+        
+        // Función para cargar datos de receptor guardado
+        window.cargarReceptorGuardado = function() {
+            const selector = document.getElementById('receptorGuardado');
+            const index = selector.value;
+            
+            if (index === '') {
+                // Limpiar campos si se selecciona "capturar manualmente"
+                document.getElementById('receptorRfc').value = '';
+                document.getElementById('receptorNombre').value = '';
+                document.getElementById('receptorCodigoPostal').value = '';
+                document.getElementById('receptorRegimenFiscal').value = '';
+                document.getElementById('usoCfdi').value = '';
+                return;
+            }
+            
+            const receptor = receptoresGuardados[index];
+            if (receptor) {
+                document.getElementById('receptorRfc').value = receptor.rfc;
+                document.getElementById('receptorNombre').value = receptor.nombre;
+                document.getElementById('receptorCodigoPostal').value = receptor.codigoPostal;
+                document.getElementById('receptorRegimenFiscal').value = receptor.regimenFiscal;
+                document.getElementById('usoCfdi').value = receptor.usoCfdi;
+                
+                console.log('✅ Receptor cargado:', receptor.rfc, '-', receptor.nombre);
+                showAlert(`✅ Receptor cargado: ${receptor.nombre}`, 'success');
+            }
+        };
+        
+        // Función para guardar receptor automáticamente
+        function guardarReceptorAutomaticamente() {
+            const receptorData = {
+                rfc: document.getElementById('receptorRfc').value,
+                nombre: document.getElementById('receptorNombre').value,
+                codigoPostal: document.getElementById('receptorCodigoPostal').value,
+                regimenFiscal: document.getElementById('receptorRegimenFiscal').value,
+                usoCfdi: document.getElementById('usoCfdi').value,
+                fechaCreacion: new Date().toISOString()
+            };
+            
+            // Verificar si el receptor ya existe (por RFC)
+            const existeIndex = receptoresGuardados.findIndex(r => r.rfc === receptorData.rfc);
+            
+            if (existeIndex >= 0) {
+                // Actualizar receptor existente
+                receptoresGuardados[existeIndex] = { ...receptoresGuardados[existeIndex], ...receptorData };
+                console.log('🔄 Receptor actualizado:', receptorData.rfc);
+            } else {
+                // Agregar nuevo receptor
+                receptoresGuardados.push(receptorData);
+                console.log('✅ Nuevo receptor guardado:', receptorData.rfc);
+            }
+            
+            // Guardar en localStorage
+            localStorage.setItem('receptoresGuardados', JSON.stringify(receptoresGuardados));
+            
+            // Recargar lista
+            cargarListaReceptores();
+            
+            return receptorData;
+        }
+        
+        // Función para gestionar receptores
+        window.gestionarReceptores = function() {
+            const mensaje = `📋 RECEPTORES GUARDADOS (${receptoresGuardados.length}):\n\n` +
+                receptoresGuardados.map((r, i) => 
+                    `${i + 1}. ${r.rfc} - ${r.nombre}\n   CP: ${r.codigoPostal} | Régimen: ${r.regimenFiscal} | Uso: ${r.usoCfdi}`
+                ).join('\n\n') +
+                '\n\nℹ️ Los receptores se guardan automáticamente al generar XMLs exitosamente.';
+            
+            alert(mensaje);
         };
         
         // Función para agregar concepto - DISPONIBLE GLOBALMENTE
@@ -984,6 +1092,15 @@
                     mostrarInfoSellado(infoSellado);
                 }
 
+                // Guardar receptor automáticamente al generar XML exitosamente
+                try {
+                    const receptorGuardado = guardarReceptorAutomaticamente();
+                    console.log('📋 Receptor guardado automáticamente:', receptorGuardado.rfc);
+                    showAlert(`✅ XML generado exitosamente. Receptor ${receptorGuardado.nombre} guardado para uso futuro.`, 'success');
+                } catch (error) {
+                    console.error('Error guardando receptor:', error);
+                }
+                
                 // Guardar automáticamente si está habilitado y el usuario está logueado
                 const autoSave = document.getElementById('autoSave').checked;
                 if (autoSave && currentUser) {
