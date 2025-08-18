@@ -245,8 +245,9 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <!-- BOTÓN DE PRUEBA TEMPORAL -->
+                    <!-- BOTONES DE PRUEBA TEMPORALES -->
                     <button type="button" class="btn btn-secondary" onclick="testFunction()" style="margin-right: 10px;">🔧 Test JS</button>
+                    <button type="button" class="btn btn-info" onclick="verificarFunciones()" style="margin-right: 10px;">🔍 Verificar</button>
                     <button type="button" class="btn btn-primary" onclick="agregarConcepto()">➥ Agregar Concepto</button>
                 </div>
 
@@ -655,6 +656,16 @@
             console.log('✅ Función de prueba ejecutada');
         };
         
+        // VERIFICACIÓN DE FUNCIONES GLOBALES
+        window.verificarFunciones = function() {
+            console.log('🔍 VERIFICANDO FUNCIONES GLOBALES:');
+            console.log('- testFunction:', typeof window.testFunction);
+            console.log('- agregarConcepto:', typeof window.agregarConcepto);
+            console.log('- generarXML:', typeof window.generarXML);
+            console.log('- conceptos array:', conceptos ? conceptos.length : 'undefined');
+            alert('✅ Verificación completa - Ver consola para detalles');
+        };
+        
         // Función para agregar concepto - DISPONIBLE GLOBALMENTE
         window.agregarConcepto = function agregarConcepto() {
             console.log('🔧 DIAGNÓSTICO: Iniciando agregarConcepto()');
@@ -884,7 +895,9 @@
         }
 
         // Función principal para generar XML
-        async function generarXML() {
+        // Función para generar XML - DISPONIBLE GLOBALMENTE
+        window.generarXML = async function generarXML() {
+            console.log('🚀 DIAGNÓSTICO: Iniciando generarXML()');
             if (conceptos.length === 0) {
                 showAlert('⚠️ Debe agregar al menos un concepto', 'error');
                 return;
