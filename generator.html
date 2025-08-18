@@ -191,21 +191,7 @@
                 </div>
             </div>
 
-            <!-- Datos Adicionales -->
-            <div class="form-section" id="datosAdicionalesSection" style="display: none;">
-                <h3>📄 Datos Adicionales</h3>
-                <div class="form-row">
-                    <div class="form-group" id="objetoImpGroup">
-                        <label for="objetoImp">Objeto de Impuesto *</label>
-                        <select id="objetoImp" required>
-                            <option value="">Seleccionar objeto de impuesto</option>
-                            <option value="01">01 - No objeto de impuesto</option>
-                            <option value="02">02 - Sí objeto de impuesto</option>
-                            <option value="03">03 - Sí objeto de impuesto y no obligado al desglose</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+            <!-- Datos Adicionales eliminados: ObjetoImp ahora solo va por concepto -->
 
             <!-- Conceptos -->
             <div class="form-section">
@@ -635,8 +621,6 @@
         // Función para cambiar versión CFDI
         function cambiarVersionCfdi() {
             const version = document.getElementById('versionCfdi').value;
-            const datosAdicionalesSection = document.getElementById('datosAdicionalesSection');
-            const objetoImpGroup = document.getElementById('objetoImpGroup');
             const conceptoObjetoImpGroup = document.getElementById('conceptoObjetoImpGroup'); // Campo por concepto
             const versionWarning = document.getElementById('versionWarning');
             const mainTitle = document.getElementById('mainTitle');
@@ -645,23 +629,19 @@
             console.log(`🔧 CFDI GENERATOR: Cambiando versión a ${version}`);
             
             if (version === '3.3') {
-                // CFDI 3.3: Ocultar toda la sección de Datos Adicionales (ObjetoImp no existe en 3.3)
-                if (datosAdicionalesSection) datosAdicionalesSection.style.display = 'none';
-                if (objetoImpGroup) objetoImpGroup.style.display = 'none';
+                // CFDI 3.3: Ocultar ObjetoImp por concepto (no existe en 3.3)
                 if (conceptoObjetoImpGroup) conceptoObjetoImpGroup.style.display = 'none';
                 versionWarning.style.display = 'block';
                 mainTitle.textContent = '📄 Generador CFDI 3.3 - Sistema Completo';
                 pageTitle.textContent = '📄 Generador CFDI 3.3 - Sistema Completo';
-                console.log('✅ CFDI 3.3: Datos Adicionales ocultos (ObjetoImp no aplica)');
+                console.log('✅ CFDI 3.3: ObjetoImp por concepto oculto (no aplica)');
             } else {
-                // CFDI 4.0: Mostrar sección de Datos Adicionales con ObjetoImp
-                if (datosAdicionalesSection) datosAdicionalesSection.style.display = 'block';
-                if (objetoImpGroup) objetoImpGroup.style.display = 'block'; // Mostrar campo ObjetoImp
+                // CFDI 4.0: Mostrar ObjetoImp por concepto
                 if (conceptoObjetoImpGroup) conceptoObjetoImpGroup.style.display = 'block'; // Mostrar campo por concepto
                 versionWarning.style.display = 'none';
                 mainTitle.textContent = '🚀 Generador CFDI 4.0 - Sistema Completo';
                 pageTitle.textContent = '🚀 Generador CFDI 4.0 - Sistema Completo';
-                console.log('✅ CFDI 4.0: Datos Adicionales y ObjetoImp habilitados');
+                console.log('✅ CFDI 4.0: ObjetoImp por concepto habilitado');
             }
             
             actualizarRegimenesFiscales();
@@ -936,7 +916,7 @@
             // Datos de pago (ahora en Datos Generales)
             const metodoPago = document.getElementById('metodoPago').value;
             const formaPago = document.getElementById('formaPago').value;
-            const objetoImp = document.getElementById('objetoImp').value;
+            // ObjetoImp eliminado: ahora solo va por concepto
             
             // Calcular totales
             const subtotal = conceptos.reduce((sum, c) => sum + c.importe, 0);
