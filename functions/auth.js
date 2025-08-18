@@ -70,8 +70,9 @@ async function register({ email, password, nombre }, headers) {
       .insert([
         {
           email,
-          password: hashedPassword,
+          password_hash: hashedPassword,
           nombre,
+          activo: true,
           created_at: new Date().toISOString()
         }
       ])
@@ -124,7 +125,7 @@ async function login({ email, password }, headers) {
     }
 
     // Verificar contraseña
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, user.password_hash);
     if (!validPassword) {
       return {
         statusCode: 401,
