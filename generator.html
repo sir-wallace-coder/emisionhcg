@@ -649,14 +649,42 @@
 
         // Función para agregar concepto
         function agregarConcepto() {
-            const descripcion = document.getElementById('conceptoDescripcion').value;
-            const cantidad = parseFloat(document.getElementById('conceptoCantidad').value);
-            const valorUnitario = parseFloat(document.getElementById('conceptoValorUnitario').value);
-            const claveUnidad = document.getElementById('conceptoClaveUnidad').value;
-            const claveProducto = document.getElementById('conceptoClaveProducto').value;
-            const impuesto = document.getElementById('conceptoImpuesto').value;
-            const objetoImp = document.getElementById('conceptoObjetoImp').value;
-            const version = document.getElementById('versionCfdi').value;
+            console.log('🔧 DIAGNÓSTICO: Iniciando agregarConcepto()');
+            
+            // Verificar elementos del DOM
+            const elementos = {
+                descripcion: document.getElementById('conceptoDescripcion'),
+                cantidad: document.getElementById('conceptoCantidad'),
+                valorUnitario: document.getElementById('conceptoValorUnitario'),
+                claveUnidad: document.getElementById('conceptoClaveUnidad'),
+                claveProducto: document.getElementById('conceptoClaveProducto'),
+                impuesto: document.getElementById('conceptoImpuesto'),
+                objetoImp: document.getElementById('conceptoObjetoImp'),
+                version: document.getElementById('versionCfdi')
+            };
+            
+            // Verificar que todos los elementos existan
+            for (const [nombre, elemento] of Object.entries(elementos)) {
+                if (!elemento) {
+                    console.error(`❌ ERROR: Elemento '${nombre}' no encontrado en el DOM`);
+                    showAlert(`Error: Campo '${nombre}' no encontrado`, 'error');
+                    return;
+                }
+            }
+            
+            const descripcion = elementos.descripcion.value;
+            const cantidad = parseFloat(elementos.cantidad.value);
+            const valorUnitario = parseFloat(elementos.valorUnitario.value);
+            const claveUnidad = elementos.claveUnidad.value;
+            const claveProducto = elementos.claveProducto.value;
+            const impuesto = elementos.impuesto.value;
+            const objetoImp = elementos.objetoImp.value;
+            const version = elementos.version.value;
+            
+            console.log('📋 VALORES CAPTURADOS:', {
+                descripcion, cantidad, valorUnitario, claveUnidad, 
+                claveProducto, impuesto, objetoImp, version
+            });
             
             if (!descripcion || !cantidad || !valorUnitario || !claveUnidad || !claveProducto) {
                 showAlert('⚠️ Complete todos los campos obligatorios del concepto', 'error');
@@ -700,10 +728,16 @@
                 objetoImp: version === '4.0' ? objetoImp : null
             };
             
+            console.log('✅ CONCEPTO CREADO:', concepto);
             conceptos.push(concepto);
+            console.log('📊 ARRAY CONCEPTOS ACTUALIZADO:', conceptos);
+            console.log('🔄 Llamando renderizarConceptos()...');
             renderizarConceptos();
+            console.log('🧹 Limpiando formulario...');
             limpiarFormularioConcepto();
+            console.log('💰 Actualizando totales...');
             actualizarTotales();
+            console.log('✅ CONCEPTO AGREGADO EXITOSAMENTE');
         }
 
         // Función para limpiar formulario de concepto
@@ -719,10 +753,24 @@
 
         // Función para renderizar conceptos
         function renderizarConceptos() {
+            console.log('🎨 RENDERIZANDO CONCEPTOS:', conceptos.length, 'conceptos');
             const container = document.getElementById('conceptosContainer');
+            
+            if (!container) {
+                console.error('❌ ERROR: Container conceptosContainer no encontrado');
+                return;
+            }
+            
+            console.log('📦 Container encontrado:', container);
             container.innerHTML = '';
             
-            conceptos.forEach(concepto => {
+            if (conceptos.length === 0) {
+                console.log('⚠️ No hay conceptos para renderizar');
+                return;
+            }
+            
+            conceptos.forEach((concepto, index) => {
+                console.log(`🔄 Renderizando concepto ${index + 1}:`, concepto);
                 const conceptoDiv = document.createElement('div');
                 conceptoDiv.className = 'concepto-item';
                 conceptoDiv.innerHTML = `
