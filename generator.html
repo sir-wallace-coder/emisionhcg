@@ -234,6 +234,20 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-row" id="conceptoObjetoImpGroup" style="display: none;">
+                    <div class="form-group">
+                        <label for="conceptoObjetoImp">Objeto de Impuesto (CFDI 4.0) *</label>
+                        <select id="conceptoObjetoImp">
+                            <option value="">Seleccionar objeto de impuesto</option>
+                            <option value="01">01 - No objeto de impuesto</option>
+                            <option value="02">02 - Sí objeto de impuesto</option>
+                            <option value="03">03 - Sí objeto de impuesto y no obligado al desglose</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <!-- Espacio para mantener el diseño -->
+                    </div>
+                </div>
                 <div class="actions">
                     <button type="button" class="btn btn-primary" onclick="agregarConcepto()">➕ Agregar Concepto</button>
                 </div>
@@ -455,30 +469,40 @@
             }
         }
 
-        // Función para cargar emisores del usuario
+        // Función para cargar emisores del usuario desde localStorage
         async function cargarEmisores() {
-            if (!currentUser) return;
-
+            console.log('📋 CFDI GENERATOR: Cargando emisores desde localStorage...');
+            
             try {
-                const token = localStorage.getItem('cfdi_token');
-                const response = await fetch('/.netlify/functions/emisores', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const data = await response.json();
-                emisoresUsuario = data.emisores || [];
+                // Cargar emisores desde localStorage (consistente con dashboard)
+                const emisoresGuardados = localStorage.getItem('cfdi_emisores');
+                if (emisoresGuardados) {
+                    emisoresUsuario = JSON.parse(emisoresGuardados);
+                    console.log(`✅ ${emisoresUsuario.length} emisores cargados desde localStorage`);
+                } else {
+                    emisoresUsuario = [];
+                    console.log('📄 No hay emisores guardados');
+                }
                 
+                // Actualizar el select de emisores
                 const select = document.getElementById('emisorSelect');
-                select.innerHTML = '<option value="">Seleccionar emisor o llenar manualmente</option>';
-                
-                emisoresUsuario.forEach(emisor => {
-                    const option = document.createElement('option');
-                    option.value = emisor.id;
-                    option.textContent = `${emisor.rfc} - ${emisor.nombre}`;
-                    select.appendChild(option);
-                });
+                if (select) {
+                    select.innerHTML = '<option value="">Seleccionar emisor o llenar manualmente</option>';
+                    
+                    emisoresUsuario.forEach(emisor => {
+                        const option = document.createElement('option');
+                        option.value = emisor.id;
+                        option.textContent = `${emisor.rfc} - ${emisor.nombre}`;
+                        select.appendChild(option);
+                    });
+                    
+                    console.log(`✅ Select de emisores actualizado con ${emisoresUsuario.length} opciones`);
+                } else {
+                    console.error('❌ Select de emisores no encontrado en el DOM');
+                }
             } catch (error) {
-                console.error('Error cargando emisores:', error);
+                console.error('❌ Error cargando emisores:', error);
+                emisoresUsuario = [];
             }
         }
 
@@ -601,21 +625,30 @@
         // Función para cambiar versión CFDI
         function cambiarVersionCfdi() {
             const version = document.getElementById('versionCfdi').value;
-            const objetoImpGroup = document.getElementById('objetoImpGroup');
+            const objetoImpGroup = document.getElementById('objetoImpGroup'); // Campo global (obsoleto)
+            const conceptoObjetoImpGroup = document.getElementById('conceptoObjetoImpGroup'); // Campo por concepto
             const versionWarning = document.getElementById('versionWarning');
             const mainTitle = document.getElementById('mainTitle');
             const pageTitle = document.getElementById('pageTitle');
             
+            console.log(`🔧 CFDI GENERATOR: Cambiando versión a ${version}`);
+            
             if (version === '3.3') {
-                objetoImpGroup.style.display = 'none';
+                // CFDI 3.3: Ocultar ObjetoImp (no existe en 3.3)
+                if (objetoImpGroup) objetoImpGroup.style.display = 'none';
+                if (conceptoObjetoImpGroup) conceptoObjetoImpGroup.style.display = 'none';
                 versionWarning.style.display = 'block';
                 mainTitle.textContent = '📄 Generador CFDI 3.3 - Sistema Completo';
                 pageTitle.textContent = '📄 Generador CFDI 3.3 - Sistema Completo';
+                console.log('✅ CFDI 3.3: ObjetoImp oculto (no aplica)');
             } else {
-                objetoImpGroup.style.display = 'block';
+                // CFDI 4.0: Mostrar ObjetoImp por concepto
+                if (objetoImpGroup) objetoImpGroup.style.display = 'none'; // Ocultar campo global obsoleto
+                if (conceptoObjetoImpGroup) conceptoObjetoImpGroup.style.display = 'block'; // Mostrar campo por concepto
                 versionWarning.style.display = 'none';
                 mainTitle.textContent = '🚀 Generador CFDI 4.0 - Sistema Completo';
                 pageTitle.textContent = '🚀 Generador CFDI 4.0 - Sistema Completo';
+                console.log('✅ CFDI 4.0: ObjetoImp por concepto habilitado');
             }
             
             actualizarRegimenesFiscales();
@@ -629,6 +662,8 @@
             const claveUnidad = document.getElementById('conceptoClaveUnidad').value;
             const claveProducto = document.getElementById('conceptoClaveProducto').value;
             const impuesto = document.getElementById('conceptoImpuesto').value;
+            const objetoImp = document.getElementById('conceptoObjetoImp').value;
+            const version = document.getElementById('versionCfdi').value;
             
             if (!descripcion || !cantidad || !valorUnitario || !claveUnidad || !claveProducto) {
                 showAlert('⚠️ Complete todos los campos obligatorios del concepto', 'error');
@@ -637,6 +672,12 @@
             
             if (claveProducto.length !== 8 || !/^[0-9]{8}$/.test(claveProducto)) {
                 showAlert('⚠️ La clave de producto/servicio debe tener exactamente 8 dígitos', 'error');
+                return;
+            }
+            
+            // Validar ObjetoImp para CFDI 4.0
+            if (version === '4.0' && !objetoImp) {
+                showAlert('⚠️ Objeto de Impuesto es obligatorio para CFDI 4.0', 'error');
                 return;
             }
             
@@ -662,7 +703,8 @@
                 claveUnidad,
                 claveProducto,
                 importe,
-                impuesto: impuestoInfo
+                impuesto: impuestoInfo,
+                objetoImp: version === '4.0' ? objetoImp : null
             };
             
             conceptos.push(concepto);
@@ -679,6 +721,7 @@
             document.getElementById('conceptoClaveUnidad').value = '';
             document.getElementById('conceptoClaveProducto').value = '';
             document.getElementById('conceptoImpuesto').value = '';
+            document.getElementById('conceptoObjetoImp').value = '';
         }
 
         // Función para renderizar conceptos
@@ -916,7 +959,8 @@
             xml += `  <cfdi:Conceptos>
 `;
             conceptos.forEach(concepto => {
-                const objetoImpAttr = version === '4.0' && objetoImp ? ` ObjetoImp="${objetoImp}"` : '';
+                // ObjetoImp por concepto (CFDI 4.0) - Corregido según especificaciones SAT
+                const objetoImpAttr = version === '4.0' && concepto.objetoImp ? ` ObjetoImp="${concepto.objetoImp}"` : '';
                 xml += `    <cfdi:Concepto ClaveProdServ="${concepto.claveProducto}" Cantidad="${concepto.cantidad}" ClaveUnidad="${concepto.claveUnidad}" Descripcion="${concepto.descripcion}" ValorUnitario="${concepto.valorUnitario.toFixed(6)}" Importe="${concepto.importe.toFixed(6)}"${objetoImpAttr}`;
                 
                 if (concepto.impuesto) {

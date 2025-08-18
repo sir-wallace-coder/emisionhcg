@@ -258,6 +258,10 @@
                 <div class="quick-action-icon">🚀</div>
                 <div class="quick-action-title">Generar CFDI</div>
             </a>
+            <a href="#" onclick="openImportXMLModal()" class="quick-action">
+                <div class="quick-action-icon">📁</div>
+                <div class="quick-action-title">Importar XML</div>
+            </a>
             <a href="#" onclick="openEmisorModal()" class="quick-action">
                 <div class="quick-action-icon">🏢</div>
                 <div class="quick-action-title">Nuevo Emisor</div>
@@ -1898,7 +1902,280 @@
             if (event.target === modal) {
                 closeEmisorModal();
             }
+            
+            const importModal = document.getElementById('importXMLModal');
+            if (event.target === importModal) {
+                closeImportXMLModal();
+            }
+        }
+        
+        // ===== FUNCIONALIDAD IMPORTAR XML =====
+        
+        function openImportXMLModal() {
+            console.log('📁 CFDI SYSTEM: Abriendo modal de importar XML...');
+            const modal = document.getElementById('importXMLModal');
+            if (modal) {
+                modal.style.display = 'block';
+                document.getElementById('importXMLFile').value = '';
+                document.getElementById('importXMLResult').innerHTML = '';
+                console.log('✅ Modal de importar XML abierto');
+            } else {
+                console.error('❌ Modal de importar XML no encontrado');
+            }
+        }
+        
+        function closeImportXMLModal() {
+            console.log('📁 CFDI SYSTEM: Cerrando modal de importar XML...');
+            const modal = document.getElementById('importXMLModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('✅ Modal de importar XML cerrado');
+            }
+        }
+        
+        async function importarXML() {
+            console.log('📁 CFDI SYSTEM: Iniciando importación de XML...');
+            
+            const fileInput = document.getElementById('importXMLFile');
+            const resultDiv = document.getElementById('importXMLResult');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = '<div class="alert alert-error">❌ Debe seleccionar un archivo XML</div>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Validar extensión
+            if (!file.name.toLowerCase().endsWith('.xml')) {
+                resultDiv.innerHTML = '<div class="alert alert-error">❌ El archivo debe tener extensión .xml</div>';
+                return;
+            }
+            
+            // Validar tamaño (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                resultDiv.innerHTML = '<div class="alert alert-error">❌ El archivo XML no debe exceder 5MB</div>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<div class="alert alert-info">🔄 Validando XML...</div>';
+                
+                // Leer contenido del archivo
+                const xmlContent = await leerArchivoXML(file);
+                
+                // Validar estructura XML
+                const validacionXML = validarEstructuraXML(xmlContent);
+                if (!validacionXML.valido) {
+                    resultDiv.innerHTML = `<div class="alert alert-error">❌ Error de estructura XML: ${validacionXML.error}</div>`;
+                    return;
+                }
+                
+                // Extraer información del CFDI
+                const infoCFDI = extraerInformacionCFDI(xmlContent);
+                if (!infoCFDI.valido) {
+                    resultDiv.innerHTML = `<div class="alert alert-error">❌ Error procesando CFDI: ${infoCFDI.error}</div>`;
+                    return;
+                }
+                
+                // Validar contra XSD (simulado por ahora)
+                const validacionXSD = await validarContraXSD(xmlContent, infoCFDI.version);
+                if (!validacionXSD.valido) {
+                    resultDiv.innerHTML = `<div class="alert alert-error">❌ Error de validación XSD: ${validacionXSD.error}</div>`;
+                    return;
+                }
+                
+                // Guardar XML importado
+                const xmlGuardado = await guardarXMLImportado(xmlContent, infoCFDI, file.name);
+                if (xmlGuardado.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            ✅ XML importado exitosamente<br>
+                            <strong>Versión:</strong> CFDI ${infoCFDI.version}<br>
+                            <strong>RFC Emisor:</strong> ${infoCFDI.emisor.rfc}<br>
+                            <strong>Serie-Folio:</strong> ${infoCFDI.serie || ''}-${infoCFDI.folio}<br>
+                            <strong>Total:</strong> $${parseFloat(infoCFDI.total).toFixed(2)}
+                        </div>
+                    `;
+                    
+                    // Actualizar lista de XMLs
+                    setTimeout(() => {
+                        closeImportXMLModal();
+                        showTab('xmls');
+                        loadData(); // Recargar datos
+                    }, 2000);
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-error">❌ Error guardando XML: ${xmlGuardado.message}</div>`;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error importando XML:', error);
+                resultDiv.innerHTML = `<div class="alert alert-error">❌ Error crítico: ${error.message}</div>`;
+            }
+        }
+        
+        // Función para leer archivo XML
+        function leerArchivoXML(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('Error leyendo archivo'));
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+        
+        // Función para validar estructura XML
+        function validarEstructuraXML(xmlContent) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+                
+                // Verificar errores de parsing
+                const parseError = xmlDoc.getElementsByTagName('parsererror');
+                if (parseError.length > 0) {
+                    return { valido: false, error: 'XML mal formado' };
+                }
+                
+                // Verificar que sea un CFDI
+                const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+                if (!comprobante) {
+                    return { valido: false, error: 'No es un XML de CFDI válido' };
+                }
+                
+                return { valido: true, xmlDoc };
+            } catch (error) {
+                return { valido: false, error: error.message };
+            }
+        }
+        
+        // Función para extraer información del CFDI
+        function extraerInformacionCFDI(xmlContent) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+                const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+                
+                if (!comprobante) {
+                    return { valido: false, error: 'No se encontró el nodo Comprobante' };
+                }
+                
+                const version = comprobante.getAttribute('Version');
+                const serie = comprobante.getAttribute('Serie') || '';
+                const folio = comprobante.getAttribute('Folio');
+                const fecha = comprobante.getAttribute('Fecha');
+                const total = comprobante.getAttribute('Total');
+                
+                // Extraer datos del emisor
+                const emisorNode = xmlDoc.getElementsByTagName('cfdi:Emisor')[0];
+                const emisor = {
+                    rfc: emisorNode ? emisorNode.getAttribute('Rfc') : '',
+                    nombre: emisorNode ? emisorNode.getAttribute('Nombre') : ''
+                };
+                
+                // Extraer datos del receptor
+                const receptorNode = xmlDoc.getElementsByTagName('cfdi:Receptor')[0];
+                const receptor = {
+                    rfc: receptorNode ? receptorNode.getAttribute('Rfc') : '',
+                    nombre: receptorNode ? receptorNode.getAttribute('Nombre') : ''
+                };
+                
+                return {
+                    valido: true,
+                    version,
+                    serie,
+                    folio,
+                    fecha,
+                    total,
+                    emisor,
+                    receptor
+                };
+            } catch (error) {
+                return { valido: false, error: error.message };
+            }
+        }
+        
+        // Función para validar contra XSD (simulada por ahora)
+        async function validarContraXSD(xmlContent, version) {
+            // Por ahora simulamos la validación XSD
+            // En el futuro aquí se implementará la validación real contra los XSD
+            console.log(`🔍 Validando XML contra XSD de CFDI ${version}...`);
+            
+            // Simulación de validación
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Validaciones básicas
+            if (!xmlContent.includes('xmlns:cfdi')) {
+                return { valido: false, error: 'Namespace CFDI faltante' };
+            }
+            
+            if (version === '4.0' && !xmlContent.includes('cfdv40.xsd')) {
+                return { valido: false, error: 'Schema XSD incorrecto para CFDI 4.0' };
+            }
+            
+            if (version === '3.3' && !xmlContent.includes('cfdv33.xsd')) {
+                return { valido: false, error: 'Schema XSD incorrecto para CFDI 3.3' };
+            }
+            
+            return { valido: true };
+        }
+        
+        // Función para guardar XML importado
+        async function guardarXMLImportado(xmlContent, infoCFDI, nombreArchivo) {
+            try {
+                const xmlData = {
+                    id: 'imported-' + Date.now(),
+                    fecha_creacion: new Date().toISOString(),
+                    version_cfdi: infoCFDI.version,
+                    serie: infoCFDI.serie,
+                    folio: infoCFDI.folio,
+                    emisor_rfc: infoCFDI.emisor.rfc,
+                    emisor_nombre: infoCFDI.emisor.nombre,
+                    receptor_rfc: infoCFDI.receptor.rfc,
+                    receptor_nombre: infoCFDI.receptor.nombre,
+                    total: infoCFDI.total,
+                    xml_content: xmlContent,
+                    estado: 'importado',
+                    nombre_archivo: nombreArchivo,
+                    tipo: 'importado'
+                };
+                
+                // Guardar en localStorage
+                const xmlsGuardados = JSON.parse(localStorage.getItem('cfdi_xmls') || '[]');
+                xmlsGuardados.push(xmlData);
+                localStorage.setItem('cfdi_xmls', JSON.stringify(xmlsGuardados));
+                
+                console.log('✅ XML importado guardado en localStorage');
+                return { success: true, data: xmlData };
+            } catch (error) {
+                console.error('❌ Error guardando XML importado:', error);
+                return { success: false, message: error.message };
+            }
         }
     </script>
+    
+    <!-- Modal para Importar XML -->
+    <div id="importXMLModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📁 Importar XML CFDI</h2>
+                <span class="close" onclick="closeImportXMLModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="importXMLFile">Seleccionar archivo XML:</label>
+                    <input type="file" id="importXMLFile" accept=".xml" class="form-control">
+                    <small class="form-text">Solo archivos XML de CFDI 3.3 o 4.0 (máximo 5MB)</small>
+                </div>
+                
+                <div id="importXMLResult"></div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-success" onclick="importarXML()">📁 Importar y Validar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeImportXMLModal()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
