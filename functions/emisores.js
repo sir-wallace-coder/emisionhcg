@@ -489,7 +489,18 @@ async function createEmisor(userId, data, headers) {
           
           // 2. Validar y convertir llave privada .key a PEM
           console.log('🔑 Validando y convirtiendo llave privada .key a PEM...');
+          console.log('🔍 DEBUG KEY: Datos de entrada para validación:', {
+            key_length: certificado_key ? certificado_key.length : 0,
+            key_preview: certificado_key ? certificado_key.substring(0, 50) + '...' : 'VACIO',
+            password_length: password_key ? password_key.length : 0
+          });
           const keyInfo = validarLlavePrivadaSimplificada(certificado_key, password_key);
+          console.log('🔍 DEBUG KEY: Resultado de validación:', {
+            valida: keyInfo.valida,
+            tiene_pem: !!keyInfo.llavePrivadaPem,
+            pem_length: keyInfo.llavePrivadaPem ? keyInfo.llavePrivadaPem.length : 0,
+            mensaje: keyInfo.mensaje || 'OK'
+          });
           
           if (!keyInfo.valida) {
             return {
@@ -528,6 +539,14 @@ async function createEmisor(userId, data, headers) {
             validado_en: new Date().toISOString(),
             estado_validacion: 'VALIDADO_PROFESIONAL'
           };
+          
+          console.log('🔍 DEBUG CERTIFICADO_INFO: Objeto creado:', {
+            tiene_cer: !!certificadoInfo.certificado_cer,
+            tiene_key: !!certificadoInfo.certificado_key,
+            cer_length: certificadoInfo.certificado_cer ? certificadoInfo.certificado_cer.length : 0,
+            key_length: certificadoInfo.certificado_key ? certificadoInfo.certificado_key.length : 0,
+            key_preview: certificadoInfo.certificado_key ? certificadoInfo.certificado_key.substring(0, 100) + '...' : 'VACIO'
+          });
           
           console.log('✅ EMISOR: Certificados CSD procesados con procesador profesional:', {
             numero_certificado: certInfo.numeroSerie,
@@ -595,6 +614,14 @@ async function createEmisor(userId, data, headers) {
       // Convertir fechas ISO a formato DATE para PostgreSQL
       emisorData.vigencia_desde = certificadoInfo.vigencia_desde; // Ya convertido a formato YYYY-MM-DD
       emisorData.vigencia_hasta = certificadoInfo.vigencia_hasta; // Ya convertido a formato YYYY-MM-DD
+      
+      console.log('🔍 DEBUG EMISOR_DATA: Datos preparados para inserción:', {
+        tiene_cer: !!emisorData.certificado_cer,
+        tiene_key: !!emisorData.certificado_key,
+        cer_length: emisorData.certificado_cer ? emisorData.certificado_cer.length : 0,
+        key_length: emisorData.certificado_key ? emisorData.certificado_key.length : 0,
+        key_preview: emisorData.certificado_key ? emisorData.certificado_key.substring(0, 100) + '...' : 'VACIO'
+      });
     }
 
     // 7. Insertar emisor en base de datos
