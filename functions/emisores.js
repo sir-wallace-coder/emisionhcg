@@ -385,19 +385,64 @@ async function createEmisor(userId, data, headers) {
           };
         }
         
-        // 4. Crear información del certificado (sin validación de fecha de expiración)
-        // Generar número de certificado corto (máximo 20 caracteres)
-        const timestamp = Date.now().toString().slice(-8); // Últimos 8 dígitos del timestamp
-        const rfcShort = rfcClean.slice(0, 8); // Primeros 8 caracteres del RFC
-        const numeroCertificado = `${rfcShort}${timestamp}`; // Máximo 16 caracteres
+        // 4. Extraer información REAL del certificado .cer
+        let numeroCertificado = null;
+        let vigenciaDesde = null;
+        let vigenciaHasta = null;
+        
+        try {
+          // Decodificar el certificado desde base64
+          const cerBuffer = Buffer.from(certificado_cer, 'base64');
+          const cerString = cerBuffer.toString('utf8');
+          
+          // Buscar el número de serie en el certificado
+          // El número de serie está en formato hexadecimal en el certificado
+          const serialMatch = cerString.match(/Serial Number:\s*([a-fA-F0-9:]+)/i) || 
+                             cerString.match(/serialNumber=([a-fA-F0-9]+)/i);
+          
+          if (serialMatch) {
+            // Limpiar el número de serie (quitar : y espacios)
+            const serialHex = serialMatch[1].replace(/[:\s]/g, '');
+            // Convertir de hex a decimal y tomar los últimos 20 dígitos
+            const serialDecimal = BigInt('0x' + serialHex).toString();
+            numeroCertificado = serialDecimal.slice(-20); // Máximo 20 caracteres
+            console.log('🔢 Número de certificado extraído del .cer:', numeroCertificado);
+          } else {
+            console.log('⚠️ No se pudo extraer el número de serie del certificado, usando fallback');
+            // Fallback: generar número basado en hash del certificado
+            const crypto = require('crypto');
+            const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
+            numeroCertificado = hash.slice(-20); // Últimos 20 caracteres del hash
+          }
+          
+          // Buscar fechas de vigencia en el certificado
+          const notBeforeMatch = cerString.match(/Not Before:\s*([^\n]+)/i);
+          const notAfterMatch = cerString.match(/Not After:\s*([^\n]+)/i);
+          
+          if (notBeforeMatch) {
+            vigenciaDesde = new Date(notBeforeMatch[1]).toISOString();
+          }
+          
+          if (notAfterMatch) {
+            vigenciaHasta = new Date(notAfterMatch[1]).toISOString();
+          }
+          
+        } catch (certParseError) {
+          console.error('❌ Error extrayendo datos del certificado:', certParseError);
+          // Fallback: generar número basado en timestamp y RFC
+          const timestamp = Date.now().toString().slice(-8);
+          const rfcShort = rfcClean.slice(0, 8);
+          numeroCertificado = `${rfcShort}${timestamp}`;
+          console.log('🔢 Usando número de certificado fallback:', numeroCertificado);
+        }
         
         certificadoInfo = {
           certificado_cer: certificado_cer,
           certificado_key: certificado_key,
           password_key: password_key,
           numero_certificado: numeroCertificado,
-          vigencia_desde: new Date().toISOString(),
-          vigencia_hasta: new Date(Date.now() + 4 * 365 * 24 * 60 * 60 * 1000).toISOString(), // 4 años
+          vigencia_desde: vigenciaDesde || new Date().toISOString(),
+          vigencia_hasta: vigenciaHasta || new Date(Date.now() + 4 * 365 * 24 * 60 * 60 * 1000).toISOString(),
           validado_en: new Date().toISOString(),
           estado_validacion: 'VALIDADO_BASICO'
         };
