@@ -1266,12 +1266,20 @@
                     return;
                 }
                 
+                console.log('🔑 Token disponible, haciendo petición GET...');
+                
                 const response = await fetch('/.netlify/functions/emisores', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
+                });
+                
+                console.log('📡 Respuesta recibida:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
                 });
                 
                 if (response.ok) {
@@ -1290,13 +1298,22 @@
                     
                     return emisores;
                 } else {
-                    console.error('❌ Error cargando emisores desde backend');
-                    alert('Error cargando emisores desde la base de datos.');
+                    const errorText = await response.text();
+                    console.error('❌ Error cargando emisores desde backend:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorBody: errorText
+                    });
+                    alert(`Error cargando emisores: ${response.status} - ${response.statusText}`);
                     return [];
                 }
             } catch (error) {
-                console.error('❌ Error en cargarEmisoresDesdeBackend:', error);
-                alert('Error de conexión al cargar emisores.');
+                console.error('❌ Error en cargarEmisoresDesdeBackend:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                alert(`Error de conexión: ${error.message}`);
                 return [];
             }
         }
