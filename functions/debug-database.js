@@ -68,7 +68,7 @@ exports.handler = async (event, context) => {
     // 3. Verificar XMLs
     try {
       const { data: xmls, error: errorXMLs } = await supabase
-        .from('xmls')
+        .from('xmls_generados')
         .select('*');
       
       if (errorXMLs) {
