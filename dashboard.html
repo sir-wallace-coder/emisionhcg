@@ -32,20 +32,14 @@
         }
 
         .header {
-            background: var(--dark-bg);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 1rem 0;
-            box-shadow: var(--box-shadow);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .header-content {
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1200px;
+            max-width: 95%;
             margin: 0 auto;
             padding: 0 20px;
         }
@@ -62,9 +56,10 @@
         }
 
         .container-fluid {
-            max-width: 1200px;
+            max-width: 95%;
             margin: 0 auto;
             padding: 20px;
+            width: 100%;
         }
 
         .quick-actions {
@@ -1254,15 +1249,650 @@
         }
         
         // Simple XML viewer
-        function viewXMLSimple(xmlId) {
-            const xmlsData = localStorage.getItem('xmls_generados');
-            if (!xmlsData) return;
+        // Función mejorada para ver XML en modal profesional
+        async function viewXMLSimple(xmlId) {
+            console.log('👁️ Abriendo vista de XML:', xmlId);
             
-            const xmls = JSON.parse(xmlsData);
-            const xml = xmls.find(x => x.id === xmlId);
+            try {
+                // Cargar XML desde localStorage o BD
+                let xml = null;
+                
+                // Primero intentar desde localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (xmlsData) {
+                    const xmls = JSON.parse(xmlsData);
+                    xml = xmls.find(x => x.id === xmlId);
+                }
+                
+                // Si no se encuentra y hay usuario autenticado, cargar desde BD
+                if (!xml) {
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        console.log('💾 Cargando XML desde base de datos...');
+                        const response = await fetch('/.netlify/functions/xmls', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            xml = data.xmls.find(x => x.id === xmlId);
+                        }
+                    }
+                }
+                
+                if (!xml) {
+                    alert('❌ XML no encontrado');
+                    return;
+                }
+                
+                // Mostrar modal con XML
+                mostrarModalVerXML(xml);
+                
+            } catch (error) {
+                console.error('❌ Error cargando XML:', error);
+                alert('❌ Error cargando XML: ' + error.message);
+            }
+        }
+        
+        // Función para mostrar modal de ver XML
+        function mostrarModalVerXML(xml) {
+            const modalHTML = `
+                <div class="modal fade" id="modalVerXML" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-file-code"></i> Ver XML - ${xml.serie || 'A'}-${xml.folio || '1'}
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Información del comprobante -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="fas fa-building"></i> Emisor</h6>
+                                                <p class="mb-1"><strong>RFC:</strong> ${xml.emisor_rfc || 'N/A'}</p>
+                                                <p class="mb-0"><strong>Nombre:</strong> ${xml.emisor_nombre || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="fas fa-user"></i> Receptor</h6>
+                                                <p class="mb-1"><strong>RFC:</strong> ${xml.receptor_rfc || 'N/A'}</p>
+                                                <p class="mb-0"><strong>Nombre:</strong> ${xml.receptor_nombre || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Detalles del comprobante -->
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <div class="h4 text-primary">$${parseFloat(xml.total || 0).toFixed(2)}</div>
+                                            <small class="text-muted">Total</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <div class="h5">${xml.version_cfdi || 'N/A'}</div>
+                                            <small class="text-muted">Versión CFDI</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <div class="h5">
+                                                <span class="badge bg-${getEstadoBadgeColor(xml.estado)}">${xml.estado || 'generado'}</span>
+                                            </div>
+                                            <small class="text-muted">Estado</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <div class="h6">${xml.uuid ? xml.uuid.substring(0, 8) + '...' : 'Sin UUID'}</div>
+                                            <small class="text-muted">UUID</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Contenido XML -->
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-code"></i> Contenido XML</h6>
+                                    <div class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                                        <pre><code id="xmlContent">${xml.xml_content ? formatXML(xml.xml_content) : 'Contenido XML no disponible'}</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-success" onclick="descargarXML('${xml.id}')">
+                                    <i class="fas fa-download"></i> Descargar XML
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="editarXML('${xml.id}')">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                ${xml.estado !== 'sellado' ? `
+                                    <button type="button" class="btn btn-primary" onclick="sellarXML('${xml.id}')">
+                                        <i class="fas fa-stamp"></i> Sellar
+                                    </button>
+                                ` : ''}
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times"></i> Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            if (xml) {
-                alert(`XML: ${xml.serie || 'A'}-${xml.folio || '1'}\nEmisor: ${xml.emisor_nombre || 'N/A'}\nTotal: $${parseFloat(xml.total || 0).toFixed(2)}`);
+            // Remover modal anterior si existe
+            const existingModal = document.getElementById('modalVerXML');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Agregar modal al DOM
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('modalVerXML'));
+            modal.show();
+        }
+        
+        // Funciones auxiliares
+        function getEstadoBadgeColor(estado) {
+            switch (estado) {
+                case 'generado': return 'secondary';
+                case 'sellado': return 'primary';
+                case 'timbrado': return 'success';
+                case 'cancelado': return 'danger';
+                case 'importado': return 'info';
+                default: return 'secondary';
+            }
+        }
+        
+        function formatXML(xmlString) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                const serializer = new XMLSerializer();
+                const formatted = serializer.serializeToString(xmlDoc);
+                
+                // Escapar HTML para mostrar en el DOM
+                return formatted
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            } catch (error) {
+                return xmlString;
+            }
+        }
+        
+        // Función para descargar XML
+        async function descargarXML(xmlId) {
+            console.log('📎 Descargando XML:', xmlId);
+            
+            try {
+                // Cargar XML desde localStorage o BD
+                let xml = null;
+                
+                // Primero intentar desde localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (xmlsData) {
+                    const xmls = JSON.parse(xmlsData);
+                    xml = xmls.find(x => x.id === xmlId);
+                }
+                
+                // Si no se encuentra y hay usuario autenticado, cargar desde BD
+                if (!xml) {
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        console.log('💾 Cargando XML desde base de datos para descarga...');
+                        const response = await fetch('/.netlify/functions/xmls', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            xml = data.xmls.find(x => x.id === xmlId);
+                        }
+                    }
+                }
+                
+                if (!xml || !xml.xml_content) {
+                    alert('❌ XML no encontrado o sin contenido');
+                    return;
+                }
+                
+                // Crear nombre de archivo
+                const fileName = `${xml.emisor_rfc || 'XML'}_${xml.serie || 'A'}_${xml.folio || '1'}.xml`;
+                
+                // Crear blob y descargar
+                const blob = new Blob([xml.xml_content], { type: 'application/xml' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                console.log('✅ XML descargado exitosamente:', fileName);
+                
+            } catch (error) {
+                console.error('❌ Error descargando XML:', error);
+                alert('❌ Error descargando XML: ' + error.message);
+            }
+        }
+        
+        // Función para editar XML
+        async function editarXML(xmlId) {
+            console.log('✏️ Editando XML:', xmlId);
+            
+            try {
+                // Cargar XML desde localStorage o BD
+                let xml = null;
+                
+                // Primero intentar desde localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (xmlsData) {
+                    const xmls = JSON.parse(xmlsData);
+                    xml = xmls.find(x => x.id === xmlId);
+                }
+                
+                // Si no se encuentra y hay usuario autenticado, cargar desde BD
+                if (!xml) {
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        console.log('💾 Cargando XML desde base de datos para edición...');
+                        const response = await fetch('/.netlify/functions/xmls', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            xml = data.xmls.find(x => x.id === xmlId);
+                        }
+                    }
+                }
+                
+                if (!xml) {
+                    alert('❌ XML no encontrado');
+                    return;
+                }
+                
+                // Mostrar modal de edición
+                mostrarModalEditarXML(xml);
+                
+            } catch (error) {
+                console.error('❌ Error cargando XML para edición:', error);
+                alert('❌ Error cargando XML: ' + error.message);
+            }
+        }
+        
+        // Función para mostrar modal de editar XML
+        function mostrarModalEditarXML(xml) {
+            const modalHTML = `
+                <div class="modal fade" id="modalEditarXML" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-edit"></i> Editar XML - ${xml.serie || 'A'}-${xml.folio || '1'}
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="formEditarXML">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Serie</label>
+                                                <input type="text" class="form-control" id="editSerie" value="${xml.serie || ''}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Folio *</label>
+                                                <input type="text" class="form-control" id="editFolio" value="${xml.folio || ''}" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Emisor RFC *</label>
+                                                <input type="text" class="form-control" id="editEmisorRfc" value="${xml.emisor_rfc || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Emisor Nombre *</label>
+                                                <input type="text" class="form-control" id="editEmisorNombre" value="${xml.emisor_nombre || ''}" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Receptor RFC *</label>
+                                                <input type="text" class="form-control" id="editReceptorRfc" value="${xml.receptor_rfc || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Receptor Nombre *</label>
+                                                <input type="text" class="form-control" id="editReceptorNombre" value="${xml.receptor_nombre || ''}" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Total *</label>
+                                                <input type="number" step="0.01" class="form-control" id="editTotal" value="${xml.total || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Estado</label>
+                                                <select class="form-control" id="editEstado">
+                                                    <option value="generado" ${xml.estado === 'generado' ? 'selected' : ''}>Generado</option>
+                                                    <option value="sellado" ${xml.estado === 'sellado' ? 'selected' : ''}>Sellado</option>
+                                                    <option value="timbrado" ${xml.estado === 'timbrado' ? 'selected' : ''}>Timbrado</option>
+                                                    <option value="cancelado" ${xml.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                                                    <option value="importado" ${xml.estado === 'importado' ? 'selected' : ''}>Importado</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <input type="hidden" id="editXmlId" value="${xml.id}">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button type="button" class="btn btn-warning" onclick="guardarEdicionXML()">
+                                    <i class="fas fa-save"></i> Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remover modal anterior si existe
+            const existingModal = document.getElementById('modalEditarXML');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Agregar modal al DOM
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarXML'));
+            modal.show();
+        }
+        
+        // Función para guardar edición de XML
+        async function guardarEdicionXML() {
+            console.log('💾 Guardando edición de XML...');
+            
+            try {
+                const xmlId = document.getElementById('editXmlId').value;
+                const serie = document.getElementById('editSerie').value;
+                const folio = document.getElementById('editFolio').value;
+                const emisorRfc = document.getElementById('editEmisorRfc').value;
+                const emisorNombre = document.getElementById('editEmisorNombre').value;
+                const receptorRfc = document.getElementById('editReceptorRfc').value;
+                const receptorNombre = document.getElementById('editReceptorNombre').value;
+                const total = document.getElementById('editTotal').value;
+                const estado = document.getElementById('editEstado').value;
+                
+                // Validar campos obligatorios
+                if (!folio || !emisorRfc || !emisorNombre || !receptorRfc || !receptorNombre || !total) {
+                    alert('❌ Por favor, completa todos los campos obligatorios');
+                    return;
+                }
+                
+                // Preparar datos para actualizar
+                const datosActualizados = {
+                    serie: serie || null,
+                    folio,
+                    emisor_rfc: emisorRfc,
+                    emisor_nombre: emisorNombre,
+                    receptor_rfc: receptorRfc,
+                    receptor_nombre: receptorNombre,
+                    total: parseFloat(total),
+                    estado
+                };
+                
+                console.log('📋 Datos a actualizar:', datosActualizados);
+                
+                // Actualizar en localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (xmlsData) {
+                    const xmls = JSON.parse(xmlsData);
+                    const xmlIndex = xmls.findIndex(x => x.id === xmlId);
+                    if (xmlIndex !== -1) {
+                        xmls[xmlIndex] = { ...xmls[xmlIndex], ...datosActualizados };
+                        localStorage.setItem('xmls_generados', JSON.stringify(xmls));
+                        console.log('✅ XML actualizado en localStorage');
+                    }
+                }
+                
+                // TODO: Actualizar en base de datos si hay usuario autenticado
+                const token = localStorage.getItem('token');
+                if (token) {
+                    console.log('💾 Actualizando XML en base de datos...');
+                    // Implementar llamada PUT a /functions/xmls cuando esté disponible
+                }
+                
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarXML'));
+                modal.hide();
+                
+                // Recargar datos
+                if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
+                    await window.dashboardMain.loadInitialData();
+                    await window.dashboardMain.renderAllData();
+                }
+                
+                alert('✅ XML actualizado exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error guardando edición de XML:', error);
+                alert('❌ Error guardando cambios: ' + error.message);
+            }
+        }
+        
+        // Función para sellar XML
+        async function sellarXML(xmlId) {
+            console.log('🔐 Sellando XML:', xmlId);
+            
+            try {
+                // Cargar XML desde localStorage o BD
+                let xml = null;
+                
+                // Primero intentar desde localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (xmlsData) {
+                    const xmls = JSON.parse(xmlsData);
+                    xml = xmls.find(x => x.id === xmlId);
+                }
+                
+                if (!xml) {
+                    alert('❌ XML no encontrado');
+                    return;
+                }
+                
+                if (xml.estado === 'sellado') {
+                    alert('⚠️ Este XML ya está sellado');
+                    return;
+                }
+                
+                // Verificar que hay emisores con CSD disponibles
+                const emisoresData = localStorage.getItem('emisores');
+                if (!emisoresData) {
+                    alert('❌ No hay emisores registrados. Registra un emisor con CSD primero.');
+                    return;
+                }
+                
+                const emisores = JSON.parse(emisoresData);
+                const emisorConCSD = emisores.find(e => 
+                    e.rfc === xml.emisor_rfc && 
+                    e.certificado_cer && 
+                    e.certificado_key
+                );
+                
+                if (!emisorConCSD) {
+                    alert(`❌ No se encontró un emisor con CSD para el RFC: ${xml.emisor_rfc}\n\nRegistra el emisor con sus certificados CSD (.cer y .key) primero.`);
+                    return;
+                }
+                
+                // Confirmar sellado
+                const confirmar = confirm(`¿¿Estás seguro de que deseas sellar este XML?\n\nEmisor: ${xml.emisor_rfc}\nSerie-Folio: ${xml.serie || 'A'}-${xml.folio}\nTotal: $${parseFloat(xml.total || 0).toFixed(2)}\n\nEsta acción no se puede deshacer.`);
+                
+                if (!confirmar) {
+                    return;
+                }
+                
+                // IMPLEMENTACIÓN REAL DE SELLADO
+                console.log('🔐 Iniciando proceso de sellado real...');
+                
+                // Mostrar indicador de carga
+                const loadingAlert = document.createElement('div');
+                loadingAlert.className = 'alert alert-info';
+                loadingAlert.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sellando XML digitalmente...';
+                document.body.appendChild(loadingAlert);
+                
+                try {
+                    // Llamar al backend para sellar el XML
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        throw new Error('No hay sesión activa. Inicia sesión para sellar XMLs.');
+                    }
+                    
+                    const response = await fetch('/.netlify/functions/sellar-cfdi', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            xmlContent: xml.xml_content,
+                            emisorId: emisorConCSD.id,
+                            version: xml.version_cfdi || '4.0'
+                        })
+                    });
+                    
+                    // Remover indicador de carga
+                    document.body.removeChild(loadingAlert);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const resultado = await response.json();
+                    console.log('✅ Sellado completado:', resultado);
+                    
+                    // Actualizar XML con datos del sellado
+                    const xmlsDataUpdated = localStorage.getItem('xmls_generados');
+                    if (xmlsDataUpdated) {
+                        const xmlsUpdated = JSON.parse(xmlsDataUpdated);
+                        const xmlIndexUpdated = xmlsUpdated.findIndex(x => x.id === xmlId);
+                        if (xmlIndexUpdated !== -1) {
+                            xmlsUpdated[xmlIndexUpdated].estado = 'sellado';
+                            xmlsUpdated[xmlIndexUpdated].sello = resultado.selloDigital;
+                            xmlsUpdated[xmlIndexUpdated].xml_content = resultado.xmlSellado;
+                            xmlsUpdated[xmlIndexUpdated].cadena_original = resultado.cadenaOriginal;
+                            xmlsUpdated[xmlIndexUpdated].numero_certificado = resultado.numeroCertificado;
+                            xmlsUpdated[xmlIndexUpdated].sello_valido = resultado.selloValido;
+                            localStorage.setItem('xmls_generados', JSON.stringify(xmlsUpdated));
+                            console.log('✅ XML actualizado con sellado real');
+                        }
+                    }
+                    
+                    // TODO: Actualizar en base de datos también
+                    if (token) {
+                        console.log('💾 Actualizando XML sellado en base de datos...');
+                        // Implementar actualización en BD cuando esté disponible el endpoint PUT
+                    }
+                    
+                    // Recargar datos
+                    if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
+                        await window.dashboardMain.loadInitialData();
+                        await window.dashboardMain.renderAllData();
+                    }
+                    
+                    // Mostrar resultado exitoso
+                    const successMessage = `✅ XML sellado exitosamente\n\n` +
+                        `📋 Detalles del sellado:\n` +
+                        `• Estado: Sellado\n` +
+                        `• Certificado: ${resultado.numeroCertificado}\n` +
+                        `• Sello válido: ${resultado.selloValido ? 'Sí' : 'No'}\n` +
+                        `• Emisor: ${resultado.emisor.rfc} - ${resultado.emisor.nombre}\n\n` +
+                        `El XML ahora contiene el sello digital oficial y está listo para timbrado.`;
+                    
+                    alert(successMessage);
+                    
+                } catch (selladoError) {
+                    // Remover indicador de carga si aún existe
+                    if (document.body.contains(loadingAlert)) {
+                        document.body.removeChild(loadingAlert);
+                    }
+                    
+                    console.error('❌ Error en sellado real:', selladoError);
+                    
+                    let errorMessage = '❌ Error sellando XML:\n\n';
+                    
+                    if (selladoError.message.includes('certificados')) {
+                        errorMessage += '🔐 El emisor no tiene certificados CSD válidos.\n\n' +
+                            'Por favor:\n' +
+                            '1. Ve a "Gestionar Emisores"\n' +
+                            '2. Edita el emisor\n' +
+                            '3. Sube los archivos .cer y .key\n' +
+                            '4. Intenta sellar nuevamente';
+                    } else if (selladoError.message.includes('sesión')) {
+                        errorMessage += '🔒 Problema de autenticación.\n\n' +
+                            'Por favor inicia sesión nuevamente.';
+                    } else {
+                        errorMessage += selladoError.message;
+                    }
+                    
+                    alert(errorMessage);
+                    throw selladoError;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error sellando XML:', error);
+                alert('❌ Error sellando XML: ' + error.message);
             }
         }
         
