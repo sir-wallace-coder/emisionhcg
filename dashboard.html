@@ -1803,23 +1803,56 @@
                     const data = await response.json();
                     console.log('💾 Emisores encontrados en BD:', data.emisores.length);
                     
-                    // Buscar emisor con CSD completo
-                    emisorConCSD = data.emisores.find(e => 
-                        e.rfc === xml.emisor_rfc && 
-                        e.certificado_cer && 
-                        e.certificado_key
-                    );
-                    
-                    if (emisorConCSD) {
-                        console.log('✅ Emisor con CSD encontrado en base de datos:', {
-                            rfc: emisorConCSD.rfc,
-                            nombre: emisorConCSD.nombre || emisorConCSD.razon_social,
-                            tiene_cer: !!emisorConCSD.certificado_cer,
-                            tiene_key: !!emisorConCSD.certificado_key,
-                            numero_certificado: emisorConCSD.numero_certificado
+                    // DIAGNÓSTICO DETALLADO: Analizar todos los emisores
+                    console.log('🔍 DIAGNÓSTICO DETALLADO DE EMISORES:');
+                    data.emisores.forEach((emisor, index) => {
+                        console.log(`Emisor ${index + 1}:`, {
+                            rfc: emisor.rfc,
+                            nombre: emisor.nombre || emisor.razon_social,
+                            tiene_cer: !!emisor.certificado_cer,
+                            tiene_key: !!emisor.certificado_key,
+                            cer_length: emisor.certificado_cer ? emisor.certificado_cer.length : 0,
+                            key_length: emisor.certificado_key ? emisor.certificado_key.length : 0,
+                            numero_certificado: emisor.numero_certificado
                         });
+                    });
+                    
+                    // Buscar emisor específico por RFC
+                    const emisorEncontrado = data.emisores.find(e => e.rfc === xml.emisor_rfc);
+                    
+                    if (emisorEncontrado) {
+                        console.log('🔍 EMISOR ENCONTRADO POR RFC:', {
+                            rfc: emisorEncontrado.rfc,
+                            nombre: emisorEncontrado.nombre || emisorEncontrado.razon_social,
+                            tiene_cer: !!emisorEncontrado.certificado_cer,
+                            tiene_key: !!emisorEncontrado.certificado_key,
+                            cer_valor: emisorEncontrado.certificado_cer ? 'PRESENTE' : 'AUSENTE',
+                            key_valor: emisorEncontrado.certificado_key ? 'PRESENTE' : 'AUSENTE',
+                            cer_preview: emisorEncontrado.certificado_cer ? emisorEncontrado.certificado_cer.substring(0, 50) + '...' : 'N/A',
+                            key_preview: emisorEncontrado.certificado_key ? emisorEncontrado.certificado_key.substring(0, 50) + '...' : 'N/A'
+                        });
+                        
+                        // Validar CSD completo (acepta pending si tiene certificados)
+                        if (emisorEncontrado.certificado_cer && emisorEncontrado.certificado_key) {
+                            emisorConCSD = emisorEncontrado;
+                            console.log('✅ VALIDACIÓN CSD: Emisor tiene certificados completos');
+                            console.log('📝 Estado CSD actual:', emisorEncontrado.estado_csd || 'no definido');
+                            
+                            // NOTA: Aceptamos estado 'pending' si tiene certificados válidos
+                            // Esto permite sellar mientras se corrige el backend para actualizar estado
+                            if (emisorEncontrado.estado_csd === 'pending') {
+                                console.log('⚠️ NOTA: CSD en estado pending pero con certificados válidos - permitiendo sellado');
+                            }
+                        } else {
+                            console.log('❌ VALIDACIÓN CSD: Emisor NO tiene certificados completos');
+                            console.log('Detalles de falta:', {
+                                falta_cer: !emisorEncontrado.certificado_cer,
+                                falta_key: !emisorEncontrado.certificado_key,
+                                estado_csd: emisorEncontrado.estado_csd
+                            });
+                        }
                     } else {
-                        console.log('❌ No se encontró emisor con CSD completo para RFC:', xml.emisor_rfc);
+                        console.log('❌ No se encontró emisor con RFC:', xml.emisor_rfc);
                     }
                     
                 } catch (error) {
