@@ -1741,8 +1741,21 @@
             const xmlsCount = (typeof xmls !== 'undefined' && xmls) ? xmls.length : (todosLosXMLs ? todosLosXMLs.length : 0);
             const emisoresCount = (typeof emisores !== 'undefined' && emisores) ? emisores.length : 0;
             
-            document.getElementById('totalXMLs').textContent = xmlsCount;
-            document.getElementById('totalEmisores').textContent = emisoresCount;
+            // Verificar que los elementos existan antes de actualizar
+            const totalXMLsElement = document.getElementById('totalXMLs');
+            const totalEmisoresElement = document.getElementById('totalEmisores');
+            
+            if (totalXMLsElement) {
+                totalXMLsElement.textContent = xmlsCount;
+            } else {
+                console.warn('⚠️ Elemento totalXMLs no encontrado en DOM');
+            }
+            
+            if (totalEmisoresElement) {
+                totalEmisoresElement.textContent = emisoresCount;
+            } else {
+                console.warn('⚠️ Elemento totalEmisores no encontrado en DOM');
+            }
             
             // Calcular XMLs de este mes
             const xmlsArray = xmls || todosLosXMLs || [];
@@ -1757,7 +1770,13 @@
                 }
             }).length;
             
-            document.getElementById('xmlsThisMonth').textContent = thisMonth;
+            // Verificar que el elemento exista antes de actualizar
+            const xmlsThisMonthElement = document.getElementById('xmlsThisMonth');
+            if (xmlsThisMonthElement) {
+                xmlsThisMonthElement.textContent = thisMonth;
+            } else {
+                console.warn('⚠️ Elemento xmlsThisMonth no encontrado en DOM');
+            }
         }
 
         // Funciones de filtros y búsqueda
