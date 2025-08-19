@@ -856,6 +856,156 @@
                 alert(`XML: ${xml.serie || 'A'}-${xml.folio || '1'}\nEmisor: ${xml.emisor_nombre || 'N/A'}\nTotal: $${parseFloat(xml.total || 0).toFixed(2)}`);
             }
         }
+        
+        // ===== FUNCIONES GLOBALES REQUERIDAS =====
+        
+        // Función global para cambiar tabs (requerida por onclick en HTML)
+        function showTab(tabName) {
+            console.log(`🔄 Cambiando a tab: ${tabName}`);
+            
+            try {
+                // Si existe la instancia del dashboard principal, usar su método
+                if (window.dashboardMain && typeof window.dashboardMain.showTab === 'function') {
+                    window.dashboardMain.showTab(tabName);
+                    return;
+                }
+                
+                // Fallback: implementación básica de cambio de tabs
+                // Ocultar todos los tab-panes
+                const tabPanes = document.querySelectorAll('.tab-pane');
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Mostrar el tab seleccionado
+                const targetTab = document.getElementById(`${tabName}Tab`);
+                if (targetTab) {
+                    targetTab.classList.add('show', 'active');
+                }
+                
+                // Actualizar navegación
+                const navLinks = document.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                const activeNavLink = document.querySelector(`[href="#${tabName}Tab"]`);
+                if (activeNavLink) {
+                    activeNavLink.classList.add('active');
+                }
+                
+                console.log(`✅ Tab cambiado a: ${tabName}`);
+                
+            } catch (error) {
+                console.error('❌ Error cambiando tab:', error);
+            }
+        }
+        
+        // Función global para abrir modal de emisor
+        function openEmisorModal() {
+            console.log('🏢 Abriendo modal de emisor...');
+            
+            try {
+                // Si existe la instancia del dashboard principal, usar su método
+                if (window.dashboardMain && typeof window.dashboardMain.openEmisorModal === 'function') {
+                    window.dashboardMain.openEmisorModal();
+                    return;
+                }
+                
+                // Fallback: implementación básica
+                alert('Modal de emisor en desarrollo. Usa el generador para crear emisores.');
+                
+            } catch (error) {
+                console.error('❌ Error abriendo modal de emisor:', error);
+                alert('Error abriendo modal de emisor');
+            }
+        }
+        
+        // Función global para importar XML
+        function openImportXMLModal() {
+            console.log('📄 Abriendo modal de importar XML...');
+            
+            try {
+                // Si existe la instancia del dashboard principal, usar su método
+                if (window.dashboardMain && typeof window.dashboardMain.openImportXMLModal === 'function') {
+                    window.dashboardMain.openImportXMLModal();
+                    return;
+                }
+                
+                // Fallback: implementación básica
+                alert('Modal de importar XML en desarrollo.');
+                
+            } catch (error) {
+                console.error('❌ Error abriendo modal de importar XML:', error);
+                alert('Error abriendo modal de importar XML');
+            }
+        }
+        
+        // Función global para logout
+        function logout() {
+            console.log('🚪 Cerrando sesión...');
+            
+            try {
+                // Limpiar datos de autenticación
+                localStorage.removeItem('cfdi_token');
+                localStorage.removeItem('cfdi_user');
+                
+                // Redirigir a login
+                window.location.href = 'login.html';
+                
+            } catch (error) {
+                console.error('❌ Error en logout:', error);
+                alert('Error cerrando sesión');
+            }
+        }
+        
+        // ===== CORRECCIÓN DE CARGA DE DATOS REALES =====
+        
+        // Función para forzar carga de datos reales desde BD
+        async function forceLoadRealData() {
+            console.log('🔄 Forzando carga de datos reales desde BD...');
+            
+            try {
+                // Verificar autenticación
+                const token = localStorage.getItem('cfdi_token');
+                if (!token) {
+                    console.log('⚠️ No hay token de autenticación, usando datos locales');
+                    return false;
+                }
+                
+                // Cargar datos usando el sistema modular
+                if (typeof CFDIStorage !== 'undefined') {
+                    console.log('📊 Cargando XMLs desde BD...');
+                    const xmls = await CFDIStorage.loadXMLs();
+                    
+                    console.log('🏢 Cargando emisores desde BD...');
+                    const emisores = await CFDIStorage.loadEmisores();
+                    
+                    // Forzar renderizado si existe la instancia del dashboard
+                    if (window.dashboardMain) {
+                        console.log('🔄 Actualizando dashboard con datos reales...');
+                        await window.dashboardMain.renderAllData();
+                        await window.dashboardMain.updateStats();
+                    }
+                    
+                    console.log('✅ Datos reales cargados exitosamente');
+                    return true;
+                } else {
+                    console.error('❌ CFDIStorage no está disponible');
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error cargando datos reales:', error);
+                return false;
+            }
+        }
+        
+        // Ejecutar carga de datos reales después de la inicialización
+        setTimeout(async () => {
+            console.log('🚀 Ejecutando carga de datos reales...');
+            await forceLoadRealData();
+        }, 2000); // Esperar 2 segundos para que todo esté inicializado
     </script>
 </body>
 </html>
