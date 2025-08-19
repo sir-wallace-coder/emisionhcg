@@ -1767,72 +1767,86 @@
                     return;
                 }
                 
-                // Verificar que hay emisores con CSD disponibles
-                // BUSCAR PRIMERO EN LOCALSTORAGE USANDO STORAGEUTILS
-                let emisorConCSD = StorageUtils.findEmisorByRFC(xml.emisor_rfc);
+                // VALIDACIÓN CSD: BUSCAR ÚNICAMENTE EN BASE DE DATOS
+                // Los certificados CSD son datos críticos de seguridad y deben manejarse solo desde BD
+                console.log('🔐 Validando CSD para emisor:', xml.emisor_rfc);
                 
-                // Validar que tenga CSD completo
-                if (emisorConCSD && (!emisorConCSD.certificado_cer || !emisorConCSD.certificado_key)) {
-                    emisorConCSD = null; // No tiene CSD completo
+                let emisorConCSD = null;
+                const token = StorageUtils.getToken();
+                
+                if (!token) {
+                    const errorMessage = `❌ No hay sesión activa para validar CSD\n\n` +
+                        `🔑 Para sellar XMLs necesitas:\n` +
+                        `1. Iniciar sesión en el sistema\n` +
+                        `2. Tener emisores registrados con CSD\n` +
+                        `3. Certificados válidos en la base de datos`;
+                    
+                    alert(errorMessage);
+                    return;
                 }
                 
-                console.log('💾 Búsqueda en localStorage:', emisorConCSD ? 'Encontrado con CSD' : 'No encontrado o sin CSD');
-                
-                // SI NO SE ENCUENTRA EN LOCALSTORAGE, BUSCAR EN BASE DE DATOS
-                if (!emisorConCSD) {
-                    console.log('💾 Emisor no encontrado en localStorage, buscando en base de datos...');
-                    const token = StorageUtils.getToken();
+                try {
+                    console.log('💾 Consultando emisores con CSD en base de datos...');
                     
-                    if (token) {
-                        try {
-                            const response = await fetch('/.netlify/functions/emisores', {
-                                method: 'GET',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-                            
-                            if (response.ok) {
-                                const data = await response.json();
-                                emisorConCSD = data.emisores.find(e => 
-                                    e.rfc === xml.emisor_rfc && 
-                                    e.certificado_cer && 
-                                    e.certificado_key
-                                );
-                                console.log('💾 Búsqueda en base de datos:', emisorConCSD ? 'Encontrado' : 'No encontrado');
-                                
-                                if (emisorConCSD) {
-                                    console.log('✅ Emisor con CSD encontrado en base de datos:', {
-                                        rfc: emisorConCSD.rfc,
-                                        nombre: emisorConCSD.nombre,
-                                        tiene_cer: !!emisorConCSD.certificado_cer,
-                                        tiene_key: !!emisorConCSD.certificado_key,
-                                        numero_certificado: emisorConCSD.numero_certificado
-                                    });
-                                }
-                            } else {
-                                console.error('❌ Error cargando emisores desde BD:', response.status);
-                            }
-                        } catch (error) {
-                            console.error('❌ Error conectando con base de datos:', error);
+                    const response = await fetch('/.netlify/functions/emisores', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
                     }
+                    
+                    const data = await response.json();
+                    console.log('💾 Emisores encontrados en BD:', data.emisores.length);
+                    
+                    // Buscar emisor con CSD completo
+                    emisorConCSD = data.emisores.find(e => 
+                        e.rfc === xml.emisor_rfc && 
+                        e.certificado_cer && 
+                        e.certificado_key
+                    );
+                    
+                    if (emisorConCSD) {
+                        console.log('✅ Emisor con CSD encontrado en base de datos:', {
+                            rfc: emisorConCSD.rfc,
+                            nombre: emisorConCSD.nombre || emisorConCSD.razon_social,
+                            tiene_cer: !!emisorConCSD.certificado_cer,
+                            tiene_key: !!emisorConCSD.certificado_key,
+                            numero_certificado: emisorConCSD.numero_certificado
+                        });
+                    } else {
+                        console.log('❌ No se encontró emisor con CSD completo para RFC:', xml.emisor_rfc);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error consultando base de datos:', error);
+                    
+                    const errorMessage = `❌ Error consultando base de datos\n\n` +
+                        `🚫 Error: ${error.message}\n\n` +
+                        `🔧 Posibles soluciones:\n` +
+                        `1. Verifica tu conexión a internet\n` +
+                        `2. Inicia sesión nuevamente\n` +
+                        `3. Contacta al administrador si persiste`;
+                    
+                    alert(errorMessage);
+                    return;
                 }
                 
                 // VALIDAR QUE SE ENCONTRÓ EMISOR CON CSD
                 if (!emisorConCSD) {
-                    // Obtener información de localStorage para el mensaje
-                    const emisoresLocalStorage = StorageUtils.getEmisores();
-                    
                     const errorMessage = `❌ No se encontró un emisor con CSD para el RFC: ${xml.emisor_rfc}\n\n` +
-                        `🔍 Búsqueda realizada en:\n` +
-                        `• LocalStorage: ${emisoresLocalStorage.length > 0 ? `${emisoresLocalStorage.length} emisores encontrados` : 'Vacío'}\n` +
-                        `• Base de datos: ${StorageUtils.getToken() ? 'Revisado' : 'Sin sesión'}\n\n` +
+                        `🔐 Validación de CSD realizada en:\n` +
+                        `• Base de datos: Consultada correctamente\n` +
+                        `• Certificados CSD: No encontrados o incompletos\n\n` +
                         `📝 Para solucionar:\n` +
-                        `1. Verifica que el emisor esté registrado\n` +
-                        `2. Asegúrate de que tenga certificados CSD (.cer y .key)\n` +
-                        `3. Inicia sesión si es necesario`;
+                        `1. Ve a "Gestionar Emisores" en el dashboard\n` +
+                        `2. Registra el emisor con RFC: ${xml.emisor_rfc}\n` +
+                        `3. Sube los certificados CSD (.cer y .key)\n` +
+                        `4. Asegúrate de que los certificados sean válidos`;
                     
                     alert(errorMessage);
                     return;
