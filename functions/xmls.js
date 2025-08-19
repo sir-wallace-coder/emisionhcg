@@ -101,8 +101,76 @@ async function saveXML(userId, data, headers) {
       serie,
       folio,
       total,
-      emisor_id
+      uuid,
+      sello,
+      estado
     } = data;
+
+    // === VALIDACIONES DE LONGITUD DE CAMPOS CRÍTICOS ===
+    const validacionCampos = {
+      version_cfdi: { valor: version_cfdi, limite: 5, actual: version_cfdi?.length || 0 },
+      emisor_rfc: { valor: emisor_rfc, limite: 13, actual: emisor_rfc?.length || 0 },
+      emisor_nombre: { valor: emisor_nombre, limite: 300, actual: emisor_nombre?.length || 0 },
+      receptor_rfc: { valor: receptor_rfc, limite: 13, actual: receptor_rfc?.length || 0 },
+      receptor_nombre: { valor: receptor_nombre, limite: 300, actual: receptor_nombre?.length || 0 },
+      serie: { valor: serie, limite: 25, actual: serie?.length || 0 },
+      folio: { valor: folio, limite: 40, actual: folio?.length || 0 },
+      uuid: { valor: uuid, limite: 36, actual: uuid?.length || 0 },
+      estado: { valor: estado, limite: 20, actual: estado?.length || 0 }
+    };
+
+    console.log('📏 XML: Validación de longitudes de campos:');
+    for (const [campo, info] of Object.entries(validacionCampos)) {
+      if (info.actual > 0) {
+        const status = info.actual <= info.limite ? '✅' : '❌';
+        console.log(`${status} ${campo}: ${info.actual}/${info.limite} caracteres - "${info.valor}"`);
+
+        if (info.actual > info.limite) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: `Campo '${campo}' excede el límite de ${info.limite} caracteres (actual: ${info.actual})`,
+              tipo: 'CAMPO_XML_DEMASIADO_LARGO',
+              campo: campo,
+              valor_actual: info.valor,
+              longitud_actual: info.actual,
+              longitud_maxima: info.limite
+            })
+          };
+        }
+      }
+    }
+
+    // Validaciones específicas adicionales
+    if (uuid && uuid.length !== 36) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `UUID debe tener exactamente 36 caracteres (formato: 12345678-1234-1234-1234-123456789012)`,
+          tipo: 'UUID_LONGITUD_INVALIDA',
+          uuid_actual: uuid,
+          longitud_actual: uuid.length,
+          longitud_requerida: 36
+        })
+      };
+    }
+
+    // Validar estados permitidos
+    const estadosValidos = ['generado', 'sellado', 'timbrado', 'cancelado'];
+    if (estado && !estadosValidos.includes(estado)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `Estado '${estado}' no es válido. Estados permitidos: ${estadosValidos.join(', ')}`,
+          tipo: 'ESTADO_XML_INVALIDO',
+          estado_actual: estado,
+          estados_validos: estadosValidos
+        })
+      };
+    }
 
     // Guardar XML
     const { data: xmlRecord, error } = await supabase
@@ -110,7 +178,6 @@ async function saveXML(userId, data, headers) {
       .insert([
         {
           usuario_id: userId,
-          emisor_id: emisor_id || null,
           xml_content,
           version_cfdi,
           emisor_rfc,
@@ -120,7 +187,9 @@ async function saveXML(userId, data, headers) {
           serie,
           folio,
           total: parseFloat(total),
-          estado: 'generado',
+          uuid,
+          sello,
+          estado,
           created_at: new Date().toISOString()
         }
       ])
