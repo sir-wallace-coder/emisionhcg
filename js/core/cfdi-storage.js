@@ -13,9 +13,83 @@ class CFDIStorage {
         logSystem('Cargando XMLs desde almacenamiento', 'info');
         
         try {
+            let loadedXMLs = [];
+            
+            // 1. INTENTAR CARGAR DESDE SUPABASE (DATOS REALES)
+            const realDataLoaded = await this.loadXMLsFromDatabase();
+            if (realDataLoaded && realDataLoaded.length > 0) {
+                loadedXMLs = realDataLoaded;
+                logSystem('XMLs cargados desde base de datos', 'success', { count: loadedXMLs.length });
+                
+                // Guardar en localStorage para caché
+                localStorage.setItem(CFDI_CONFIG.storageKeys.xmls, JSON.stringify(loadedXMLs));
+            } else {
+                // 2. FALLBACK: CARGAR DESDE LOCALSTORAGE
+                logSystem('No se pudieron cargar XMLs desde BD, usando localStorage', 'warning');
+                loadedXMLs = await this.loadXMLsFromLocalStorage();
+            }
+            
+            // Actualizar variables globales
+            xmls = loadedXMLs;
+            todosLosXMLs = [...loadedXMLs];
+            xmlsFiltrados = [...loadedXMLs];
+            
+            logSystem('XMLs cargados exitosamente', 'success', { total: xmls.length });
+            return xmls;
+            
+        } catch (error) {
+            logSystem('Error cargando XMLs', 'error', error);
+            return [];
+        }
+    }
+    
+    // ===== CARGAR XMLs DESDE BASE DE DATOS =====
+    static async loadXMLsFromDatabase() {
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                logSystem('No hay token de autenticación para cargar XMLs desde BD', 'warning');
+                return null;
+            }
+            
+            logSystem('Cargando XMLs desde Supabase...', 'info');
+            
+            const response = await fetch('/.netlify/functions/xmls', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                logSystem('Error en respuesta de XMLs desde BD', 'error', { status: response.status });
+                return null;
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && Array.isArray(data.xmls)) {
+                logSystem('XMLs cargados exitosamente desde BD', 'success', { count: data.xmls.length });
+                return data.xmls;
+            } else {
+                logSystem('Respuesta de XMLs desde BD no válida', 'warning', data);
+                return null;
+            }
+            
+        } catch (error) {
+            logSystem('Error cargando XMLs desde base de datos', 'error', error);
+            return null;
+        }
+    }
+    
+    // ===== CARGAR XMLs DESDE LOCALSTORAGE =====
+    static async loadXMLsFromLocalStorage() {
+        try {
             // Intentar cargar desde múltiples claves para compatibilidad
             const keys = [
                 CFDI_CONFIG.storageKeys.xmls,
+                'xmls_generados',
                 'xmls',
                 'cfdi_xmls'
             ];
@@ -29,7 +103,7 @@ class CFDIStorage {
                         const parsed = JSON.parse(data);
                         if (Array.isArray(parsed) && parsed.length > 0) {
                             loadedXMLs = parsed;
-                            logSystem(`XMLs cargados desde clave: ${key}`, 'success', { count: parsed.length });
+                            logSystem(`XMLs cargados desde localStorage clave: ${key}`, 'success', { count: parsed.length });
                             break;
                         }
                     } catch (e) {
@@ -38,16 +112,10 @@ class CFDIStorage {
                 }
             }
             
-            // Actualizar variables globales
-            xmls = loadedXMLs;
-            todosLosXMLs = [...loadedXMLs];
-            xmlsFiltrados = [...loadedXMLs];
-            
-            logSystem('XMLs cargados exitosamente', 'success', { total: xmls.length });
-            return xmls;
+            return loadedXMLs;
             
         } catch (error) {
-            logSystem('Error cargando XMLs', 'error', error);
+            logSystem('Error cargando XMLs desde localStorage', 'error', error);
             return [];
         }
     }
@@ -138,6 +206,77 @@ class CFDIStorage {
         logSystem('Cargando emisores desde almacenamiento', 'info');
         
         try {
+            let loadedEmisores = [];
+            
+            // 1. INTENTAR CARGAR DESDE SUPABASE (DATOS REALES)
+            const realDataLoaded = await this.loadEmisoresFromDatabase();
+            if (realDataLoaded && realDataLoaded.length > 0) {
+                loadedEmisores = realDataLoaded;
+                logSystem('Emisores cargados desde base de datos', 'success', { count: loadedEmisores.length });
+                
+                // Guardar en localStorage para caché
+                localStorage.setItem(CFDI_CONFIG.storageKeys.emisores, JSON.stringify(loadedEmisores));
+            } else {
+                // 2. FALLBACK: CARGAR DESDE LOCALSTORAGE
+                logSystem('No se pudieron cargar emisores desde BD, usando localStorage', 'warning');
+                loadedEmisores = await this.loadEmisoresFromLocalStorage();
+            }
+            
+            // Actualizar variable global
+            emisores = loadedEmisores;
+            
+            logSystem('Emisores cargados exitosamente', 'success', { total: emisores.length });
+            return emisores;
+            
+        } catch (error) {
+            logSystem('Error cargando emisores', 'error', error);
+            return [];
+        }
+    }
+    
+    // ===== CARGAR EMISORES DESDE BASE DE DATOS =====
+    static async loadEmisoresFromDatabase() {
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                logSystem('No hay token de autenticación para cargar emisores desde BD', 'warning');
+                return null;
+            }
+            
+            logSystem('Cargando emisores desde Supabase...', 'info');
+            
+            const response = await fetch('/.netlify/functions/emisores', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                logSystem('Error en respuesta de emisores desde BD', 'error', { status: response.status });
+                return null;
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && Array.isArray(data.emisores)) {
+                logSystem('Emisores cargados exitosamente desde BD', 'success', { count: data.emisores.length });
+                return data.emisores;
+            } else {
+                logSystem('Respuesta de emisores desde BD no válida', 'warning', data);
+                return null;
+            }
+            
+        } catch (error) {
+            logSystem('Error cargando emisores desde base de datos', 'error', error);
+            return null;
+        }
+    }
+    
+    // ===== CARGAR EMISORES DESDE LOCALSTORAGE =====
+    static async loadEmisoresFromLocalStorage() {
+        try {
             // Intentar cargar desde múltiples claves para compatibilidad
             const keys = [
                 CFDI_CONFIG.storageKeys.emisores,
@@ -154,7 +293,7 @@ class CFDIStorage {
                         const parsed = JSON.parse(data);
                         if (Array.isArray(parsed) && parsed.length > 0) {
                             loadedEmisores = parsed;
-                            logSystem(`Emisores cargados desde clave: ${key}`, 'success', { count: parsed.length });
+                            logSystem(`Emisores cargados desde localStorage clave: ${key}`, 'success', { count: parsed.length });
                             break;
                         }
                     } catch (e) {
@@ -163,14 +302,10 @@ class CFDIStorage {
                 }
             }
             
-            // Actualizar variable global
-            emisores = loadedEmisores;
-            
-            logSystem('Emisores cargados exitosamente', 'success', { total: emisores.length });
-            return emisores;
+            return loadedEmisores;
             
         } catch (error) {
-            logSystem('Error cargando emisores', 'error', error);
+            logSystem('Error cargando emisores desde localStorage', 'error', error);
             return [];
         }
     }
