@@ -1474,7 +1474,7 @@
         });
         
         // Fallback function to load data manually
-        function loadFallbackData() {
+        async function loadFallbackData() {
             console.log('🔄 Loading data with fallback method...');
             
             try {
@@ -1482,9 +1482,20 @@
                 const xmls = StorageUtils.getXMLs();
                 console.log('📄 XMLs loaded from localStorage:', xmls.length);
                 
-                // Load emisores using StorageUtils
-                const emisores = StorageUtils.getEmisores();
-                console.log('🏢 Emisores loaded from localStorage:', emisores.length);
+                // 🔧 FIX CRÍTICO: Cargar emisores desde BACKEND, NO localStorage
+                console.log('🚨 CORRECCIÓN FALLBACK: Cargando emisores desde backend en lugar de localStorage');
+                
+                let emisores = [];
+                try {
+                    // Intentar cargar desde backend
+                    emisores = await cargarEmisoresDesdeBackend();
+                    console.log('✅ Emisores cargados desde backend en fallback:', emisores.length);
+                } catch (backendError) {
+                    console.error('❌ Error cargando desde backend en fallback:', backendError);
+                    // Solo como último recurso usar localStorage
+                    emisores = StorageUtils.getEmisores();
+                    console.log('⚠️ Fallback a localStorage:', emisores.length);
+                }
                 
                 // Display XMLs and emisores
                 if (xmls.length > 0) {
@@ -1493,8 +1504,10 @@
                     displayEmptyState();
                 }
                 
-                if (emisores.length > 0) {
-                    displayEmisoresSimple(emisores);
+                if (emisores && emisores.length > 0) {
+                    // 🔧 FIX CRÍTICO: Usar mostrarEmisores() para consistencia
+                    console.log('🚨 CORRECCIÓN FALLBACK: Usando mostrarEmisores() con datos del backend');
+                    mostrarEmisores(emisores);
                 } else {
                     displayEmisoresEmpty();
                 }
@@ -3276,7 +3289,9 @@
                 StorageUtils.setEmisores(emisores);
                 
                 // Actualizar vista
-                displayEmisoresSimple(emisores);
+                // 🔧 FIX CRÍTICO: Usar mostrarEmisores() para consistencia
+                console.log('🚨 CORRECCIÓN DELETE: Usando mostrarEmisores() en lugar de displayEmisoresSimple()');
+                mostrarEmisores(emisores);
                 
                 console.log('✅ Emisor eliminado:', emisorEliminado.rfc);
                 alert(`Emisor ${emisorEliminado.rfc} eliminado exitosamente`);
