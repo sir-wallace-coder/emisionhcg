@@ -414,7 +414,7 @@ class CFDIDashboardMain {
     updateUserInfo() {
         const userWelcome = document.getElementById('userWelcome');
         if (userWelcome) {
-            const user = CFDIAuth.getCurrentUser();
+            const user = CFDIStorage.getCurrentUser();
             if (user) {
                 userWelcome.textContent = `Bienvenido, ${user.nombre || user.email}`;
             } else {
