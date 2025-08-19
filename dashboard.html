@@ -2290,6 +2290,20 @@
                     const data = await response.json();
                     console.log('✅ Sellado completado:', data);
                     
+                    // 🔍 DEBUG: Verificar XML sellado recibido
+                    console.log('🔍 DEBUG SELLADO: XML sellado recibido:');
+                    console.log('🔍 DEBUG SELLADO: xmlSellado length:', data.xmlSellado ? data.xmlSellado.length : 'undefined');
+                    console.log('🔍 DEBUG SELLADO: xmlSellado preview:', data.xmlSellado ? data.xmlSellado.substring(0, 500) + '...' : 'N/A');
+                    console.log('🔍 DEBUG SELLADO: selloDigital:', data.selloDigital ? data.selloDigital.substring(0, 50) + '...' : 'N/A');
+                    console.log('🔍 DEBUG SELLADO: numeroCertificado:', data.numeroCertificado);
+                    
+                    // Verificar si el XML sellado contiene el sello
+                    if (data.xmlSellado && data.xmlSellado.includes('Sello=""')) {
+                        console.error('❌ DEBUG SELLADO: ¡XML SELLADO TIENE SELLO VACÍO!');
+                    } else if (data.xmlSellado && data.selloDigital && data.xmlSellado.includes(data.selloDigital.substring(0, 20))) {
+                        console.log('✅ DEBUG SELLADO: XML sellado contiene el sello correctamente');
+                    }
+                    
                     // Actualizar XML en localStorage usando StorageUtils
                     const xmlUpdateData = {
                         estado: 'sellado',
@@ -2300,6 +2314,8 @@
                         sello_valido: data.selloValido,
                         fecha_sellado: new Date().toISOString()
                     };
+                    
+                    console.log('🔍 DEBUG SELLADO: Datos para actualizar:', xmlUpdateData);
                     
                     const updated = StorageUtils.updateXML(xmlId, xmlUpdateData);
                     if (updated) {
