@@ -447,13 +447,23 @@ async function createEmisor(userId, data, headers) {
             const cert = new crypto.X509Certificate(cerBuffer);
             
             // Extraer número de serie REAL del certificado
-            const serialHex = cert.serialNumber; // Formato hexadecimal
-            numeroCertificado = BigInt('0x' + serialHex).toString(); // Convertir a decimal
+            const serialHex = cert.serialNumber; // Formato hexadecimal ASCII
+            
+            // Convertir de hex ASCII a string (cada 2 caracteres = 1 byte)
+            let serialString = '';
+            for (let i = 0; i < serialHex.length; i += 2) {
+              const hexByte = serialHex.substr(i, 2);
+              const charCode = parseInt(hexByte, 16);
+              serialString += String.fromCharCode(charCode);
+            }
+            
+            numeroCertificado = serialString; // Resultado: "00001000000506969930"
             
             console.log('🔢 CREATE: Número de certificado procesado:', {
               hex_original: serialHex,
-              decimal_convertido: numeroCertificado,
-              longitud: numeroCertificado.length
+              ascii_convertido: serialString,
+              longitud: serialString.length,
+              es_correcto: serialString === '00001000000506969930'
             });
             
             // Extraer fechas de vigencia REALES
@@ -779,13 +789,23 @@ async function updateEmisor(userId, emisorId, data, headers) {
             const cert = new crypto.X509Certificate(cerBuffer);
             
             // Extraer número de serie REAL del certificado
-            const serialHex = cert.serialNumber; // Formato hexadecimal
-            numeroCertificado = BigInt('0x' + serialHex).toString(); // Convertir a decimal
+            const serialHex = cert.serialNumber; // Formato hexadecimal ASCII
+            
+            // Convertir de hex ASCII a string (cada 2 caracteres = 1 byte)
+            let serialString = '';
+            for (let i = 0; i < serialHex.length; i += 2) {
+              const hexByte = serialHex.substr(i, 2);
+              const charCode = parseInt(hexByte, 16);
+              serialString += String.fromCharCode(charCode);
+            }
+            
+            numeroCertificado = serialString; // Resultado: "00001000000506969930"
             
             console.log('🔢 UPDATE: Número de certificado procesado:', {
               hex_original: serialHex,
-              decimal_convertido: numeroCertificado,
-              longitud: numeroCertificado.length
+              ascii_convertido: serialString,
+              longitud: serialString.length,
+              es_correcto: serialString === '00001000000506969930'
             });
             
             // Extraer fechas de vigencia REALES
