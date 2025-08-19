@@ -505,8 +505,10 @@
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="showTab('xmls')">📄 XMLs Generados</button>
-            <button class="tab" onclick="showTab('emisores')">🏢 Emisores</button>
+            <div class="tab" onclick="showTab('xmls')">📄 XMLs Generados</div>
+            <div class="tab" onclick="showTab('emisores')">👤 Emisores</div>
+            <div class="tab" onclick="showTab('estadisticas')">📊 Estadísticas</div>
+            <div class="tab" onclick="showTab('logs')">📋 Logs del Sistema</div>
         </div>
 
         <div class="tab-content">
@@ -620,6 +622,59 @@
                 </div>
                 <div id="emisoresContent" class="loading">
                     Cargando emisores...
+                </div>
+            </div>
+
+            <!-- Tab Estadísticas -->
+            <div id="estadisticasTab" class="tab-pane">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>📊 Resumen General</h3>
+                        <p>Total XMLs: <span id="totalXMLsCount">0</span></p>
+                        <p>Emisores: <span id="totalEmisoresCount">0</span></p>
+                        <p>Este mes: <span id="xmlsThisMonthCount">0</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Logs del Sistema -->
+            <div id="logsTab" class="tab-pane">
+                <div class="logs-header">
+                    <h3>📋 Logs del Sistema</h3>
+                    <div class="logs-controls">
+                        <div class="logs-filters">
+                            <select id="logLevelFilter" onchange="filterLogs()">
+                                <option value="all">🔍 Todos los niveles</option>
+                                <option value="info">ℹ️ Info</option>
+                                <option value="success">✅ Success</option>
+                                <option value="warning">⚠️ Warning</option>
+                                <option value="error">❌ Error</option>
+                            </select>
+                            <input type="text" id="logSearchInput" placeholder="🔍 Buscar en logs..." oninput="filterLogs()">
+                        </div>
+                        <div class="logs-actions">
+                            <button onclick="clearLogs()" class="btn btn-secondary">🗑️ Limpiar</button>
+                            <button onclick="exportLogs()" class="btn btn-primary">📥 Exportar</button>
+                            <button onclick="refreshLogs()" class="btn btn-success">🔄 Actualizar</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="logs-container">
+                    <div id="logsContent" class="logs-list">
+                        <!-- Los logs se cargarán aquí dinámicamente -->
+                    </div>
+                </div>
+                
+                <div class="logs-footer">
+                    <div class="logs-stats">
+                        <span id="logsCount">0 logs</span> | 
+                        <span id="logsFiltered">0 filtrados</span> | 
+                        <label>
+                            <input type="checkbox" id="autoScrollLogs" checked> 
+                            📜 Auto-scroll
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1432,19 +1487,13 @@
                 
                 // Cargar datos desde localStorage (modo desarrollo)
                 await loadLocalData();
-                
-                // Actualizar UI
-                renderXMLs();
-                renderEmisores();
                 updateStats();
-                cargarEmisoresEnFiltro();
-                
-                console.log('✅ Datos cargados exitosamente');
-                
+                await cargarXMLs();
+                await cargarEmisores();
+                addLog('success', 'Datos del dashboard cargados exitosamente', 'XMLs y emisores disponibles');
             } catch (error) {
                 console.error('❌ Error cargando datos:', error);
-                // Continuar con arrays vacíos para evitar errores
-                updateStats();
+                addLog('error', 'Error cargando datos del dashboard', error.message || 'Error desconocido');
             }
         }
         
@@ -2041,6 +2090,201 @@
             // Update tab content
             document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
             document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Cargar datos específicos de la pestaña
+            if (tabName === 'logs') {
+                loadLogs();
+            } else if (tabName === 'estadisticas') {
+                updateStatistics();
+            }
+        }
+        
+        // SISTEMA DE LOGS PROFESIONAL
+        let systemLogs = JSON.parse(localStorage.getItem('cfdi_system_logs') || '[]');
+        let filteredLogs = [];
+        
+        // Función para agregar un log al sistema
+        window.addLog = function(level, message, details = null) {
+            const logEntry = {
+                id: Date.now() + Math.random(),
+                timestamp: new Date().toISOString(),
+                level: level, // 'info', 'success', 'warning', 'error'
+                message: message,
+                details: details,
+                source: 'dashboard'
+            };
+            
+            systemLogs.unshift(logEntry); // Agregar al inicio
+            
+            // Mantener solo los últimos 1000 logs
+            if (systemLogs.length > 1000) {
+                systemLogs = systemLogs.slice(0, 1000);
+            }
+            
+            // Guardar en localStorage
+            localStorage.setItem('cfdi_system_logs', JSON.stringify(systemLogs));
+            
+            // Actualizar vista si está activa
+            if (document.getElementById('logsTab').classList.contains('active')) {
+                renderLogs();
+            }
+            
+            // Auto-scroll si está habilitado
+            if (document.getElementById('autoScrollLogs')?.checked) {
+                setTimeout(() => {
+                    const logsContainer = document.querySelector('.logs-container');
+                    if (logsContainer) {
+                        logsContainer.scrollTop = 0;
+                    }
+                }, 100);
+            }
+        };
+        
+        // Función para cargar logs
+        function loadLogs() {
+            systemLogs = JSON.parse(localStorage.getItem('cfdi_system_logs') || '[]');
+            renderLogs();
+            updateLogsStats();
+        }
+        
+        // Función para renderizar logs
+        function renderLogs() {
+            const logsContent = document.getElementById('logsContent');
+            if (!logsContent) return;
+            
+            if (filteredLogs.length === 0 && systemLogs.length === 0) {
+                logsContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                        <h3>📋 No hay logs del sistema</h3>
+                        <p>Los logs aparecerán aquí cuando se realicen operaciones.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const logsToShow = filteredLogs.length > 0 ? filteredLogs : systemLogs;
+            
+            logsContent.innerHTML = logsToShow.map(log => {
+                const timestamp = new Date(log.timestamp).toLocaleString('es-MX');
+                const levelIcon = {
+                    'info': 'ℹ️',
+                    'success': '✅',
+                    'warning': '⚠️',
+                    'error': '❌'
+                }[log.level] || '📝';
+                
+                return `
+                    <div class="log-entry ${log.level}">
+                        <span class="log-timestamp">${timestamp}</span>
+                        <span class="log-level ${log.level}">${levelIcon} ${log.level.toUpperCase()}</span>
+                        <span class="log-message">${log.message}</span>
+                        ${log.details ? `<div style="margin-top: 5px; color: #666; font-size: 12px;">📄 ${log.details}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Función para filtrar logs
+        function filterLogs() {
+            const levelFilter = document.getElementById('logLevelFilter')?.value || 'all';
+            const searchText = document.getElementById('logSearchInput')?.value.toLowerCase() || '';
+            
+            filteredLogs = systemLogs.filter(log => {
+                const levelMatch = levelFilter === 'all' || log.level === levelFilter;
+                const textMatch = searchText === '' || 
+                    log.message.toLowerCase().includes(searchText) ||
+                    (log.details && log.details.toLowerCase().includes(searchText));
+                
+                return levelMatch && textMatch;
+            });
+            
+            renderLogs();
+            updateLogsStats();
+        }
+        
+        // Función para actualizar estadísticas de logs
+        function updateLogsStats() {
+            const totalLogs = systemLogs.length;
+            const filteredCount = filteredLogs.length > 0 ? filteredLogs.length : totalLogs;
+            
+            const logsCountElement = document.getElementById('logsCount');
+            const logsFilteredElement = document.getElementById('logsFiltered');
+            
+            if (logsCountElement) logsCountElement.textContent = `${totalLogs} logs`;
+            if (logsFilteredElement) logsFilteredElement.textContent = `${filteredCount} mostrados`;
+        }
+        
+        // Función para limpiar logs
+        function clearLogs() {
+            if (confirm('¿Estás seguro de que quieres limpiar todos los logs?')) {
+                systemLogs = [];
+                filteredLogs = [];
+                localStorage.removeItem('cfdi_system_logs');
+                renderLogs();
+                updateLogsStats();
+                addLog('info', 'Logs del sistema limpiados', 'Todos los logs anteriores han sido eliminados');
+            }
+        }
+        
+        // Función para exportar logs
+        function exportLogs() {
+            const logsToExport = filteredLogs.length > 0 ? filteredLogs : systemLogs;
+            const csvContent = 'data:text/csv;charset=utf-8,' + 
+                'Timestamp,Level,Message,Details\n' +
+                logsToExport.map(log => {
+                    const timestamp = new Date(log.timestamp).toLocaleString('es-MX');
+                    const message = `"${log.message.replace(/"/g, '""')}"`;
+                    const details = log.details ? `"${log.details.replace(/"/g, '""')}"` : '';
+                    return `${timestamp},${log.level},${message},${details}`;
+                }).join('\n');
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `cfdi_logs_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            addLog('success', 'Logs exportados', `Se exportaron ${logsToExport.length} logs a CSV`);
+        }
+        
+        // Función para actualizar logs
+        function refreshLogs() {
+            loadLogs();
+            addLog('info', 'Logs actualizados', 'Vista de logs refrescada manualmente');
+        }
+        
+        // Función para actualizar estadísticas generales
+        function updateStatistics() {
+            const totalXMLsElement = document.getElementById('totalXMLsCount');
+            const totalEmisoresElement = document.getElementById('totalEmisoresCount');
+            const xmlsThisMonthElement = document.getElementById('xmlsThisMonthCount');
+            
+            if (totalXMLsElement) {
+                const xmlsCount = todosLosXMLs ? todosLosXMLs.length : 0;
+                totalXMLsElement.textContent = xmlsCount;
+            }
+            
+            if (totalEmisoresElement) {
+                const emisoresCount = emisores ? emisores.length : 0;
+                totalEmisoresElement.textContent = emisoresCount;
+            }
+            
+            if (xmlsThisMonthElement) {
+                const xmlsArray = todosLosXMLs || [];
+                const thisMonth = xmlsArray.filter(xml => {
+                    try {
+                        const xmlDate = new Date(xml.fecha);
+                        const now = new Date();
+                        return xmlDate.getMonth() === now.getMonth() && 
+                               xmlDate.getFullYear() === now.getFullYear();
+                    } catch (error) {
+                        return false;
+                    }
+                }).length;
+                xmlsThisMonthElement.textContent = thisMonth;
+            }
         }
 
         // ===== FUNCIONES DE UTILIDAD ADICIONALES =====
