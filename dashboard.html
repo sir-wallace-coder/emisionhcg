@@ -2779,9 +2779,8 @@
                 // 🔄 CARGAR EMISOR DESDE BASE DE DATOS (NO LOCALSTORAGE)
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
-                    window.location.href = 'login.html';
-                    return;
+                    console.log('⚠️ MODO EMERGENCIA: Sin token, usando localStorage para diagnóstico...');
+                    return editarEmisorFallback(emisorId);
                 }
                 
                 console.log('🌐 CORRECCIÓN: Consultando emisor real desde BD...');
@@ -2794,15 +2793,16 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    console.log(`⚠️ ERROR BD: ${response.status} - Fallback a localStorage...`);
+                    return editarEmisorFallback(emisorId);
                 }
                 
                 const data = await response.json();
                 const emisor = data.emisor;
                 
                 if (!emisor) {
-                    alert('Emisor no encontrado en la base de datos');
-                    return;
+                    console.log('⚠️ EMISOR NO ENCONTRADO EN BD - Fallback a localStorage...');
+                    return editarEmisorFallback(emisorId);
                 }
                 
                 console.log('📝 CORRECCIÓN: Datos REALES del emisor desde BD:', {
@@ -2836,7 +2836,63 @@
                 
             } catch (error) {
                 console.error('❌ Error abriendo modal de edición:', error);
-                alert('Error cargando datos del emisor: ' + error.message);
+                console.log('⚠️ FALLBACK: Intentando con localStorage...');
+                return editarEmisorFallback(emisorId);
+            }
+        }
+        
+        // ===== FUNCIÓN FALLBACK PARA MODO EMERGENCIA =====
+        editarEmisorFallback(emisorId) {
+            console.log('🚑 MODO EMERGENCIA: Editando emisor desde localStorage:', emisorId);
+            
+            try {
+                // Cargar emisores desde localStorage
+                const emisoresData = localStorage.getItem('emisores');
+                if (!emisoresData) {
+                    alert('No se encontraron emisores en localStorage');
+                    return;
+                }
+                
+                const emisores = JSON.parse(emisoresData);
+                const emisor = emisores.find(e => e.id === emisorId);
+                
+                if (!emisor) {
+                    alert('Emisor no encontrado en localStorage');
+                    return;
+                }
+                
+                console.log('📝 FALLBACK: Datos del emisor desde localStorage:', {
+                    id: emisor.id,
+                    rfc: emisor.rfc,
+                    nombre: emisor.nombre,
+                    tiene_cer: !!emisor.certificado_cer,
+                    tiene_key: !!emisor.certificado_key,
+                    numero_certificado: emisor.numero_certificado || 'No disponible',
+                    estado_csd: emisor.estado_csd || 'pendiente'
+                });
+                
+                // Cargar datos en el formulario de edición
+                document.getElementById('editEmisorId').value = emisor.id;
+                document.getElementById('editEmisorRFC').value = emisor.rfc || '';
+                document.getElementById('editEmisorNombre').value = emisor.nombre || '';
+                document.getElementById('editEmisorCP').value = emisor.codigo_postal || '';
+                document.getElementById('editEmisorRegimen').value = emisor.regimen_fiscal || '';
+                
+                // Mostrar información de CSD actual
+                mostrarInfoCSDActual(emisor);
+                
+                // Configurar listeners para la sección de CSD
+                setupEditCSDListeners();
+                
+                // Abrir modal
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarEmisor'));
+                modal.show();
+                
+                console.log('✅ FALLBACK: Modal de edición abierto exitosamente');
+                
+            } catch (error) {
+                console.error('❌ FALLBACK: Error abriendo modal:', error);
+                alert('Error crítico cargando datos del emisor: ' + error.message);
             }
         }
         
