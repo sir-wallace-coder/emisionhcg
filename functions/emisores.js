@@ -386,16 +386,23 @@ async function createEmisor(userId, data, headers) {
         }
         
         // 4. Crear información del certificado (sin validación de fecha de expiración)
+        // Generar número de certificado corto (máximo 20 caracteres)
+        const timestamp = Date.now().toString().slice(-8); // Últimos 8 dígitos del timestamp
+        const rfcShort = rfcClean.slice(0, 8); // Primeros 8 caracteres del RFC
+        const numeroCertificado = `${rfcShort}${timestamp}`; // Máximo 16 caracteres
+        
         certificadoInfo = {
           certificado_cer: certificado_cer,
           certificado_key: certificado_key,
           password_key: password_key,
-          numero_certificado: 'CSD_' + Date.now() + '_' + rfcClean,
+          numero_certificado: numeroCertificado,
           vigencia_desde: new Date().toISOString(),
           vigencia_hasta: new Date(Date.now() + 4 * 365 * 24 * 60 * 60 * 1000).toISOString(), // 4 años
           validado_en: new Date().toISOString(),
           estado_validacion: 'VALIDADO_BASICO'
         };
+        
+        console.log('🔢 Número de certificado generado:', numeroCertificado, `(${numeroCertificado.length} caracteres)`);
         
         console.log('✅ EMISOR: Certificados CSD validados exitosamente (sin validación de expiración)');
         
@@ -456,6 +463,37 @@ async function createEmisor(userId, data, headers) {
 
     // 7. Insertar emisor en base de datos
     console.log('🔧 EMISOR: Insertando en base de datos...');
+    // Validar longitudes de campos críticos ANTES de insertar
+    const validacionCampos = {
+      rfc: { valor: emisorData.rfc, limite: 13, actual: emisorData.rfc?.length || 0 },
+      codigo_postal: { valor: emisorData.codigo_postal, limite: 5, actual: emisorData.codigo_postal?.length || 0 },
+      regimen_fiscal: { valor: emisorData.regimen_fiscal, limite: 10, actual: emisorData.regimen_fiscal?.length || 0 },
+      numero_certificado: { valor: emisorData.numero_certificado, limite: 20, actual: emisorData.numero_certificado?.length || 0 }
+    };
+    
+    console.log('📏 Validación de longitudes de campos:');
+    for (const [campo, info] of Object.entries(validacionCampos)) {
+      if (info.actual > 0) {
+        const status = info.actual <= info.limite ? '✅' : '❌';
+        console.log(`${status} ${campo}: ${info.actual}/${info.limite} caracteres - "${info.valor}"`);
+        
+        if (info.actual > info.limite) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: `Campo '${campo}' excede el límite de ${info.limite} caracteres (actual: ${info.actual})`,
+              tipo: 'CAMPO_DEMASIADO_LARGO',
+              campo: campo,
+              valor_actual: info.valor,
+              longitud_actual: info.actual,
+              longitud_maxima: info.limite
+            })
+          };
+        }
+      }
+    }
+    
     console.log('Datos completos a insertar:', JSON.stringify(emisorData, null, 2));
     console.log('Resumen de datos:', {
       usuario_id: emisorData.usuario_id,
