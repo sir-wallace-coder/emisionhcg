@@ -71,40 +71,55 @@ function validarLlavePrivadaSimplificada(keyBase64, password) {
     // Convertir llave privada a PEM
     console.log('🔍 DEBUG KEY VALIDATION: Convirtiendo keyBase64 a buffer...');
     const keyBuffer = Buffer.from(keyBase64, 'base64');
-    console.log('🔍 DEBUG KEY VALIDATION: Buffer creado, tamaño:', keyBuffer.length);
+    console.log(' DEBUG KEY VALIDATION: Buffer creado, tamaño:', keyBuffer.length);
     
     // Intentar crear objeto de llave privada para validar
-    console.log('🔍 DEBUG KEY VALIDATION: Intentando crear llave privada...');
+    console.log(' DEBUG KEY VALIDATION: Intentando crear llave privada...');
+    // FIX CRÍTICO: Generar formato RSA PRIVATE KEY (PKCS#1) para compatibilidad con forge
     try {
-      console.log('🔍 DEBUG KEY VALIDATION: Intentando formato PRIVATE KEY...');
-      const keyPem = '-----BEGIN PRIVATE KEY-----\n' + 
+      console.log(' DEBUG KEY VALIDATION: Intentando formato RSA PRIVATE KEY...');
+      const keyPem = '-----BEGIN RSA PRIVATE KEY-----\n' + 
                     keyBase64.match(/.{1,64}/g).join('\n') + 
-                    '\n-----END PRIVATE KEY-----';
+                    '\n-----END RSA PRIVATE KEY-----';
       
-      console.log('🔍 DEBUG KEY VALIDATION: PEM generado, longitud:', keyPem.length);
-      console.log('🔍 DEBUG KEY VALIDATION: PEM preview:', keyPem.substring(0, 100) + '...');
+      console.log(' DEBUG KEY VALIDATION: PEM generado (RSA), longitud:', keyPem.length);
+      console.log(' DEBUG KEY VALIDATION: PEM preview:', keyPem.substring(0, 100) + '...');
       
-      // Validar que se puede crear la llave
-      console.log('🔍 DEBUG KEY VALIDATION: Validando con crypto.createPrivateKey...');
+      // Validar que se puede crear la llave con passphrase
+      console.log(' DEBUG KEY VALIDATION: Validando con crypto.createPrivateKey...');
       crypto.createPrivateKey({ key: keyPem, passphrase: password });
       
-      console.log('✅ DEBUG KEY VALIDATION: ÉXITO - Llave privada válida en formato PRIVATE KEY');
+      console.log(' DEBUG KEY VALIDATION: ÉXITO - Llave privada válida en formato RSA PRIVATE KEY');
       return {
         valida: true,
         llavePrivadaPem: keyPem
       };
-    } catch (pemError) {
-      // Intentar formato PKCS#8
-      const keyPem = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
-                    keyBase64.match(/.{1,64}/g).join('\n') + 
-                    '\n-----END ENCRYPTED PRIVATE KEY-----';
+    } catch (firstError) {
+      console.log('⚠️ DEBUG KEY VALIDATION: Formato RSA PRIVATE KEY falló, intentando PRIVATE KEY...');
+      console.log('⚠️ DEBUG KEY VALIDATION: Error RSA PRIVATE KEY:', firstError.message);
       
-      crypto.createPrivateKey({ key: keyPem, passphrase: password });
-      
-      return {
-        valida: true,
-        llavePrivadaPem: keyPem
-      };
+      try {
+        const keyPemPKCS8 = '-----BEGIN PRIVATE KEY-----\n' + 
+                           keyBase64.match(/.{1,64}/g).join('\n') + 
+                           '\n-----END PRIVATE KEY-----';
+        
+        console.log('🔍 DEBUG KEY VALIDATION: PEM PKCS8 generado, longitud:', keyPemPKCS8.length);
+        console.log('🔍 DEBUG KEY VALIDATION: PEM PKCS8 preview:', keyPemPKCS8.substring(0, 100) + '...');
+        
+        // Validar que se puede crear la llave
+        console.log('🔍 DEBUG KEY VALIDATION: Validando PKCS8 con crypto.createPrivateKey...');
+        crypto.createPrivateKey({ key: keyPemPKCS8, passphrase: password });
+        
+        console.log('✅ DEBUG KEY VALIDATION: ÉXITO - Llave privada válida en formato PRIVATE KEY (fallback)');
+        return {
+          valida: true,
+          llavePrivadaPem: keyPemPKCS8
+        };
+      } catch (secondError) {
+        console.log('❌ DEBUG KEY VALIDATION: Ambos formatos fallaron');
+        console.log('❌ DEBUG KEY VALIDATION: Error PRIVATE KEY:', secondError.message);
+        throw new Error('No se pudo validar la llave privada en ningún formato: RSA(' + firstError.message + '), PKCS8(' + secondError.message + ')');
+      }
     }
   } catch (error) {
     return {
