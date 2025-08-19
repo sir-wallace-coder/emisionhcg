@@ -463,8 +463,10 @@ async function createEmisor(userId, data, headers) {
       tiene_certificados: !!certificadoInfo
     });
     
+    let nuevoEmisor = null;
+    
     try {
-      const { data: nuevoEmisor, error: insertError } = await supabase
+      const { data: emisorCreado, error: insertError } = await supabase
         .from('emisores')
         .insert([emisorData])
         .select()
@@ -503,7 +505,7 @@ async function createEmisor(userId, data, headers) {
         };
       }
       
-      if (!nuevoEmisor) {
+      if (!emisorCreado) {
         console.error('❌ EMISOR: No se recibió el emisor creado');
         return {
           statusCode: 500,
@@ -514,6 +516,9 @@ async function createEmisor(userId, data, headers) {
           })
         };
       }
+      
+      // Asignar el emisor creado a la variable del scope superior
+      nuevoEmisor = emisorCreado;
       
     } catch (insertException) {
       console.error('❌ EMISOR: Excepción insertando emisor:', insertException);
