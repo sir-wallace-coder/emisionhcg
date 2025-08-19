@@ -1005,6 +1005,56 @@
     <script src="js/dashboard/cfdi-dashboard-main.js"></script>
 
     <script>
+        // ===== FUNCIONES GLOBALES REQUERIDAS POR ONCLICK =====
+        
+        // Función global para cambiar tabs (requerida por onclick en HTML)
+        function showTab(tabName) {
+            console.log(`🔄 Cambiando a tab: ${tabName}`);
+            
+            try {
+                // Fallback: implementación básica de cambio de tabs
+                // Ocultar todos los tab-panes
+                const tabPanes = document.querySelectorAll('.tab-pane');
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Mostrar el tab seleccionado
+                const targetTab = document.getElementById(`${tabName}Tab`);
+                if (targetTab) {
+                    targetTab.classList.add('show', 'active');
+                }
+                
+                // Actualizar navegación
+                const navLinks = document.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                const activeNavLink = document.querySelector(`[href="#${tabName}Tab"]`);
+                if (activeNavLink) {
+                    activeNavLink.classList.add('active');
+                }
+                
+                console.log(`✅ Tab cambiado a: ${tabName}`);
+                
+            } catch (error) {
+                console.error('❌ Error cambiando tab:', error);
+            }
+        }
+        
+        // Función global para editar emisor (requerida por onclick en HTML)
+        function editEmisor(emisorId) {
+            console.log('✏️ Editando emisor:', emisorId);
+            // Llamar a la función principal cuando esté disponible
+            if (typeof editarEmisor === 'function') {
+                return editarEmisor(emisorId);
+            } else {
+                console.error('❌ Función editarEmisor no disponible');
+                alert('Error: Sistema de edición no disponible');
+            }
+        }
+        
         // Initialize dashboard when DOM is ready
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
@@ -2121,47 +2171,7 @@
             deleteXML: typeof window.deleteXML
         });
         
-        // Función global para cambiar tabs (requerida por onclick en HTML)
-        function showTab(tabName) {
-            console.log(`🔄 Cambiando a tab: ${tabName}`);
-            
-            try {
-                // Si existe la instancia del dashboard principal, usar su método
-                if (window.dashboardMain && typeof window.dashboardMain.showTab === 'function') {
-                    window.dashboardMain.showTab(tabName);
-                    return;
-                }
-                
-                // Fallback: implementación básica de cambio de tabs
-                // Ocultar todos los tab-panes
-                const tabPanes = document.querySelectorAll('.tab-pane');
-                tabPanes.forEach(pane => {
-                    pane.classList.remove('show', 'active');
-                });
-                
-                // Mostrar el tab seleccionado
-                const targetTab = document.getElementById(`${tabName}Tab`);
-                if (targetTab) {
-                    targetTab.classList.add('show', 'active');
-                }
-                
-                // Actualizar navegación
-                const navLinks = document.querySelectorAll('.nav-link');
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                });
-                
-                const activeNavLink = document.querySelector(`[href="#${tabName}Tab"]`);
-                if (activeNavLink) {
-                    activeNavLink.classList.add('active');
-                }
-                
-                console.log(`✅ Tab cambiado a: ${tabName}`);
-                
-            } catch (error) {
-                console.error('❌ Error cambiando tab:', error);
-            }
-        }
+
         
         // Función global para abrir modal de emisor
         function openEmisorModal() {
@@ -2898,10 +2908,7 @@
             }
         }
         
-        // Alias para compatibilidad (por si hay referencias con nombre diferente)
-        function editEmisor(emisorId) {
-            return editarEmisor(emisorId);
-        }
+
         
         function eliminarEmisor(emisorId) {
             console.log('🗑️ Eliminando emisor:', emisorId);
