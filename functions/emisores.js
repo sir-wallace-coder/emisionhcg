@@ -150,6 +150,14 @@ exports.handler = async (event, context) => {
     return { statusCode: 200, headers, body: '' };
   }
 
+  // 🚨 LOGGING CRÍTICO: Verificar que el backend se ejecuta
+  console.log('🚀 BACKEND EJECUTÁNDOSE:', {
+    method: event.httpMethod,
+    path: event.path,
+    queryString: event.queryStringParameters,
+    timestamp: new Date().toISOString()
+  });
+
   try {
     // Verificar autenticación
     const authHeader = event.headers.authorization;
