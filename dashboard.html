@@ -1055,6 +1055,187 @@
             }
         }
         
+        // ===== FUNCIONES XML GLOBALES (REQUERIDAS POR ONCLICK) =====
+        
+        function viewXML(xmlId) {
+            console.log('👁️ Ver XML:', xmlId);
+            if (typeof verXML === 'function') {
+                return verXML(xmlId);
+            } else {
+                console.error('❌ Función verXML no disponible');
+                alert('Error: Sistema de visualización no disponible');
+            }
+        }
+        
+        function editXML(xmlId) {
+            console.log('✏️ Editar XML:', xmlId);
+            if (typeof editarXML === 'function') {
+                return editarXML(xmlId);
+            } else {
+                console.error('❌ Función editarXML no disponible');
+                alert('Error: Sistema de edición no disponible');
+            }
+        }
+        
+        function downloadXML(xmlId) {
+            console.log('💾 Descargar XML:', xmlId);
+            if (typeof descargarXML === 'function') {
+                return descargarXML(xmlId);
+            } else {
+                console.error('❌ Función descargarXML no disponible');
+                alert('Error: Sistema de descarga no disponible');
+            }
+        }
+        
+        function deleteXML(xmlId) {
+            console.log('🗑️ Eliminar XML:', xmlId);
+            if (typeof eliminarXML === 'function') {
+                return eliminarXML(xmlId);
+            } else {
+                console.error('❌ Función eliminarXML no disponible');
+                alert('Error: Sistema de eliminación no disponible');
+            }
+        }
+        
+        // ===== FUNCIONES ADICIONALES GLOBALES (REQUERIDAS POR ONCLICK) =====
+        
+        function openImportXMLModal() {
+            console.log('📎 Abrir modal importar XML');
+            if (typeof abrirModalImportarXML === 'function') {
+                return abrirModalImportarXML();
+            } else {
+                console.error('❌ Función abrirModalImportarXML no disponible');
+                alert('Error: Sistema de importación no disponible');
+            }
+        }
+        
+        function limpiarFiltros() {
+            console.log('🧹 Limpiar filtros');
+            if (typeof limpiarFiltrosXML === 'function') {
+                return limpiarFiltrosXML();
+            } else {
+                console.error('❌ Función limpiarFiltrosXML no disponible');
+                alert('Error: Sistema de filtros no disponible');
+            }
+        }
+        
+        function logout() {
+            console.log('🚪 Cerrar sesión');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+        
+        function exportarXMLs() {
+            console.log('📊 Exportar XMLs');
+            if (typeof exportarListaXMLs === 'function') {
+                return exportarListaXMLs();
+            } else {
+                console.error('❌ Función exportarListaXMLs no disponible');
+                alert('Error: Sistema de exportación no disponible');
+            }
+        }
+        
+        function guardarEmisor() {
+            console.log('💾 Guardar emisor');
+            if (typeof crearEmisor === 'function') {
+                return crearEmisor();
+            } else {
+                console.error('❌ Función crearEmisor no disponible');
+                alert('Error: Sistema de guardado no disponible');
+            }
+        }
+        
+        function validarXMLs() {
+            console.log('✅ Validar XMLs');
+            if (typeof validarXMLsImportados === 'function') {
+                return validarXMLsImportados();
+            } else {
+                console.error('❌ Función validarXMLsImportados no disponible');
+                alert('Error: Sistema de validación no disponible');
+            }
+        }
+        
+        function importarXMLs() {
+            console.log('📎 Importar XMLs');
+            if (typeof procesarImportacionXMLs === 'function') {
+                return procesarImportacionXMLs();
+            } else {
+                console.error('❌ Función procesarImportacionXMLs no disponible');
+                alert('Error: Sistema de importación no disponible');
+            }
+        }
+        
+        function actualizarEmisor() {
+            console.log('🔄 Actualizar emisor');
+            if (typeof editarEmisorCompleto === 'function') {
+                return editarEmisorCompleto();
+            } else {
+                console.error('❌ Función editarEmisorCompleto no disponible');
+                alert('Error: Sistema de actualización no disponible');
+            }
+        }
+        
+        function eliminarEmisor(emisorId) {
+            console.log('🗑️ Eliminar emisor:', emisorId);
+            if (typeof borrarEmisor === 'function') {
+                return borrarEmisor(emisorId);
+            } else {
+                console.error('❌ Función borrarEmisor no disponible');
+                alert('Error: Sistema de eliminación no disponible');
+            }
+        }
+        
+        function viewXMLSimple(xmlId) {
+            console.log('👁️ Ver XML simple:', xmlId);
+            if (typeof verXMLSimple === 'function') {
+                return verXMLSimple(xmlId);
+            } else {
+                console.error('❌ Función verXMLSimple no disponible');
+                alert('Error: Sistema de visualización no disponible');
+            }
+        }
+        
+        function descargarXML(xmlId) {
+            console.log('💾 Descargar XML:', xmlId);
+            if (typeof bajarXML === 'function') {
+                return bajarXML(xmlId);
+            } else {
+                console.error('❌ Función bajarXML no disponible');
+                alert('Error: Sistema de descarga no disponible');
+            }
+        }
+        
+        function editarXML(xmlId) {
+            console.log('✏️ Editar XML:', xmlId);
+            if (typeof modificarXML === 'function') {
+                return modificarXML(xmlId);
+            } else {
+                console.error('❌ Función modificarXML no disponible');
+                alert('Error: Sistema de edición no disponible');
+            }
+        }
+        
+        function sellarXML(xmlId) {
+            console.log('🔐 Sellar XML:', xmlId);
+            if (typeof aplicarSelloXML === 'function') {
+                return aplicarSelloXML(xmlId);
+            } else {
+                console.error('❌ Función aplicarSelloXML no disponible');
+                alert('Error: Sistema de sellado no disponible');
+            }
+        }
+        
+        function guardarEdicionXML() {
+            console.log('💾 Guardar edición XML');
+            if (typeof salvarCambiosXML === 'function') {
+                return salvarCambiosXML();
+            } else {
+                console.error('❌ Función salvarCambiosXML no disponible');
+                alert('Error: Sistema de guardado no disponible');
+            }
+        }
+        
         // Initialize dashboard when DOM is ready
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
