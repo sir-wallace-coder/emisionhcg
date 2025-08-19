@@ -1044,6 +1044,12 @@
         // Función principal para generar XML
         // Función para generar XML - DISPONIBLE GLOBALMENTE
         window.generarXML = async function generarXML() {
+            console.log('🚀 INICIO: Función generarXML ejecutándose...');
+            console.log('🔍 Estado inicial:', {
+                conceptos: conceptos.length,
+                autoSave: document.getElementById('autoSave')?.checked,
+                currentUser: !!currentUser
+            });
             console.log('🚀 DIAGNÓSTICO: Iniciando generarXML()');
             if (conceptos.length === 0) {
                 showAlert('⚠️ Debe agregar al menos un concepto', 'error');
@@ -1210,10 +1216,12 @@
                 }
                 
                 // Guardar automáticamente el XML generado
+                console.log('🎯 PUNTO CRÍTICO: Llegando al código de guardado...');
                 const autoSave = document.getElementById('autoSave').checked;
                 console.log('🔍 Estado de guardado:', { autoSave, currentUser: !!currentUser });
                 
                 if (autoSave) {
+                    console.log('✅ AutoSave habilitado, procediendo con guardado...');
                     if (currentUser) {
                         // Guardar en base de datos si el usuario está logueado
                         console.log('💾 Guardando XML en base de datos...');
@@ -1222,13 +1230,19 @@
                             console.log('✅ XML guardado en base de datos exitosamente');
                         } catch (error) {
                             console.error('❌ Error guardando en BD:', error);
-                            // Fallback a localStorage si falla la BD
+                            console.log('🔄 Fallback: Intentando guardar en localStorage...');
                             guardarXMLEnLocalStorage(xmlFinal, sellado, infoSellado);
                         }
                     } else {
                         // Guardar en localStorage si no hay usuario logueado
                         console.log('💾 Guardando XML en localStorage (usuario no logueado)...');
-                        guardarXMLEnLocalStorage(xmlFinal, sellado, infoSellado);
+                        console.log('📊 Datos a guardar:', {
+                            xmlLength: xmlFinal.length,
+                            sellado,
+                            conceptosCount: conceptos.length
+                        });
+                        const resultado = guardarXMLEnLocalStorage(xmlFinal, sellado, infoSellado);
+                        console.log('🎯 Resultado del guardado:', resultado);
                     }
                 } else {
                     console.log('⚠️ Guardado automático deshabilitado');
