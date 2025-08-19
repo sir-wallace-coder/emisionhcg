@@ -1319,8 +1319,8 @@
                         });
                     }
                     
-                    // Actualizar localStorage como cache
-                    localStorage.setItem('emisores', JSON.stringify(emisores));
+                    // 🚨 FIX CRÍTICO: NO guardar emisores en localStorage (causa columnas incorrectas)
+                    console.log('🚨 CORRECCIÓN: NO se guardará en localStorage para evitar columnas incorrectas');
                     
                     // Refrescar la tabla de emisores
                     if (typeof mostrarEmisores === 'function') {
@@ -2450,15 +2450,17 @@
                 localStorage.setItem('xmls_generados', JSON.stringify(xmls));
             },
             
-            // Obtener emisores con fallback
+            // 🚨 FIX CRÍTICO: Funciones de emisores ELIMINADAS para evitar columnas incorrectas
+            // NO usar localStorage para emisores - causa datos con estructura antigua
             getEmisores() {
-                const data = localStorage.getItem('emisores');
-                return data ? JSON.parse(data) : [];
+                console.log('🚨 CORRECCIÓN: getEmisores() deshabilitado - no usar localStorage para emisores');
+                return []; // Siempre retorna array vacío
             },
             
-            // Guardar emisores
+            // Guardar emisores DESHABILITADO
             setEmisores(emisores) {
-                localStorage.setItem('emisores', JSON.stringify(emisores));
+                console.log('🚨 CORRECCIÓN: setEmisores() deshabilitado - no guardar emisores en localStorage');
+                // NO hacer nada - no guardar en localStorage
             },
             
             // Buscar XML por ID en localStorage
@@ -3214,7 +3216,7 @@
         
 
         
-        function eliminarEmisor(emisorId) {
+        async function eliminarEmisor(emisorId) {
             console.log('🗑️ Eliminando emisor:', emisorId);
             
             if (!confirm('¿Estás seguro de que deseas eliminar este emisor?')) {
@@ -3222,14 +3224,21 @@
             }
             
             try {
-                // Cargar emisores actuales
-                const emisoresData = localStorage.getItem('emisores');
-                if (!emisoresData) {
-                    alert('No se encontraron emisores');
+                // 🚨 FIX CRÍTICO: Cargar emisores desde BACKEND, NO localStorage (causa columnas incorrectas)
+                console.log('🚨 CORRECCIÓN DELETE: Cargando emisores desde backend en lugar de localStorage');
+                
+                let emisores;
+                try {
+                    emisores = await cargarEmisoresDesdeBackend();
+                    if (!emisores || emisores.length === 0) {
+                        alert('No se encontraron emisores');
+                        return;
+                    }
+                } catch (backendError) {
+                    console.error('❌ Error cargando emisores desde backend:', backendError);
+                    alert('Error cargando emisores. Intenta nuevamente.');
                     return;
                 }
-                
-                let emisores = JSON.parse(emisoresData);
                 const emisorIndex = emisores.findIndex(e => e.id === emisorId);
                 
                 if (emisorIndex === -1) {
@@ -3240,8 +3249,8 @@
                 // Eliminar emisor
                 const emisorEliminado = emisores.splice(emisorIndex, 1)[0];
                 
-                // Guardar cambios usando StorageUtils
-                StorageUtils.setEmisores(emisores);
+                // 🚨 FIX CRÍTICO: NO guardar emisores en localStorage (causa columnas incorrectas)
+                console.log('🚨 CORRECCIÓN DELETE: NO se guardará en localStorage para evitar columnas incorrectas');
                 
                 // Actualizar vista
                 // 🔧 FIX CRÍTICO: Usar mostrarEmisores() para consistencia
