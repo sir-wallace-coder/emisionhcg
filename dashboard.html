@@ -2324,9 +2324,9 @@
                     const successMessage = `✅ XML sellado exitosamente\n\n` +
                         `📋 Detalles del sellado:\n` +
                         `• Estado: Sellado\n` +
-                        `• Certificado: ${resultado.numeroCertificado}\n` +
-                        `• Sello válido: ${resultado.selloValido ? 'Sí' : 'No'}\n` +
-                        `• Emisor: ${resultado.emisor.rfc} - ${resultado.emisor.nombre}\n\n` +
+                        `• Certificado: ${data.numeroCertificado || 'N/A'}\n` +
+                        `• Sello válido: ${data.selloValido ? 'Sí' : 'No'}\n` +
+                        `• Emisor: ${emisorConCSD.rfc} - ${emisorConCSD.nombre}\n\n` +
                         `El XML ahora contiene el sello digital oficial y está listo para timbrado.`;
                     
                     alert(successMessage);
