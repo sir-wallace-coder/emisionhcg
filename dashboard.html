@@ -1476,24 +1476,88 @@
 
         // Función principal para cargar datos del sistema
         async function loadData() {
-            console.log('📊 Cargando datos del sistema CFDI...');
+            console.log('📊 CFDI SYSTEM: Cargando datos del sistema...');
             
             try {
+                // 🔍 DIAGNÓSTICO COMPLETO DE LOCALSTORAGE
+                console.log('🔍 DIAGNÓSTICO: Todas las claves en localStorage:');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    console.log(`  - ${key}: ${value ? value.substring(0, 100) + '...' : 'null'}`);
+                }
+                
                 // Inicializar arrays
                 xmls = [];
                 emisores = [];
                 todosLosXMLs = [];
                 xmlsFiltrados = [];
                 
-                // Cargar datos desde localStorage (modo desarrollo)
-                await loadLocalData();
+                // 🔧 CARGAR DATOS DIRECTAMENTE DESDE LOCALSTORAGE
+                console.log('🔧 Cargando datos directamente desde localStorage...');
+                
+                // CARGAR XMLs DESDE TODAS LAS POSIBLES CLAVES
+                let xmlsData = localStorage.getItem('xmls_generados') || 
+                              localStorage.getItem('cfdi_xmls') || 
+                              localStorage.getItem('xmls') || '[]';
+                              
+                if (xmlsData !== '[]') {
+                    try {
+                        xmls = JSON.parse(xmlsData);
+                        todosLosXMLs = [...xmls];
+                        xmlsFiltrados = [...xmls];
+                        console.log('✅ XMLs cargados:', xmls.length, 'encontrados');
+                        xmls.forEach((xml, i) => {
+                            console.log(`  📄 XML ${i+1}: ${xml.serie}-${xml.folio} (${xml.emisor_nombre || xml.emisor_rfc || 'Sin emisor'})`);
+                        });
+                    } catch (e) {
+                        console.error('❌ Error parseando XMLs:', e);
+                        xmls = [];
+                    }
+                } else {
+                    console.warn('⚠️ No se encontraron XMLs en localStorage');
+                }
+                
+                // CARGAR EMISORES DESDE TODAS LAS POSIBLES CLAVES
+                let emisoresData = localStorage.getItem('emisores') || 
+                                  localStorage.getItem('cfdi_emisores') || 
+                                  localStorage.getItem('emisores_cfdi') || '[]';
+                                  
+                if (emisoresData !== '[]') {
+                    try {
+                        emisores = JSON.parse(emisoresData);
+                        console.log('✅ Emisores cargados:', emisores.length, 'encontrados');
+                        emisores.forEach((emisor, i) => {
+                            console.log(`  🏢 Emisor ${i+1}: ${emisor.rfc} - ${emisor.razon_social || emisor.nombre || 'Sin nombre'}`);
+                        });
+                    } catch (e) {
+                        console.error('❌ Error parseando emisores:', e);
+                        emisores = [];
+                    }
+                } else {
+                    console.warn('⚠️ No se encontraron emisores en localStorage');
+                }
+                
+                // Renderizar inmediatamente
+                console.log('🎨 Renderizando datos en la UI...');
+                renderXMLs();
+                renderEmisores();
                 updateStats();
-                await cargarXMLs();
-                await cargarEmisores();
-                addLog('success', 'Datos del dashboard cargados exitosamente', 'XMLs y emisores disponibles');
+                
+                console.log('✅ Dashboard cargado exitosamente:', { xmls: xmls.length, emisores: emisores.length });
+                addLog('success', 'Datos del dashboard cargados exitosamente', `XMLs: ${xmls.length}, Emisores: ${emisores.length}`);
             } catch (error) {
                 console.error('❌ Error cargando datos:', error);
                 addLog('error', 'Error cargando datos del dashboard', error.message || 'Error desconocido');
+                
+                // En caso de error, asegurar que las variables estén inicializadas
+                xmls = [];
+                emisores = [];
+                todosLosXMLs = [];
+                xmlsFiltrados = [];
+                renderXMLs();
+                renderEmisores();
+                updateStats();
             }
         }
         
