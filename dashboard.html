@@ -3288,21 +3288,37 @@
         }
         
         // Función para refrescar la lista de emisores tras registro
-        function refreshEmisorList() {
-            console.log('🔄 Refrescando lista de emisores...');
+        async function refreshEmisorList() {
+            console.log('🔄 Refrescando lista de emisores desde BACKEND...');
             
             try {
-                // Cargar y mostrar emisores usando StorageUtils
-                const emisores = StorageUtils.getEmisores();
-                if (emisores.length > 0) {
-                    displayEmisoresSimple(emisores);
-                    console.log('✅ Lista de emisores actualizada:', emisores.length);
+                // 🔧 FIX CRÍTICO: Usar datos del backend, NO de localStorage
+                console.log('🚨 CORRECCIÓN: Cargando desde backend en lugar de localStorage');
+                
+                // Cargar emisores desde backend (datos actualizados)
+                const emisores = await cargarEmisoresDesdeBackend();
+                
+                if (emisores && emisores.length > 0) {
+                    console.log('✅ Emisores cargados desde backend:', emisores.length);
+                    console.log('📊 Primer emisor desde backend:', {
+                        nombre: emisores[0].nombre,
+                        estado_csd: emisores[0].estado_csd,
+                        numero_certificado: emisores[0].numero_certificado
+                    });
+                    
+                    // Usar mostrarEmisores() que es la función correcta
+                    if (typeof mostrarEmisores === 'function') {
+                        mostrarEmisores(emisores);
+                    } else {
+                        console.error('❌ Función mostrarEmisores no disponible');
+                        displayEmisoresEmpty();
+                    }
                 } else {
                     displayEmisoresEmpty();
                     console.log('📝 No hay emisores para mostrar');
                 }
             } catch (error) {
-                console.error('❌ Error refrescando emisores:', error);
+                console.error('❌ Error refrescando emisores desde backend:', error);
                 displayEmisoresEmpty();
             }
         }
