@@ -1260,8 +1260,10 @@
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    console.log('⚠️ Sin token, usando localStorage');
-                    return cargarEmisoresDesdeLocalStorage();
+                    console.error('❌ Sin token de autenticación');
+                    alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                    window.location.href = 'login.html';
+                    return;
                 }
                 
                 const response = await fetch('/.netlify/functions/emisores', {
@@ -1289,31 +1291,12 @@
                     return emisores;
                 } else {
                     console.error('❌ Error cargando emisores desde backend');
-                    return cargarEmisoresDesdeLocalStorage();
+                    alert('Error cargando emisores desde la base de datos.');
+                    return [];
                 }
             } catch (error) {
                 console.error('❌ Error en cargarEmisoresDesdeBackend:', error);
-                return cargarEmisoresDesdeLocalStorage();
-            }
-        }
-        
-        // Función fallback para cargar desde localStorage
-        function cargarEmisoresDesdeLocalStorage() {
-            console.log('📦 Cargando emisores desde localStorage...');
-            try {
-                const emisores = JSON.parse(localStorage.getItem('emisores') || '[]');
-                console.log('✅ Emisores cargados desde localStorage:', emisores.length);
-                
-                // Refrescar la tabla de emisores
-                if (typeof mostrarEmisores === 'function') {
-                    mostrarEmisores(emisores);
-                } else {
-                    console.log('⚠️ Función mostrarEmisores no disponible');
-                }
-                
-                return emisores;
-            } catch (error) {
-                console.error('❌ Error cargando desde localStorage:', error);
+                alert('Error de conexión al cargar emisores.');
                 return [];
             }
         }
@@ -3048,17 +3031,18 @@
         // ===== FUNCIONES DE GESTIÓN DE EMISORES =====
         
         async function editarEmisor(emisorId) {
-            console.log('🔧 CORRECCIÓN CRÍTICA: Editando emisor desde BD:', emisorId);
+            console.log('🔧 Editando emisor desde BD:', emisorId);
             
             try {
-                // 🔄 CARGAR EMISOR DESDE BASE DE DATOS (NO LOCALSTORAGE)
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    console.log('⚠️ MODO EMERGENCIA: Sin token, usando localStorage para diagnóstico...');
-                    return editarEmisorFallback(emisorId);
+                    console.error('❌ Sin token de autenticación');
+                    alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                    window.location.href = 'login.html';
+                    return;
                 }
                 
-                console.log('🌐 CORRECCIÓN: Consultando emisor real desde BD...');
+                console.log('🌐 Consultando emisor real desde BD...');
                 const response = await fetch(`/.netlify/functions/emisores?id=${emisorId}`, {
                     method: 'GET',
                     headers: {
@@ -3068,16 +3052,18 @@
                 });
                 
                 if (!response.ok) {
-                    console.log(`⚠️ ERROR BD: ${response.status} - Fallback a localStorage...`);
-                    return editarEmisorFallback(emisorId);
+                    console.error(`❌ Error cargando emisor: ${response.status}`);
+                    alert('Error cargando datos del emisor desde la base de datos.');
+                    return;
                 }
                 
                 const data = await response.json();
                 const emisor = data.emisor;
                 
                 if (!emisor) {
-                    console.log('⚠️ EMISOR NO ENCONTRADO EN BD - Fallback a localStorage...');
-                    return editarEmisorFallback(emisorId);
+                    console.error('❌ Emisor no encontrado en la base de datos');
+                    alert('Emisor no encontrado.');
+                    return;
                 }
                 
                 console.log('📝 CORRECCIÓN: Datos REALES del emisor desde BD:', {
@@ -3111,65 +3097,10 @@
                 
             } catch (error) {
                 console.error('❌ Error abriendo modal de edición:', error);
-                console.log('⚠️ FALLBACK: Intentando con localStorage...');
-                return editarEmisorFallback(emisorId);
+                alert('Error al abrir el modal de edición: ' + error.message);
             }
         }
-        
-        // ===== FUNCIÓN FALLBACK PARA MODO EMERGENCIA =====
-        function editarEmisorFallback(emisorId) {
-            console.log('🚑 MODO EMERGENCIA: Editando emisor desde localStorage:', emisorId);
-            
-            try {
-                // Cargar emisores desde localStorage
-                const emisoresData = localStorage.getItem('emisores');
-                if (!emisoresData) {
-                    alert('No se encontraron emisores en localStorage');
-                    return;
-                }
-                
-                const emisores = JSON.parse(emisoresData);
-                const emisor = emisores.find(e => e.id === emisorId);
-                
-                if (!emisor) {
-                    alert('Emisor no encontrado en localStorage');
-                    return;
-                }
-                
-                console.log('📝 FALLBACK: Datos del emisor desde localStorage:', {
-                    id: emisor.id,
-                    rfc: emisor.rfc,
-                    nombre: emisor.nombre,
-                    tiene_cer: !!emisor.certificado_cer,
-                    tiene_key: !!emisor.certificado_key,
-                    numero_certificado: emisor.numero_certificado || 'No disponible',
-                    estado_csd: emisor.estado_csd || 'pendiente'
-                });
-                
-                // Cargar datos en el formulario de edición
-                document.getElementById('editEmisorId').value = emisor.id;
-                document.getElementById('editEmisorRFC').value = emisor.rfc || '';
-                document.getElementById('editEmisorNombre').value = emisor.nombre || '';
-                document.getElementById('editEmisorCP').value = emisor.codigo_postal || '';
-                document.getElementById('editEmisorRegimen').value = emisor.regimen_fiscal || '';
-                
-                // Mostrar información de CSD actual
-                mostrarInfoCSDActual(emisor);
-                
-                // Configurar listeners para la sección de CSD
-                setupEditCSDListeners();
-                
-                // Abrir modal
-                const modal = new bootstrap.Modal(document.getElementById('modalEditarEmisor'));
-                modal.show();
-                
-                console.log('✅ FALLBACK: Modal de edición abierto exitosamente');
-                
-            } catch (error) {
-                console.error('❌ FALLBACK: Error abriendo modal:', error);
-                alert('Error crítico cargando datos del emisor: ' + error.message);
-            }
-        }
+
         
 
         
