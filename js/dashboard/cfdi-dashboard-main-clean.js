@@ -53,35 +53,15 @@ class CFDIDashboardMain {
         logSystem('Cargando datos iniciales del dashboard', 'info');
         
         try {
-            // Cargar XMLs desde localStorage
-            const xmlsData = localStorage.getItem(CFDI_CONFIG.storageKeys.xmls);
-            if (xmlsData) {
-                try {
-                    xmls = JSON.parse(xmlsData);
-                    logSystem('XMLs cargados desde localStorage', 'success', { count: xmls.length });
-                } catch (e) {
-                    xmls = [];
-                    logSystem('Error parseando XMLs, inicializando array vacío', 'warning');
-                }
-            } else {
-                xmls = [];
-                logSystem('No hay XMLs guardados, inicializando array vacío', 'info');
-            }
+            // Solo usar datos de base de datos (sin localStorage)
+            xmls = [];
+            logSystem('Dashboard clean configurado para usar solo datos de BD (sin localStorage)', 'info');
+            logSystem('No hay XMLs guardados, inicializando array vacío', 'info');
             
-            // Cargar emisores desde localStorage
-            const emisoresData = localStorage.getItem(CFDI_CONFIG.storageKeys.emisores);
-            if (emisoresData) {
-                try {
-                    emisores = JSON.parse(emisoresData);
-                    logSystem('Emisores cargados desde localStorage', 'success', { count: emisores.length });
-                } catch (e) {
-                    emisores = [];
-                    logSystem('Error parseando emisores, inicializando array vacío', 'warning');
-                }
-            } else {
-                emisores = [];
-                logSystem('No hay emisores guardados, inicializando array vacío', 'info');
-            }
+            // Solo usar datos de base de datos (sin localStorage)
+            emisores = [];
+            logSystem('Emisores configurados para usar solo datos de BD (sin localStorage)', 'info');
+            logSystem('No hay emisores guardados, inicializando array vacío', 'info');
             
             // Cargar logs del sistema
             const savedLogs = localStorage.getItem(CFDI_CONFIG.storageKeys.logs);

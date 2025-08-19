@@ -24,15 +24,9 @@ class CFDIStorage {
                 // Guardar en localStorage para caché
                 localStorage.setItem(CFDI_CONFIG.storageKeys.xmls, JSON.stringify(loadedXMLs));
             } else {
-                // 2. FALLBACK: CARGAR DESDE LOCALSTORAGE (SOLO DATOS REALES)
-                logSystem('No se pudieron cargar XMLs desde BD, verificando localStorage para datos reales', 'warning');
-                loadedXMLs = await this.loadXMLsFromLocalStorage();
-                
-                // Si no hay datos reales, mantener array vacío (NO generar datos de prueba)
-                if (!loadedXMLs || loadedXMLs.length === 0) {
-                    logSystem('No hay XMLs reales disponibles - manteniendo dashboard vacío', 'info');
-                    loadedXMLs = [];
-                }
+                // 2. SIN FALLBACK: SOLO DATOS DE BASE DE DATOS
+                logSystem('No se pudieron cargar XMLs desde BD - manteniendo dashboard vacío (sin fallback local)', 'info');
+                loadedXMLs = [];
             }
             
             // Actualizar variables globales
@@ -223,15 +217,9 @@ class CFDIStorage {
                 // Guardar en localStorage para caché
                 localStorage.setItem(CFDI_CONFIG.storageKeys.emisores, JSON.stringify(loadedEmisores));
             } else {
-                // 2. FALLBACK: CARGAR DESDE LOCALSTORAGE (SOLO DATOS REALES)
-                logSystem('No se pudieron cargar emisores desde BD, verificando localStorage para datos reales', 'warning');
-                loadedEmisores = await this.loadEmisoresFromLocalStorage();
-                
-                // Si no hay datos reales, mantener array vacío (NO generar datos de prueba)
-                if (!loadedEmisores || loadedEmisores.length === 0) {
-                    logSystem('No hay emisores reales disponibles - manteniendo dashboard vacío', 'info');
-                    loadedEmisores = [];
-                }
+                // 2. SIN FALLBACK: SOLO DATOS DE BASE DE DATOS
+                logSystem('No se pudieron cargar emisores desde BD - manteniendo dashboard vacío (sin fallback local)', 'info');
+                loadedEmisores = [];
             }
             
             // Actualizar variable global

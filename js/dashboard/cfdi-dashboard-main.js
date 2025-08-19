@@ -61,21 +61,9 @@ class CFDIDashboardMain {
                 xmls = await CFDIStorage.loadXMLs();
                 logSystem('XMLs cargados con sistema híbrido', 'success', { count: xmls.length });
             } else {
-                // Fallback: cargar solo desde localStorage
-                logSystem('CFDIStorage no disponible, usando localStorage directo', 'warning');
-                const xmlsData = localStorage.getItem(CFDI_CONFIG.storageKeys.xmls);
-                if (xmlsData) {
-                    try {
-                        xmls = JSON.parse(xmlsData);
-                        logSystem('XMLs cargados desde localStorage (fallback)', 'success', { count: xmls.length });
-                    } catch (e) {
-                        xmls = [];
-                        logSystem('Error parseando XMLs, inicializando array vacío', 'warning');
-                    }
-                } else {
-                    xmls = [];
-                    logSystem('No hay XMLs guardados, inicializando array vacío', 'info');
-                }
+                // Sin fallback: solo datos de base de datos
+                logSystem('CFDIStorage no disponible - manteniendo XMLs vacíos (sin fallback local)', 'warning');
+                xmls = [];
             }
             
             // Cargar emisores usando el sistema híbrido (BD primero, localStorage fallback)
@@ -84,21 +72,9 @@ class CFDIDashboardMain {
                 emisores = await CFDIStorage.loadEmisores();
                 logSystem('Emisores cargados con sistema híbrido', 'success', { count: emisores.length });
             } else {
-                // Fallback: cargar solo desde localStorage
-                logSystem('CFDIStorage no disponible, usando localStorage directo', 'warning');
-                const emisoresData = localStorage.getItem(CFDI_CONFIG.storageKeys.emisores);
-                if (emisoresData) {
-                    try {
-                        emisores = JSON.parse(emisoresData);
-                        logSystem('Emisores cargados desde localStorage (fallback)', 'success', { count: emisores.length });
-                    } catch (e) {
-                        emisores = [];
-                        logSystem('Error parseando emisores, inicializando array vacío', 'warning');
-                    }
-                } else {
-                    emisores = [];
-                    logSystem('No hay emisores guardados, inicializando array vacío', 'info');
-                }
+                // Sin fallback: solo datos de base de datos
+                logSystem('CFDIStorage no disponible - manteniendo emisores vacíos (sin fallback local)', 'warning');
+                emisores = [];
             }
             
             // Cargar logs del sistema (solo localStorage, no necesita BD)
