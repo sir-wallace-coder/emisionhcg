@@ -2772,26 +2772,48 @@
         
         // ===== FUNCIONES DE GESTIÓN DE EMISORES =====
         
-        function editarEmisor(emisorId) {
-            console.log('✏️ Editando emisor:', emisorId);
+        async function editarEmisor(emisorId) {
+            console.log('🔧 CORRECCIÓN CRÍTICA: Editando emisor desde BD:', emisorId);
             
             try {
-                // Cargar emisores desde localStorage
-                const emisoresData = localStorage.getItem('emisores');
-                if (!emisoresData) {
-                    alert('No se encontraron emisores');
+                // 🔄 CARGAR EMISOR DESDE BASE DE DATOS (NO LOCALSTORAGE)
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    window.location.href = 'login.html';
                     return;
                 }
                 
-                const emisores = JSON.parse(emisoresData);
-                const emisor = emisores.find(e => e.id === emisorId);
+                console.log('🌐 CORRECCIÓN: Consultando emisor real desde BD...');
+                const response = await fetch(`/.netlify/functions/emisores?id=${emisorId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const emisor = data.emisor;
                 
                 if (!emisor) {
-                    alert('Emisor no encontrado');
+                    alert('Emisor no encontrado en la base de datos');
                     return;
                 }
                 
-                console.log('📝 Cargando datos del emisor:', emisor);
+                console.log('📝 CORRECCIÓN: Datos REALES del emisor desde BD:', {
+                    id: emisor.id,
+                    rfc: emisor.rfc,
+                    nombre: emisor.nombre,
+                    tiene_cer: !!emisor.certificado_cer,
+                    tiene_key: !!emisor.certificado_key,
+                    numero_certificado: emisor.numero_certificado,
+                    estado_csd: emisor.estado_csd
+                });
                 
                 // Cargar datos en el formulario de edición
                 document.getElementById('editEmisorId').value = emisor.id;
@@ -3013,9 +3035,11 @@
             }
         }
         
-        // Función principal para actualizar emisor
+        // Función principal para actualizar emisor - CORREGIDA PARA USAR BACKEND
         async function actualizarEmisor() {
             try {
+                console.log('🔧 FUNCIÓN LEGACY CORREGIDA: Iniciando actualización de emisor con backend...');
+                
                 // Validar formulario
                 const form = document.getElementById('formEditarEmisor');
                 if (!form.checkValidity()) {
@@ -3035,11 +3059,11 @@
                 const regimenFiscal = document.getElementById('editEmisorRegimen').value;
                 const actualizarCSD = document.getElementById('editActualizarCSD').checked;
                 
-                console.log('🔄 Actualizando emisor:', emisorId);
+                console.log('🔄 LEGACY CORREGIDA: Actualizando emisor:', emisorId);
                 
                 // Preparar datos para actualizar
                 const datosActualizacion = {
-                    id: emisorId,
+                    rfc: document.getElementById('editEmisorRFC').value || '',
                     nombre: nombre,
                     codigo_postal: codigoPostal,
                     regimen_fiscal: regimenFiscal
@@ -3056,53 +3080,59 @@
                         return;
                     }
                     
+                    console.log('🔐 LEGACY CORREGIDA: Procesando certificados CSD...');
+                    
                     // Convertir archivos a base64
                     datosActualizacion.certificado_cer = await fileToBase64(cerFile);
                     datosActualizacion.certificado_key = await fileToBase64(keyFile);
                     datosActualizacion.password_key = passwordKey;
-                }
-                
-                // Cargar emisores usando StorageUtils
-                const emisores = StorageUtils.getEmisores();
-                console.log('🏢 Emisores cargados desde localStorage:', emisores.length);
-                
-                if (emisores.length > 0) {
-                    displayEmisoresSimple(emisores);
-                } else {
-                    console.log('🏢 No hay emisores en localStorage');
-                    displayEmisoresEmpty();
-                }
-                
-                // Actualizar en localStorage
-                const emisorIndex = emisores.findIndex(e => e.id === emisorId);
-                
-                if (emisorIndex !== -1) {
-                    // Actualizar datos
-                    emisores[emisorIndex] = { ...emisores[emisorIndex], ...datosActualizacion };
-                    emisores[emisorIndex].updated_at = new Date().toISOString();
                     
-                    // Guardar cambios usando StorageUtils
-                    StorageUtils.setEmisores(emisores);
-                    
-                    console.log('✅ Emisor actualizado en localStorage usando StorageUtils');
-                } else {
-                    console.log('⚠️ No se encontró el emisor para actualizar');
+                    console.log('📄 LEGACY CORREGIDA: Certificados convertidos a base64:', {
+                        cer_length: datosActualizacion.certificado_cer.length,
+                        key_length: datosActualizacion.certificado_key.length
+                    });
                 }
                 
-                // TODO: Actualizar en backend (Supabase) cuando esté disponible
+                // 🔧 ENVIAR AL BACKEND REAL (NO localStorage)
+                console.log('🌐 LEGACY CORREGIDA: Enviando al backend /.netlify/functions/emisores...');
                 
-                // Mostrar éxito
-                alert('✅ Emisor actualizado exitosamente');
+                const token = localStorage.getItem('token') || localStorage.getItem('cfdi_token');
+                const response = await fetch('/.netlify/functions/emisores?id=' + emisorId, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(datosActualizacion)
+                });
                 
-                // Cerrar modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarEmisor'));
-                modal.hide();
+                console.log('📝 LEGACY CORREGIDA: Respuesta del backend:', {
+                    status: response.status,
+                    ok: response.ok
+                });
                 
-                // Refrescar lista
-                refreshEmisorList();
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ LEGACY CORREGIDA: Emisor actualizado en backend:', result);
+                    
+                    // Mostrar éxito
+                    alert('✅ Emisor actualizado exitosamente en la base de datos');
+                    
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarEmisor'));
+                    modal.hide();
+                    
+                    // Refrescar lista desde backend
+                    await cargarEmisoresDesdeBackend();
+                    
+                } else {
+                    const error = await response.json();
+                    console.error('❌ LEGACY CORREGIDA: Error del backend:', error);
+                    alert('Error actualizando emisor: ' + (error.error || 'Error desconocido'));
+                }
                 
             } catch (error) {
-                console.error('❌ Error actualizando emisor:', error);
+                console.error('❌ LEGACY CORREGIDA: Error actualizando emisor:', error);
                 alert('Error actualizando emisor: ' + error.message);
             } finally {
                 // Restaurar botón

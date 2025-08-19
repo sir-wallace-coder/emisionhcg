@@ -35,7 +35,8 @@ exports.handler = async (event, context) => {
 
     switch (method) {
       case 'GET':
-        return await getEmisores(userId, headers);
+        const emisorId = event.queryStringParameters?.id;
+        return await getEmisores(userId, headers, emisorId);
       case 'POST':
         return await createEmisor(userId, body, headers);
       case 'PUT':
@@ -61,13 +62,57 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function getEmisores(userId, headers) {
+async function getEmisores(userId, headers, emisorId = null) {
   try {
-    const { data: emisores, error } = await supabase
+    console.log('🔍 GET EMISORES: Consultando', emisorId ? `emisor específico: ${emisorId}` : 'todos los emisores');
+    
+    let query = supabase
       .from('emisores')
       .select('*')
-      .eq('usuario_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('usuario_id', userId);
+    
+    // Si se especifica un ID, consultar solo ese emisor
+    if (emisorId) {
+      query = query.eq('id', emisorId).single();
+      
+      const { data: emisor, error } = await query;
+      
+      if (error) {
+        console.error('❌ GET EMISOR: Error consultando emisor específico:', error);
+        throw error;
+      }
+      
+      if (!emisor) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Emisor no encontrado' })
+        };
+      }
+      
+      console.log('✅ GET EMISOR: Emisor encontrado:', {
+        id: emisor.id,
+        rfc: emisor.rfc,
+        nombre: emisor.nombre,
+        tiene_cer: !!emisor.certificado_cer,
+        tiene_key: !!emisor.certificado_key,
+        numero_certificado: emisor.numero_certificado,
+        estado_csd: emisor.estado_csd
+      });
+      
+      // No devolver datos sensibles para emisor individual
+      const { certificado_key, password_key, ...safeEmisor } = emisor;
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true, emisor: safeEmisor })
+      };
+    }
+    
+    // Consultar todos los emisores
+    query = query.order('created_at', { ascending: false });
+    const { data: emisores, error } = await query;
 
     if (error) throw error;
 
