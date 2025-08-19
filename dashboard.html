@@ -734,6 +734,49 @@
         </div>
     </div>
 
+    <!-- Modal para Ver XML -->
+    <div id="xmlModal" class="modal">
+        <div class="modal-content" style="max-width: 80%; max-height: 80%;">
+            <div class="modal-header">
+                <h2>📄 Ver XML CFDI</h2>
+                <span class="close" onclick="cerrarModalXML()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="xmlInfo" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;"></div>
+                <pre id="xmlContent" style="background: #2d3748; color: #e2e8f0; padding: 20px; border-radius: 8px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button onclick="cerrarModalXML()" class="btn btn-secondary">Cerrar</button>
+                <button onclick="copiarXMLActual()" class="btn btn-info">📋 Copiar</button>
+                <button onclick="descargarXMLActual()" class="btn btn-primary">📥 Descargar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para Importar XML -->
+    <div id="importXMLModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📁 Importar XML CFDI</h2>
+                <span class="close" onclick="closeImportXMLModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="importXMLFile">Seleccionar archivo XML:</label>
+                    <input type="file" id="importXMLFile" accept=".xml" class="form-control">
+                    <small class="form-text">Solo archivos XML de CFDI 3.3 o 4.0 (máximo 5MB)</small>
+                </div>
+                
+                <div id="importXMLResult"></div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-success" onclick="importarXML()">📁 Importar y Validar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeImportXMLModal()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ===== SISTEMA CFDI PROFESIONAL - GESTIÓN DE EMISORES =====
         
@@ -3460,61 +3503,19 @@ async function importarXML() {
         // Función auxiliar para copiar al portapapeles
         function copyToClipboard(text) {
             if (!text) {
-                showAlert('❌ No hay contenido para copiar', 'error');
+                console.warn('❌ No hay contenido para copiar');
                 return;
             }
             
             navigator.clipboard.writeText(text).then(() => {
-                showAlert('✅ XML copiado al portapapeles', 'success');
+                console.log('✅ XML copiado al portapapeles');
             }).catch(err => {
                 console.error('Error copiando al portapapeles:', err);
-                showAlert('⚠️ Error copiando al portapapeles', 'warning');
             });
         }
+        
+        console.log('✅ CFDI SYSTEM: Dashboard JavaScript cargado completamente');
     </script>
-    
-    <!-- Modal para Ver XML -->
-    <div id="xmlModal" class="modal">
-        <div class="modal-content" style="max-width: 80%; max-height: 80%;">
-            <div class="modal-header">
-                <h2>📄 Ver XML CFDI</h2>
-                <span class="close" onclick="cerrarModalXML()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div id="xmlInfo" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;"></div>
-                <pre id="xmlContent" style="background: #2d3748; color: #e2e8f0; padding: 20px; border-radius: 8px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;"></pre>
-            </div>
-            <div class="modal-footer">
-                <button onclick="cerrarModalXML()" class="btn btn-secondary">Cerrar</button>
-                <button onclick="copiarXMLActual()" class="btn btn-info">📋 Copiar</button>
-                <button onclick="descargarXMLActual()" class="btn btn-primary">📥 Descargar</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para Importar XML -->
-    <div id="importXMLModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📁 Importar XML CFDI</h2>
-                <span class="close" onclick="closeImportXMLModal()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="importXMLFile">Seleccionar archivo XML:</label>
-                    <input type="file" id="importXMLFile" accept=".xml" class="form-control">
-                    <small class="form-text">Solo archivos XML de CFDI 3.3 o 4.0 (máximo 5MB)</small>
-                </div>
-                
-                <div id="importXMLResult"></div>
-                
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-success" onclick="importarXML()">📁 Importar y Validar</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeImportXMLModal()">Cancelar</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
 </body>
 </html>
