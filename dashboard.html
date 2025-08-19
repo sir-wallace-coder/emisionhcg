@@ -1497,27 +1497,37 @@
             }
         }
         
-        // Función para cargar datos locales
+        // 🔧 FUNCIÓN PARA CARGAR DATOS LOCALES - CLAVES CORREGIDAS
         async function loadLocalData() {
-            // Cargar XMLs desde localStorage
-            const localXmls = localStorage.getItem('cfdi_xmls');
+            console.log('🔍 DIAGNÓSTICO: Iniciando carga de datos locales...');
+            
+            // ✅ CARGAR XMLs DESDE CLAVE CORRECTA
+            const localXmls = localStorage.getItem('xmls_generados'); // ✅ CLAVE CORRECTA
+            console.log('🔍 DIAGNÓSTICO: Buscando XMLs en xmls_generados:', !!localXmls);
+            
             if (localXmls) {
                 try {
                     xmls = JSON.parse(localXmls);
                     todosLosXMLs = [...xmls];
                     xmlsFiltrados = [...xmls];
-                    console.log('📄 XMLs cargados:', xmls.length);
+                    console.log('✅ XMLs cargados exitosamente:', xmls.length);
+                    console.log('📄 XMLs encontrados:', xmls.map(x => `${x.serie}-${x.folio}`));
                 } catch (e) {
-                    console.warn('⚠️ Error cargando XMLs:', e);
+                    console.error('❌ Error parseando XMLs:', e);
                 }
+            } else {
+                console.warn('⚠️ No se encontraron XMLs en localStorage');
             }
             
-            // Cargar emisores desde localStorage
-            const localEmisores = localStorage.getItem('cfdi_emisores');
+            // ✅ CARGAR EMISORES DESDE CLAVE CORRECTA
+            const localEmisores = localStorage.getItem('emisores'); // ✅ CLAVE CORRECTA
+            console.log('🔍 DIAGNÓSTICO: Buscando emisores en emisores:', !!localEmisores);
+            
             if (localEmisores) {
                 try {
                     emisores = JSON.parse(localEmisores);
-                    console.log('🏢 Emisores cargados:', emisores.length);
+                    console.log('✅ Emisores cargados exitosamente:', emisores.length);
+                    console.log('🏢 Emisores encontrados:', emisores.map(e => `${e.rfc} - ${e.razon_social}`));
                 } catch (e) {
                     console.warn('⚠️ Error cargando emisores:', e);
                 }
