@@ -2178,19 +2178,20 @@
                     const emisorEncontrado = data.emisores.find(e => e.rfc === xml.emisor_rfc);
                     
                     if (emisorEncontrado) {
+                        // 🔧 FIX CRÍTICO: Usar campos correctos que existen en el frontend
                         console.log('🔍 EMISOR ENCONTRADO POR RFC:', {
                             rfc: emisorEncontrado.rfc,
                             nombre: emisorEncontrado.nombre || emisorEncontrado.razon_social,
-                            tiene_cer: !!emisorEncontrado.certificado_cer,
-                            tiene_key: !!emisorEncontrado.certificado_key,
-                            cer_valor: emisorEncontrado.certificado_cer ? 'PRESENTE' : 'AUSENTE',
-                            key_valor: emisorEncontrado.certificado_key ? 'PRESENTE' : 'AUSENTE',
-                            cer_preview: emisorEncontrado.certificado_cer ? emisorEncontrado.certificado_cer.substring(0, 50) + '...' : 'N/A',
-                            key_preview: emisorEncontrado.certificado_key ? emisorEncontrado.certificado_key.substring(0, 50) + '...' : 'N/A'
+                            tiene_cer: !!emisorEncontrado.certificado_cer_presente,
+                            tiene_key: !!emisorEncontrado.certificado_key_presente,
+                            cer_valor: emisorEncontrado.certificado_cer_presente ? 'PRESENTE' : 'AUSENTE',
+                            key_valor: emisorEncontrado.certificado_key_presente ? 'PRESENTE' : 'AUSENTE',
+                            certificado_cer_presente: emisorEncontrado.certificado_cer_presente,
+                            certificado_key_presente: emisorEncontrado.certificado_key_presente
                         });
                         
-                        // Validar CSD completo (acepta pending si tiene certificados)
-                        if (emisorEncontrado.certificado_cer && emisorEncontrado.certificado_key) {
+                        // 🔧 FIX CRÍTICO: Validar CSD usando campos correctos que existen
+                        if (emisorEncontrado.certificado_cer_presente && emisorEncontrado.certificado_key_presente) {
                             emisorConCSD = emisorEncontrado;
                             console.log('✅ VALIDACIÓN CSD: Emisor tiene certificados completos');
                             console.log('📝 Estado CSD actual:', emisorEncontrado.estado_csd || 'no definido');
@@ -2203,8 +2204,8 @@
                         } else {
                             console.log('❌ VALIDACIÓN CSD: Emisor NO tiene certificados completos');
                             console.log('Detalles de falta:', {
-                                falta_cer: !emisorEncontrado.certificado_cer,
-                                falta_key: !emisorEncontrado.certificado_key,
+                                falta_cer: !emisorEncontrado.certificado_cer_presente,
+                                falta_key: !emisorEncontrado.certificado_key_presente,
                                 estado_csd: emisorEncontrado.estado_csd
                             });
                         }
