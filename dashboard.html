@@ -1774,21 +1774,74 @@
                 }
                 
                 // Verificar que hay emisores con CSD disponibles
+                // BUSCAR PRIMERO EN LOCALSTORAGE
+                let emisorConCSD = null;
                 const emisoresData = localStorage.getItem('emisores');
-                if (!emisoresData) {
-                    alert('❌ No hay emisores registrados. Registra un emisor con CSD primero.');
-                    return;
+                
+                if (emisoresData) {
+                    const emisores = JSON.parse(emisoresData);
+                    emisorConCSD = emisores.find(e => 
+                        e.rfc === xml.emisor_rfc && 
+                        e.certificado_cer && 
+                        e.certificado_key
+                    );
+                    console.log('💾 Búsqueda en localStorage:', emisorConCSD ? 'Encontrado' : 'No encontrado');
                 }
                 
-                const emisores = JSON.parse(emisoresData);
-                const emisorConCSD = emisores.find(e => 
-                    e.rfc === xml.emisor_rfc && 
-                    e.certificado_cer && 
-                    e.certificado_key
-                );
-                
+                // SI NO SE ENCUENTRA EN LOCALSTORAGE, BUSCAR EN BASE DE DATOS
                 if (!emisorConCSD) {
-                    alert(`❌ No se encontró un emisor con CSD para el RFC: ${xml.emisor_rfc}\n\nRegistra el emisor con sus certificados CSD (.cer y .key) primero.`);
+                    console.log('💾 Emisor no encontrado en localStorage, buscando en base de datos...');
+                    const token = localStorage.getItem('token');
+                    
+                    if (token) {
+                        try {
+                            const response = await fetch('/.netlify/functions/emisores', {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                emisorConCSD = data.emisores.find(e => 
+                                    e.rfc === xml.emisor_rfc && 
+                                    e.certificado_cer && 
+                                    e.certificado_key
+                                );
+                                console.log('💾 Búsqueda en base de datos:', emisorConCSD ? 'Encontrado' : 'No encontrado');
+                                
+                                if (emisorConCSD) {
+                                    console.log('✅ Emisor con CSD encontrado en base de datos:', {
+                                        rfc: emisorConCSD.rfc,
+                                        nombre: emisorConCSD.nombre,
+                                        tiene_cer: !!emisorConCSD.certificado_cer,
+                                        tiene_key: !!emisorConCSD.certificado_key,
+                                        numero_certificado: emisorConCSD.numero_certificado
+                                    });
+                                }
+                            } else {
+                                console.error('❌ Error cargando emisores desde BD:', response.status);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error conectando con base de datos:', error);
+                        }
+                    }
+                }
+                
+                // VALIDAR QUE SE ENCONTRÓ EMISOR CON CSD
+                if (!emisorConCSD) {
+                    const errorMessage = `❌ No se encontró un emisor con CSD para el RFC: ${xml.emisor_rfc}\n\n` +
+                        `🔍 Búsqueda realizada en:\n` +
+                        `• LocalStorage: ${emisoresData ? 'Revisado' : 'Vacío'}\n` +
+                        `• Base de datos: ${localStorage.getItem('token') ? 'Revisado' : 'Sin sesión'}\n\n` +
+                        `📝 Para solucionar:\n` +
+                        `1. Verifica que el emisor esté registrado\n` +
+                        `2. Asegúrate de que tenga certificados CSD (.cer y .key)\n` +
+                        `3. Inicia sesión si es necesario`;
+                    
+                    alert(errorMessage);
                     return;
                 }
                 
