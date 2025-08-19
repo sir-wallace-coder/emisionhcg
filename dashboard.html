@@ -1290,6 +1290,35 @@
                     const emisores = responseData.emisores || responseData || [];
                     console.log('✅ Emisores extraídos:', emisores.length);
                     
+                    // 🔍 DIAGNÓSTICO CRÍTICO: Verificar estado_csd
+                    if (emisores.length > 0) {
+                        console.log('📊 DIAGNÓSTICO ESTADO_CSD:', {
+                            emisor_completo: emisores[0],
+                            estado_csd_valor: emisores[0].estado_csd,
+                            estado_csd_tipo: typeof emisores[0].estado_csd,
+                            es_activo: emisores[0].estado_csd === 'activo',
+                            es_pendiente: emisores[0].estado_csd === 'pendiente',
+                            todas_propiedades: Object.keys(emisores[0])
+                        });
+                    }
+                    
+                    // 🔍 DIAGNÓSTICO CRÍTICO: Mostrar datos completos del emisor
+                    if (emisores.length > 0) {
+                        console.log('📊 DIAGNÓSTICO: Datos completos del primer emisor:', {
+                            id: emisores[0].id,
+                            rfc: emisores[0].rfc,
+                            nombre: emisores[0].nombre,
+                            certificado_cer_presente: !!emisores[0].certificado_cer,
+                            certificado_key_presente: !!emisores[0].certificado_key,
+                            numero_certificado: emisores[0].numero_certificado,
+                            vigencia_desde: emisores[0].vigencia_desde,
+                            vigencia_hasta: emisores[0].vigencia_hasta,
+                            estado_csd: emisores[0].estado_csd,
+                            estado_csd_tipo: typeof emisores[0].estado_csd,
+                            todas_las_propiedades: Object.keys(emisores[0])
+                        });
+                    }
+                    
                     // Actualizar localStorage como cache
                     localStorage.setItem('emisores', JSON.stringify(emisores));
                     

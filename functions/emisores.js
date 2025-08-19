@@ -447,8 +447,14 @@ async function createEmisor(userId, data, headers) {
             const cert = new crypto.X509Certificate(cerBuffer);
             
             // Extraer número de serie REAL del certificado
-            numeroCertificado = cert.serialNumber;
-            console.log('🔢 CREATE: Número de certificado REAL extraído:', numeroCertificado);
+            const serialHex = cert.serialNumber; // Formato hexadecimal
+            numeroCertificado = BigInt('0x' + serialHex).toString(); // Convertir a decimal
+            
+            console.log('🔢 CREATE: Número de certificado procesado:', {
+              hex_original: serialHex,
+              decimal_convertido: numeroCertificado,
+              longitud: numeroCertificado.length
+            });
             
             // Extraer fechas de vigencia REALES
             const validFromRaw = cert.validFrom;  // "Apr  2 17:48:48 2021 GMT"
@@ -773,8 +779,14 @@ async function updateEmisor(userId, emisorId, data, headers) {
             const cert = new crypto.X509Certificate(cerBuffer);
             
             // Extraer número de serie REAL del certificado
-            numeroCertificado = cert.serialNumber;
-            console.log('🔢 UPDATE: Número de certificado REAL extraído:', numeroCertificado);
+            const serialHex = cert.serialNumber; // Formato hexadecimal
+            numeroCertificado = BigInt('0x' + serialHex).toString(); // Convertir a decimal
+            
+            console.log('🔢 UPDATE: Número de certificado procesado:', {
+              hex_original: serialHex,
+              decimal_convertido: numeroCertificado,
+              longitud: numeroCertificado.length
+            });
             
             // Extraer fechas de vigencia REALES
             const validFromRaw = cert.validFrom;  // "Apr  2 17:48:48 2021 GMT"
