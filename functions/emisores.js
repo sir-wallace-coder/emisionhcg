@@ -439,8 +439,8 @@ async function createEmisor(userId, data, headers) {
       nombre: nombre.trim(),
       codigo_postal: codigo_postal,
       regimen_fiscal: regimen_fiscal,
-      activo: true,
-      created_at: new Date().toISOString()
+      activo: true
+      // created_at y updated_at se manejan automáticamente por la BD
     };
 
     // Agregar datos de certificado si existen
@@ -449,18 +449,23 @@ async function createEmisor(userId, data, headers) {
       emisorData.certificado_key = certificadoInfo.certificado_key;
       emisorData.password_key = certificadoInfo.password_key;
       emisorData.numero_certificado = certificadoInfo.numero_certificado;
-      emisorData.vigencia_desde = certificadoInfo.vigencia_desde;
-      emisorData.vigencia_hasta = certificadoInfo.vigencia_hasta;
+      // Convertir fechas ISO a formato DATE para PostgreSQL
+      emisorData.vigencia_desde = certificadoInfo.vigencia_desde ? certificadoInfo.vigencia_desde.split('T')[0] : null;
+      emisorData.vigencia_hasta = certificadoInfo.vigencia_hasta ? certificadoInfo.vigencia_hasta.split('T')[0] : null;
     }
 
     // 7. Insertar emisor en base de datos
     console.log('🔧 EMISOR: Insertando en base de datos...');
-    console.log('Datos a insertar:', {
+    console.log('Datos completos a insertar:', JSON.stringify(emisorData, null, 2));
+    console.log('Resumen de datos:', {
+      usuario_id: emisorData.usuario_id,
       rfc: emisorData.rfc,
       nombre: emisorData.nombre,
       codigo_postal: emisorData.codigo_postal,
       regimen_fiscal: emisorData.regimen_fiscal,
-      tiene_certificados: !!certificadoInfo
+      activo: emisorData.activo,
+      tiene_certificados: !!certificadoInfo,
+      campos_certificado: certificadoInfo ? Object.keys(certificadoInfo) : []
     });
     
     let nuevoEmisor = null;
