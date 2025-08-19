@@ -1704,6 +1704,61 @@
             }
         }
         
+        // Función para extraer datos necesarios del XML
+        function extraerDatosDelXML(xmlContent) {
+            try {
+                // Crear parser DOM
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+                
+                // Verificar errores de parsing
+                const parserError = xmlDoc.querySelector('parsererror');
+                if (parserError) {
+                    console.error('❌ Error parsing XML:', parserError.textContent);
+                    return null;
+                }
+                
+                // Buscar el elemento Comprobante (con o sin namespace)
+                let comprobante = xmlDoc.querySelector('cfdi\\:Comprobante, Comprobante');
+                if (!comprobante) {
+                    console.error('❌ No se encontró elemento Comprobante en el XML');
+                    return null;
+                }
+                
+                // Buscar emisor y receptor
+                const emisor = xmlDoc.querySelector('cfdi\\:Emisor, Emisor');
+                const receptor = xmlDoc.querySelector('cfdi\\:Receptor, Receptor');
+                const timbreFiscal = xmlDoc.querySelector('tfd\\:TimbreFiscalDigital, TimbreFiscalDigital');
+                
+                // Extraer datos
+                const datos = {
+                    version: comprobante.getAttribute('Version') || comprobante.getAttribute('version') || '4.0',
+                    serie: comprobante.getAttribute('Serie') || comprobante.getAttribute('serie') || null,
+                    folio: comprobante.getAttribute('Folio') || comprobante.getAttribute('folio') || '1',
+                    total: comprobante.getAttribute('Total') || comprobante.getAttribute('total') || '0.00',
+                    sello: comprobante.getAttribute('Sello') || comprobante.getAttribute('sello') || null,
+                    
+                    // Datos del emisor
+                    emisor_rfc: emisor ? (emisor.getAttribute('Rfc') || emisor.getAttribute('rfc') || '') : '',
+                    emisor_nombre: emisor ? (emisor.getAttribute('Nombre') || emisor.getAttribute('nombre') || '') : '',
+                    
+                    // Datos del receptor
+                    receptor_rfc: receptor ? (receptor.getAttribute('Rfc') || receptor.getAttribute('rfc') || '') : '',
+                    receptor_nombre: receptor ? (receptor.getAttribute('Nombre') || receptor.getAttribute('nombre') || '') : '',
+                    
+                    // UUID del timbre fiscal (si existe)
+                    uuid: timbreFiscal ? (timbreFiscal.getAttribute('UUID') || timbreFiscal.getAttribute('uuid') || null) : null
+                };
+                
+                console.log('📋 Datos extraídos del XML:', datos);
+                return datos;
+                
+            } catch (error) {
+                console.error('❌ Error extrayendo datos del XML:', error);
+                return null;
+            }
+        }
+        
         // Importar XMLs
         async function importarXMLs() {
             const files = document.getElementById('xmlFiles').files;
@@ -1726,6 +1781,36 @@
                         continue;
                     }
                     
+                    console.log('📋 Extrayendo datos del XML:', file.name);
+                    
+                    // Extraer datos necesarios del XML
+                    const xmlData = extraerDatosDelXML(xmlContent);
+                    
+                    if (!xmlData) {
+                        console.error('❌ No se pudieron extraer datos del XML:', file.name);
+                        continue;
+                    }
+                    
+                    console.log('✅ Datos extraídos del XML:', xmlData);
+                    
+                    // Preparar datos para el backend
+                    const dataToSend = {
+                        xml_content: xmlContent,
+                        version_cfdi: xmlData.version || '4.0',
+                        emisor_rfc: xmlData.emisor_rfc || '',
+                        emisor_nombre: xmlData.emisor_nombre || '',
+                        receptor_rfc: xmlData.receptor_rfc || '',
+                        receptor_nombre: xmlData.receptor_nombre || '',
+                        serie: xmlData.serie || null,
+                        folio: xmlData.folio || '1',
+                        total: xmlData.total || '0.00',
+                        uuid: xmlData.uuid || null,
+                        sello: xmlData.sello || null,
+                        estado: 'importado'
+                    };
+                    
+                    console.log('📦 Enviando al backend:', dataToSend);
+                    
                     // Enviar al backend
                     const response = await fetch('/.netlify/functions/xmls', {
                         method: 'POST',
@@ -1733,11 +1818,7 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            xml_content: xmlContent,
-                            filename: file.name,
-                            estado: 'importado'
-                        })
+                        body: JSON.stringify(dataToSend)
                     });
                     
                     if (response.ok) {
