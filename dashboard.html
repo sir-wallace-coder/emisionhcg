@@ -1265,18 +1265,32 @@
                     return;
                 }
                 
-                // Procesar archivos CSD
+                // Procesar archivos CSD (OPCIONALES)
                 const cerFile = document.getElementById('certificadoCer').files[0];
                 const keyFile = document.getElementById('certificadoKey').files[0];
                 
-                if (!cerFile || !keyFile) {
-                    alert('Debes seleccionar ambos archivos CSD (.cer y .key)');
+                // Validar que si se proporciona uno, se proporcionen ambos
+                if ((cerFile && !keyFile) || (!cerFile && keyFile)) {
+                    alert('Si proporcionas certificados CSD, debes seleccionar AMBOS archivos (.cer y .key)');
                     return;
                 }
                 
-                // Convertir archivos a base64
-                emisorData.certificado_cer = await fileToBase64(cerFile);
-                emisorData.certificado_key = await fileToBase64(keyFile);
+                // Validar contraseña solo si hay archivos CSD
+                if (cerFile && keyFile && !emisorData.password_key) {
+                    alert('La contraseña de la llave privada es obligatoria cuando se proporcionan certificados CSD');
+                    return;
+                }
+                
+                // Convertir archivos a base64 solo si existen
+                if (cerFile && keyFile) {
+                    emisorData.certificado_cer = await fileToBase64(cerFile);
+                    emisorData.certificado_key = await fileToBase64(keyFile);
+                    console.log('🔐 Archivos CSD procesados correctamente');
+                } else {
+                    console.log('📝 Emisor sin certificados CSD (se pueden agregar después)');
+                    // Limpiar contraseña si no hay archivos CSD
+                    delete emisorData.password_key;
+                }
                 
                 // Mostrar loading
                 const btnGuardar = event.target;
@@ -1314,7 +1328,17 @@
                         alert('❌ Error: ' + (result.error || 'Error desconocido'));
                     }
                 } else {
-                    alert('❌ Error de conexión al guardar emisor');
+                    // Intentar obtener el error específico del backend
+                    try {
+                        const errorResult = await response.json();
+                        const errorMsg = errorResult.error || `Error HTTP ${response.status}`;
+                        const errorType = errorResult.tipo ? ` (${errorResult.tipo})` : '';
+                        alert(`❌ Error del servidor: ${errorMsg}${errorType}`);
+                        console.error('Error del backend:', errorResult);
+                    } catch (parseError) {
+                        alert(`❌ Error de conexión: HTTP ${response.status} - ${response.statusText}`);
+                        console.error('Error de conexión:', response.status, response.statusText);
+                    }
                 }
                 
             } catch (error) {
