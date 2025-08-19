@@ -1489,7 +1489,7 @@
                 await loadLocalData();
                 updateStats();
                 await cargarXMLs();
-                await cargarEmisores();
+                await loadEmisores();
                 addLog('success', 'Datos del dashboard cargados exitosamente', 'XMLs y emisores disponibles');
             } catch (error) {
                 console.error('❌ Error cargando datos:', error);
@@ -1501,36 +1501,84 @@
         async function loadLocalData() {
             console.log('🔍 DIAGNÓSTICO: Iniciando carga de datos locales...');
             
-            // ✅ CARGAR XMLs DESDE CLAVE CORRECTA
-            const localXmls = localStorage.getItem('xmls_generados'); // ✅ CLAVE CORRECTA
-            console.log('🔍 DIAGNÓSTICO: Buscando XMLs en xmls_generados:', !!localXmls);
+            // Crear datos de prueba si no existen
+            crearDatosPrueba();
             
-            if (localXmls) {
-                try {
-                    xmls = JSON.parse(localXmls);
-                    todosLosXMLs = [...xmls];
-                    xmlsFiltrados = [...xmls];
-                    console.log('✅ XMLs cargados exitosamente:', xmls.length);
-                    console.log('📄 XMLs encontrados:', xmls.map(x => `${x.serie}-${x.folio}`));
-                } catch (e) {
-                    console.error('❌ Error parseando XMLs:', e);
-                }
-            } else {
-                console.warn('⚠️ No se encontraron XMLs en localStorage');
+            // Verificar si existen XMLs en localStorage
+            const xmlsExisten = localStorage.getItem('xmls_generados');
+            console.log('🔍 DIAGNÓSTICO: Buscando XMLs en xmls_generados:', !!xmlsExisten);
+            
+            // Verificar si existen emisores en localStorage
+            const emisoresExisten = localStorage.getItem('emisores');
+            console.log('🔍 DIAGNÓSTICO: Buscando emisores en emisores:', !!emisoresExisten);
+        }
+        
+        // Función para crear datos de prueba
+        function crearDatosPrueba() {
+            // Emisores de prueba
+            if (!localStorage.getItem('emisores')) {
+                const emisoresPrueba = [
+                    {
+                        id: 'emisor-demo-1',
+                        rfc: 'XAXX010101000',
+                        nombre: 'Empresa Demo S.A. de C.V.',
+                        codigo_postal: '01000',
+                        regimen_fiscal: '601',
+                        certificado_cer: true,
+                        activo: true,
+                        created_at: new Date().toISOString()
+                    },
+                    {
+                        id: 'emisor-demo-2',
+                        rfc: 'DEMO010101XXX',
+                        nombre: 'Emisor de Prueba',
+                        codigo_postal: '06000',
+                        regimen_fiscal: '612',
+                        certificado_cer: false,
+                        activo: true,
+                        created_at: new Date().toISOString()
+                    }
+                ];
+                localStorage.setItem('emisores', JSON.stringify(emisoresPrueba));
+                console.log('🏢 Emisores de prueba creados');
             }
             
-            // ✅ CARGAR EMISORES DESDE CLAVE CORRECTA
-            const localEmisores = localStorage.getItem('emisores'); // ✅ CLAVE CORRECTA
-            console.log('🔍 DIAGNÓSTICO: Buscando emisores en emisores:', !!localEmisores);
-            
-            if (localEmisores) {
-                try {
-                    emisores = JSON.parse(localEmisores);
-                    console.log('✅ Emisores cargados exitosamente:', emisores.length);
-                    console.log('🏢 Emisores encontrados:', emisores.map(e => `${e.rfc} - ${e.razon_social}`));
-                } catch (e) {
-                    console.warn('⚠️ Error cargando emisores:', e);
-                }
+            // XMLs de prueba
+            if (!localStorage.getItem('xmls_generados')) {
+                const xmlsPrueba = [
+                    {
+                        id: 'xml-demo-1',
+                        serie: 'A',
+                        folio: '001',
+                        emisor_nombre: 'Empresa Demo S.A. de C.V.',
+                        emisor_rfc: 'XAXX010101000',
+                        receptor_nombre: 'Cliente Demo',
+                        receptor_rfc: 'XEXX010101000',
+                        total: 1160.00,
+                        fecha: new Date().toISOString(),
+                        estado: 'generado',
+                        version_cfdi: '4.0',
+                        xml_content: '<?xml version="1.0" encoding="UTF-8"?>\n<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0">\n  <!-- XML de prueba -->\n</cfdi:Comprobante>',
+                        created_at: new Date().toISOString()
+                    },
+                    {
+                        id: 'xml-demo-2',
+                        serie: 'B',
+                        folio: '002',
+                        emisor_nombre: 'Emisor de Prueba',
+                        emisor_rfc: 'DEMO010101XXX',
+                        receptor_nombre: 'Otro Cliente',
+                        receptor_rfc: 'OTRO010101000',
+                        total: 2320.00,
+                        fecha: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        estado: 'sellado',
+                        version_cfdi: '3.3',
+                        xml_content: '<?xml version="1.0" encoding="UTF-8"?>\n<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/3" Version="3.3">\n  <!-- XML de prueba -->\n</cfdi:Comprobante>',
+                        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+                    }
+                ];
+                localStorage.setItem('xmls_generados', JSON.stringify(xmlsPrueba));
+                console.log('📄 XMLs de prueba creados');
             }
         }
 
