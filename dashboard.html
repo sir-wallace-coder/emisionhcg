@@ -1283,8 +1283,12 @@
                 });
                 
                 if (response.ok) {
-                    const emisores = await response.json();
-                    console.log('✅ Emisores cargados desde backend:', emisores.length);
+                    const responseData = await response.json();
+                    console.log('📊 Respuesta completa del backend:', responseData);
+                    
+                    // Extraer array de emisores del objeto respuesta
+                    const emisores = responseData.emisores || responseData || [];
+                    console.log('✅ Emisores extraídos:', emisores.length);
                     
                     // Actualizar localStorage como cache
                     localStorage.setItem('emisores', JSON.stringify(emisores));
