@@ -1213,9 +1213,26 @@
                         <td>${fecha}</td>
                         <td><span class="badge bg-secondary">${xml.estado || 'generado'}</span></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="viewXMLSimple('${xml.id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewXMLSimple('${xml.id}')" title="Ver XML">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="descargarXML('${xml.id}')" title="Descargar XML">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="editarXML('${xml.id}')" title="Editar XML">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${xml.estado !== 'sellado' ? `
+                                    <button class="btn btn-sm btn-outline-info" onclick="sellarXML('${xml.id}')" title="Sellar XML">
+                                        <i class="fas fa-stamp"></i>
+                                    </button>
+                                ` : `
+                                    <span class="btn btn-sm btn-secondary disabled" title="Ya sellado">
+                                        <i class="fas fa-check-circle"></i>
+                                    </span>
+                                `}
+                            </div>
                         </td>
                     </tr>
                 `;
