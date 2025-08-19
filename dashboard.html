@@ -709,14 +709,153 @@
 
     <script>
         // Initialize dashboard when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
             
-            // Initialize all dashboard components
-            if (typeof CFDIDashboardMain !== 'undefined') {
-                CFDIDashboardMain.initialize();
-            }
+            // Wait for all modules to load
+            setTimeout(async () => {
+                try {
+                    // Check if CFDIDashboardMain class is available
+                    if (typeof CFDIDashboardMain !== 'undefined') {
+                        console.log('✅ CFDIDashboardMain class found, creating instance...');
+                        
+                        // Create instance and initialize
+                        window.dashboardMain = new CFDIDashboardMain();
+                        await window.dashboardMain.initialize();
+                        
+                        console.log('🎉 Dashboard initialized successfully!');
+                    } else {
+                        console.error('❌ CFDIDashboardMain class not found');
+                        
+                        // Fallback: try to load data manually
+                        console.log('🔄 Attempting fallback initialization...');
+                        loadFallbackData();
+                    }
+                } catch (error) {
+                    console.error('❌ Error initializing dashboard:', error);
+                    loadFallbackData();
+                }
+            }, 500); // Wait 500ms for modules to load
         });
+        
+        // Fallback function to load data manually
+        function loadFallbackData() {
+            console.log('🔄 Loading data with fallback method...');
+            
+            try {
+                // Load XMLs from localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (xmlsData) {
+                    const xmls = JSON.parse(xmlsData);
+                    console.log('📄 XMLs loaded:', xmls.length);
+                    
+                    // Display XMLs in simple format
+                    displayXMLsSimple(xmls);
+                } else {
+                    console.log('📄 No XMLs found in localStorage');
+                    displayEmptyState();
+                }
+                
+                // Load emisores
+                const emisoresData = localStorage.getItem('emisores');
+                if (emisoresData) {
+                    const emisores = JSON.parse(emisoresData);
+                    console.log('🏢 Emisores loaded:', emisores.length);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error in fallback loading:', error);
+                displayEmptyState();
+            }
+        }
+        
+        // Simple XML display function
+        function displayXMLsSimple(xmls) {
+            const xmlsContent = document.getElementById('xmlsContent');
+            if (!xmlsContent) return;
+            
+            if (xmls.length === 0) {
+                displayEmptyState();
+                return;
+            }
+            
+            let html = `
+                <div class="table-container">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Serie-Folio</th>
+                                <th>Emisor</th>
+                                <th>Receptor</th>
+                                <th>Total</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            xmls.forEach(xml => {
+                const fecha = xml.fecha ? new Date(xml.fecha).toLocaleDateString() : 'N/A';
+                const total = parseFloat(xml.total || 0).toFixed(2);
+                
+                html += `
+                    <tr>
+                        <td>${xml.serie || 'A'}-${xml.folio || '1'}</td>
+                        <td><strong>${xml.emisor_nombre || 'N/A'}</strong><br><small>${xml.emisor_rfc || 'N/A'}</small></td>
+                        <td><strong>${xml.receptor_nombre || 'N/A'}</strong><br><small>${xml.receptor_rfc || 'N/A'}</small></td>
+                        <td>$${total}</td>
+                        <td>${fecha}</td>
+                        <td><span class="badge bg-secondary">${xml.estado || 'generado'}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewXMLSimple('${xml.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            xmlsContent.innerHTML = html;
+            console.log('✅ XMLs displayed successfully');
+        }
+        
+        // Empty state display
+        function displayEmptyState() {
+            const xmlsContent = document.getElementById('xmlsContent');
+            if (!xmlsContent) return;
+            
+            xmlsContent.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-file-invoice fa-4x"></i>
+                    <h4>No hay XMLs generados</h4>
+                    <p>Comienza generando tu primer comprobante CFDI</p>
+                    <a href="generator.html" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Generar Nuevo XML
+                    </a>
+                </div>
+            `;
+        }
+        
+        // Simple XML viewer
+        function viewXMLSimple(xmlId) {
+            const xmlsData = localStorage.getItem('xmls_generados');
+            if (!xmlsData) return;
+            
+            const xmls = JSON.parse(xmlsData);
+            const xml = xmls.find(x => x.id === xmlId);
+            
+            if (xml) {
+                alert(`XML: ${xml.serie || 'A'}-${xml.folio || '1'}\nEmisor: ${xml.emisor_nombre || 'N/A'}\nTotal: $${parseFloat(xml.total || 0).toFixed(2)}`);
+            }
+        }
     </script>
 </body>
 </html>
