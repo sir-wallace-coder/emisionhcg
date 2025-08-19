@@ -1447,6 +1447,11 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
             
+            // 🚨 FIX CRÍTICO: Limpiar localStorage de emisores al inicio para evitar columnas incorrectas
+            console.log('🗑️ LIMPIEZA PROACTIVA: Eliminando datos antiguos de emisores con columnas incorrectas');
+            localStorage.removeItem('emisores');
+            console.log('✅ localStorage de emisores limpiado proactivamente');
+            
             // 🔧 FIX CRÍTICO: Usar directamente las funciones correctas sin depender de CFDIDashboardMain
             setTimeout(async () => {
                 try {
@@ -1513,9 +1518,14 @@
                     console.log('✅ Emisores cargados desde backend en fallback:', emisores.length);
                 } catch (backendError) {
                     console.error('❌ Error cargando desde backend en fallback:', backendError);
-                    // Solo como último recurso usar localStorage
-                    emisores = StorageUtils.getEmisores();
-                    console.log('⚠️ Fallback a localStorage:', emisores.length);
+                    // 🚨 FIX CRÍTICO: NO usar localStorage para emisores (datos antiguos con columnas incorrectas)
+                    console.log('🚨 CORRECCIÓN: Limpiando localStorage de emisores - puede contener datos con columnas incorrectas');
+                    
+                    // Limpiar localStorage de emisores para evitar datos con columnas incorrectas
+                    localStorage.removeItem('emisores');
+                    console.log('🗑️ localStorage de emisores limpiado para evitar columnas incorrectas');
+                    
+                    emisores = []; // Array vacío en lugar de datos antiguos
                 }
                 
                 // Display XMLs and emisores
