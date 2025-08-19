@@ -77,7 +77,7 @@ async function getXMLs(userId, headers) {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ xmls })
+      body: JSON.stringify({ success: true, xmls })
     };
   } catch (error) {
     console.error('Get XMLs error:', error);

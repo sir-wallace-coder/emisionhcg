@@ -81,7 +81,7 @@ async function getEmisores(userId, headers) {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ emisores })
+      body: JSON.stringify({ success: true, emisores })
     };
   } catch (error) {
     console.error('Get emisores error:', error);
