@@ -1,5 +1,6 @@
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
+const { procesarCertificado, validarLlavePrivada, validarParCertificadoLlave } = require('./utils/csd-processor');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -448,102 +449,79 @@ async function createEmisor(userId, data, headers) {
           };
         }
         
-        // 4. Extraer información REAL del certificado .cer
-        let numeroCertificado = null;
-        let vigenciaDesde = null;
-        let vigenciaHasta = null;
+        // 🔧 FIX CRÍTICO: Usar procesador CSD profesional para conversión a PEM
+        console.log('🚨 CORRECCIÓN: Usando procesador CSD profesional para certificados');
         
         try {
-          // Decodificar el certificado desde base64
-          const cerBuffer = Buffer.from(certificado_cer, 'base64');
+          // 1. Procesar certificado .cer con el procesador profesional
+          console.log('📋 Procesando certificado .cer...');
+          const certInfo = procesarCertificado(certificado_cer);
           
-          // Usar crypto nativo de Node.js para procesar el certificado X.509
-          const crypto = require('crypto');
-          
-          try {
-            // Crear objeto X509Certificate (Node.js 15.6+)
-            const cert = new crypto.X509Certificate(cerBuffer);
-            
-            // Extraer número de serie REAL del certificado
-            const serialHex = cert.serialNumber; // Formato hexadecimal ASCII
-            
-            // Convertir de hex ASCII a string (cada 2 caracteres = 1 byte)
-            let serialString = '';
-            for (let i = 0; i < serialHex.length; i += 2) {
-              const hexByte = serialHex.substr(i, 2);
-              const charCode = parseInt(hexByte, 16);
-              serialString += String.fromCharCode(charCode);
-            }
-            
-            numeroCertificado = serialString; // Resultado: "00001000000506969930"
-            
-            console.log('🔢 CREATE: Número de certificado procesado:', {
-              hex_original: serialHex,
-              ascii_convertido: serialString,
-              longitud: serialString.length,
-              es_correcto: serialString === '00001000000506969930'
-            });
-            
-            // Extraer fechas de vigencia REALES
-            const validFromRaw = cert.validFrom;  // "Apr  2 17:48:48 2021 GMT"
-            const validToRaw = cert.validTo;      // "Apr  2 17:48:48 2021 GMT"
-            
-            // Convertir fechas X.509 a formato PostgreSQL (YYYY-MM-DD)
-            vigenciaDesde = validFromRaw ? new Date(validFromRaw).toISOString().split('T')[0] : null;
-            vigenciaHasta = validToRaw ? new Date(validToRaw).toISOString().split('T')[0] : null;
-            
-            console.log('📅 CREATE: Fechas de vigencia extraídas y convertidas:', {
-              desde_raw: validFromRaw,
-              hasta_raw: validToRaw,
-              desde_formatted: vigenciaDesde,
-              hasta_formatted: vigenciaHasta
-            });
-            
-          } catch (x509Error) {
-            console.log('⚠️ CREATE: Error con X509Certificate, intentando método alternativo:', x509Error.message);
-            
-            // Método alternativo: convertir a PEM y usar openssl-like parsing
-            const pemCert = '-----BEGIN CERTIFICATE-----\n' + 
-                           certificado_cer.match(/.{1,64}/g).join('\n') + 
-                           '\n-----END CERTIFICATE-----';
-            
-            // Extraer número de serie del PEM
-            const serialMatch = pemCert.match(/Serial Number:\s*([a-fA-F0-9:]+)/i);
-            if (serialMatch) {
-              const serialHex = serialMatch[1].replace(/[:\s]/g, '');
-              numeroCertificado = BigInt('0x' + serialHex).toString();
-            } else {
-              // Fallback: usar hash del certificado
-              const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
-              numeroCertificado = hash.slice(-20);
-            }
-            
-            console.log('🔢 CREATE: Número de certificado (método alternativo):', numeroCertificado);
+          if (!certInfo.valido) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: 'Error procesando certificado .cer: ' + certInfo.mensaje,
+                tipo: 'CERTIFICADO_CER_INVALIDO'
+              })
+            };
           }
           
-        } catch (certParseError) {
-          console.error('❌ Error extrayendo datos del certificado:', certParseError);
-          // Fallback: generar número basado en timestamp y RFC
-          const timestamp = Date.now().toString().slice(-8);
-          const rfcShort = rfcClean.slice(0, 8);
-          numeroCertificado = `${rfcShort}${timestamp}`;
-          console.log('🔢 Usando número de certificado fallback:', numeroCertificado);
-        }
+          // 2. Validar y convertir llave privada .key a PEM
+          console.log('🔑 Validando y convirtiendo llave privada .key a PEM...');
+          const keyInfo = validarLlavePrivada(certificado_key, password_key);
+          
+          if (!keyInfo.valida) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: 'Error validando llave privada .key: ' + keyInfo.mensaje,
+                tipo: 'CERTIFICADO_KEY_INVALIDO'
+              })
+            };
+          }
+          
+          // 3. Validar que el certificado y la llave privada coincidan
+          console.log('🔗 Validando coincidencia certificado-llave...');
+          const parValido = validarParCertificadoLlave(certInfo.certificadoPem, keyInfo.llavePrivadaPem);
+          
+          if (!parValido.valido) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: 'El certificado y la llave privada no coinciden: ' + parValido.mensaje,
+                tipo: 'CERTIFICADO_KEY_NO_COINCIDEN'
+              })
+            };
+          }
+          
+          // ✅ ÉXITO: Certificados procesados y validados correctamente
+          certificadoInfo = {
+            certificado_cer: certInfo.certificadoPem,  // 🔧 Guardar en formato PEM
+            certificado_key: keyInfo.llavePrivadaPem,  // 🔧 Guardar en formato PEM (CRÍTICO)
+            password_key: password_key,
+            numero_certificado: certInfo.numeroSerie,
+            vigencia_desde: certInfo.vigenciaDesde,
+            vigencia_hasta: certInfo.vigenciaHasta,
+            validado_en: new Date().toISOString(),
+            estado_validacion: 'VALIDADO_PROFESIONAL'
+          };
+          
+          console.log('✅ EMISOR: Certificados CSD procesados con procesador profesional:', {
+            numero_certificado: certInfo.numeroSerie,
+            vigencia_desde: certInfo.vigenciaDesde,
+            vigencia_hasta: certInfo.vigenciaHasta,
+            certificado_pem: !!certInfo.certificadoPem,
+            llave_privada_pem: !!keyInfo.llavePrivadaPem,
+            par_validado: parValido.valido
+          });
         
-        certificadoInfo = {
-          certificado_cer: certificado_cer,
-          certificado_key: certificado_key,
-          password_key: password_key,
-          numero_certificado: numeroCertificado,
-          vigencia_desde: vigenciaDesde || new Date().toISOString(),
-          vigencia_hasta: vigenciaHasta || new Date(Date.now() + 4 * 365 * 24 * 60 * 60 * 1000).toISOString(),
-          validado_en: new Date().toISOString(),
-          estado_validacion: 'VALIDADO_BASICO'
-        };
+        console.log('🔢 Número de certificado generado:', certInfo.numeroSerie, `(${certInfo.numeroSerie.length} caracteres)`);
         
-        console.log('🔢 Número de certificado generado:', numeroCertificado, `(${numeroCertificado.length} caracteres)`);
-        
-        console.log('✅ EMISOR: Certificados CSD validados exitosamente (sin validación de expiración)');
+        console.log('✅ EMISOR: Certificados CSD validados exitosamente con procesador profesional');
         
       } catch (csdError) {
         console.error('❌ EMISOR: Error validando certificados CSD:', csdError);
@@ -790,108 +768,72 @@ async function updateEmisor(userId, emisorId, data, headers) {
       console.log('🔧 EMISOR UPDATE: Procesando certificados CSD...');
       
       try {
-        // Extraer información REAL del certificado .cer (misma lógica que createEmisor)
-        let numeroCertificado = null;
-        let vigenciaDesde = null;
-        let vigenciaHasta = null;
+        // 🔧 FIX CRÍTICO: Usar procesador CSD profesional para conversión a PEM (UPDATE)
+        console.log('🚨 CORRECCIÓN UPDATE: Usando procesador CSD profesional para certificados');
         
-        try {
-          // Decodificar el certificado desde base64
-          const cerBuffer = Buffer.from(certificado_cer, 'base64');
-          
-          // Usar crypto nativo de Node.js para procesar el certificado X.509
-          const crypto = require('crypto');
-          
-          try {
-            // Crear objeto X509Certificate (Node.js 15.6+)
-            const cert = new crypto.X509Certificate(cerBuffer);
-            
-            // Extraer número de serie REAL del certificado
-            const serialHex = cert.serialNumber; // Formato hexadecimal ASCII
-            
-            // Convertir de hex ASCII a string (cada 2 caracteres = 1 byte)
-            let serialString = '';
-            for (let i = 0; i < serialHex.length; i += 2) {
-              const hexByte = serialHex.substr(i, 2);
-              const charCode = parseInt(hexByte, 16);
-              serialString += String.fromCharCode(charCode);
-            }
-            
-            numeroCertificado = serialString; // Resultado: "00001000000506969930"
-            
-            console.log('🔢 UPDATE: Número de certificado procesado:', {
-              hex_original: serialHex,
-              ascii_convertido: serialString,
-              longitud: serialString.length,
-              es_correcto: serialString === '00001000000506969930'
-            });
-            
-            // Extraer fechas de vigencia REALES
-            const validFromRaw = cert.validFrom;  // "Apr  2 17:48:48 2021 GMT"
-            const validToRaw = cert.validTo;      // "Apr  2 17:48:48 2021 GMT"
-            
-            // Convertir fechas X.509 a formato PostgreSQL (YYYY-MM-DD)
-            vigenciaDesde = validFromRaw ? new Date(validFromRaw).toISOString().split('T')[0] : null;
-            vigenciaHasta = validToRaw ? new Date(validToRaw).toISOString().split('T')[0] : null;
-            
-            console.log('📅 UPDATE: Fechas de vigencia extraídas y convertidas:', {
-              desde_raw: validFromRaw,
-              hasta_raw: validToRaw,
-              desde_formatted: vigenciaDesde,
-              hasta_formatted: vigenciaHasta
-            });
-            
-          } catch (x509Error) {
-            console.log('⚠️ UPDATE: Error con X509Certificate, intentando método alternativo:', x509Error.message);
-            
-            // Método alternativo: convertir a PEM y usar openssl-like parsing
-            const pemCert = '-----BEGIN CERTIFICATE-----\n' + 
-                           certificado_cer.match(/.{1,64}/g).join('\n') + 
-                           '\n-----END CERTIFICATE-----';
-            
-            // Extraer número de serie del PEM
-            const serialMatch = pemCert.match(/Serial Number:\s*([a-fA-F0-9:]+)/i);
-            if (serialMatch) {
-              const serialHex = serialMatch[1].replace(/[:\s]/g, '');
-              numeroCertificado = BigInt('0x' + serialHex).toString();
-            } else {
-              // Fallback: usar hash del certificado
-              const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
-              numeroCertificado = hash.slice(-20);
-            }
-            
-            console.log('🔢 UPDATE: Número de certificado (método alternativo):', numeroCertificado);
-          }
-          
-        } catch (certParseError) {
-          console.error('❌ UPDATE: Error extrayendo datos del certificado:', certParseError);
-          // Fallback: generar número basado en timestamp y RFC
-          const timestamp = Date.now().toString().slice(-8);
-          const rfcShort = (updateData.rfc || 'UNKNOWN').slice(0, 8);
-          numeroCertificado = `${rfcShort}${timestamp}`;
-          console.log('🔢 UPDATE: Usando número de certificado fallback:', numeroCertificado);
+        // 1. Procesar certificado .cer con el procesador profesional
+        console.log('📋 UPDATE: Procesando certificado .cer...');
+        const certInfo = procesarCertificado(certificado_cer);
+        
+        if (!certInfo.valido) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Error procesando certificado .cer: ' + certInfo.mensaje,
+              tipo: 'CERTIFICADO_CER_INVALIDO'
+            })
+          };
         }
         
-        // Agregar datos de certificado a la actualización
-        updateData.certificado_cer = certificado_cer;
-        updateData.certificado_key = certificado_key;
+        // 2. Validar y convertir llave privada .key a PEM
+        console.log('🔑 UPDATE: Validando y convirtiendo llave privada .key a PEM...');
+        const keyInfo = validarLlavePrivada(certificado_key, password_key);
+        
+        if (!keyInfo.valida) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Error validando llave privada .key: ' + keyInfo.mensaje,
+              tipo: 'CERTIFICADO_KEY_INVALIDO'
+            })
+          };
+        }
+        
+        // 3. Validar que el certificado y la llave privada coincidan
+        console.log('🔗 UPDATE: Validando coincidencia certificado-llave...');
+        const parValido = validarParCertificadoLlave(certInfo.certificadoPem, keyInfo.llavePrivadaPem);
+        
+        if (!parValido.valido) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: 'El certificado y la llave privada no coinciden: ' + parValido.mensaje,
+              tipo: 'CERTIFICADO_KEY_NO_COINCIDEN'
+            })
+          };
+        }
+        
+        // ✅ ÉXITO: Certificados procesados y validados correctamente con procesador profesional
+        updateData.certificado_cer = certInfo.certificadoPem;  // 🔧 Guardar en formato PEM
+        updateData.certificado_key = keyInfo.llavePrivadaPem;  // 🔧 Guardar en formato PEM (CRÍTICO)
         updateData.password_key = password_key;
-        updateData.numero_certificado = numeroCertificado;
-        updateData.vigencia_desde = vigenciaDesde; // Ya convertido a formato YYYY-MM-DD
-        updateData.vigencia_hasta = vigenciaHasta; // Ya convertido a formato YYYY-MM-DD
+        updateData.numero_certificado = certInfo.numeroSerie;
+        updateData.vigencia_desde = certInfo.vigenciaDesde;
+        updateData.vigencia_hasta = certInfo.vigenciaHasta;
         updateData.estado_csd = 'activo'; // Marcar como activo si tiene certificados completos
         
-        console.log('🔍 UPDATE DIAGNÓSTICO: Datos de certificado agregados a updateData:', {
-          certificado_cer_length: updateData.certificado_cer ? updateData.certificado_cer.length : 0,
-          certificado_key_length: updateData.certificado_key ? updateData.certificado_key.length : 0,
-          password_key_presente: !!updateData.password_key,
-          numero_certificado: updateData.numero_certificado,
-          vigencia_desde: updateData.vigencia_desde,
-          vigencia_hasta: updateData.vigencia_hasta,
+        console.log('✅ UPDATE: Certificados CSD procesados con procesador profesional:', {
+          numero_certificado: certInfo.numeroSerie,
+          vigencia_desde: certInfo.vigenciaDesde,
+          vigencia_hasta: certInfo.vigenciaHasta,
+          certificado_pem: !!certInfo.certificadoPem,
+          llave_privada_pem: !!keyInfo.llavePrivadaPem,
+          par_validado: parValido.valido,
           estado_csd: updateData.estado_csd
         });
-        
-        console.log('✅ UPDATE: Certificados CSD procesados exitosamente');
         
       } catch (csdError) {
         console.error('❌ UPDATE: Error procesando certificados CSD:', csdError);
