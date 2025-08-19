@@ -1139,7 +1139,7 @@
         
         function logout() {
             console.log('🚪 Cerrar sesión');
-            localStorage.removeItem('token');
+            localStorage.removeItem('cfdi_token');
             localStorage.removeItem('user');
             window.location.href = 'login.html';
         }
@@ -1258,7 +1258,7 @@
         async function cargarEmisoresDesdeBackend() {
             console.log('🔄 Cargando emisores desde backend...');
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('cfdi_token');
                 if (!token) {
                     console.error('❌ Sin token de autenticación');
                     alert('Sesión expirada. Por favor inicia sesión nuevamente.');
@@ -2016,7 +2016,7 @@
                 }
                 
                 // TODO: Actualizar en base de datos si hay usuario autenticado
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('cfdi_token');
                 if (token) {
                     console.log('💾 Actualizando XML en base de datos...');
                     // Implementar llamada PUT a /functions/xmls cuando esté disponible
@@ -2311,7 +2311,7 @@
         const StorageUtils = {
             // Obtener token con compatibilidad de claves
             getToken() {
-                return localStorage.getItem('token') || localStorage.getItem('cfdi_token');
+                return localStorage.getItem('cfdi_token');
             },
             
             // Establecer token en clave estándar
@@ -2323,7 +2323,7 @@
             
             // Limpiar todas las claves de sesión
             clearAuth() {
-                localStorage.removeItem('token');
+                localStorage.removeItem('cfdi_token');
                 localStorage.removeItem('cfdi_token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('cfdi_user');
@@ -2529,7 +2529,7 @@
             try {
                 // Limpiar datos de autenticación
                 // Limpiar todas las claves de sesión (compatibilidad)
-                localStorage.removeItem('token');
+                localStorage.removeItem('cfdi_token');
                 localStorage.removeItem('cfdi_token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('cfdi_user');
@@ -2685,7 +2685,7 @@
                 
                 // Enviar al backend
                 // Buscar token en ambas claves para compatibilidad
-                const token = localStorage.getItem('token') || localStorage.getItem('cfdi_token');
+                const token = localStorage.getItem('cfdi_token');
                 console.log('🌐 FRONTEND: Realizando petición PUT a /.netlify/functions/emisores...');
                 const response = await fetch('/.netlify/functions/emisores?id=' + emisorId, {
                     method: 'PUT',
@@ -2907,7 +2907,7 @@
                 btnImportar.disabled = true;
                 
                 // Buscar token en ambas claves para compatibilidad
-                const token = localStorage.getItem('token') || localStorage.getItem('cfdi_token');
+                const token = localStorage.getItem('cfdi_token');
                 let importedCount = 0;
                 
                 for (let i = 0; i < files.length; i++) {
@@ -3034,7 +3034,7 @@
             console.log('🔧 Editando emisor desde BD:', emisorId);
             
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('cfdi_token');
                 if (!token) {
                     console.error('❌ Sin token de autenticación');
                     alert('Sesión expirada. Por favor inicia sesión nuevamente.');
@@ -3355,7 +3355,7 @@
                 // 🔧 ENVIAR AL BACKEND REAL (NO localStorage)
                 console.log('🌐 LEGACY CORREGIDA: Enviando al backend /.netlify/functions/emisores...');
                 
-                const token = localStorage.getItem('token') || localStorage.getItem('cfdi_token');
+                const token = localStorage.getItem('cfdi_token');
                 const response = await fetch('/.netlify/functions/emisores?id=' + emisorId, {
                     method: 'PUT',
                     headers: {
