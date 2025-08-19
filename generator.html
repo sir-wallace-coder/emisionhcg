@@ -687,6 +687,45 @@
         // SISTEMA DE RECEPTORES GUARDADOS
         let receptoresGuardados = JSON.parse(localStorage.getItem('receptoresGuardados') || '[]');
         
+        // SISTEMA DE XMLs GUARDADOS EN LOCALSTORAGE
+        let xmlsGuardados = JSON.parse(localStorage.getItem('xmlsGuardados') || '[]');
+        
+        // Función para guardar XML en localStorage
+        function guardarXMLEnLocalStorage(xmlContent, sellado, infoSellado) {
+            try {
+                const xmlData = {
+                    id: Date.now().toString(),
+                    fecha: new Date().toISOString(),
+                    version: document.getElementById('versionCfdi').value,
+                    serie: document.getElementById('serie').value || '',
+                    folio: document.getElementById('folio').value,
+                    emisor_rfc: document.getElementById('emisorRfc').value,
+                    emisor_nombre: document.getElementById('emisorNombre').value,
+                    receptor_rfc: document.getElementById('receptorRfc').value,
+                    receptor_nombre: document.getElementById('receptorNombre').value,
+                    subtotal: conceptos.reduce((sum, c) => sum + c.importe, 0).toFixed(2),
+                    total: (conceptos.reduce((sum, c) => sum + c.importe, 0) + conceptos.reduce((sum, c) => sum + (c.impuesto ? c.impuesto.importe : 0), 0)).toFixed(2),
+                    xml_content: xmlContent,
+                    sellado: sellado,
+                    info_sellado: infoSellado,
+                    estado: sellado ? 'sellado' : 'generado',
+                    uuid: null // Se generaría con timbrado
+                };
+                
+                xmlsGuardados.push(xmlData);
+                localStorage.setItem('xmlsGuardados', JSON.stringify(xmlsGuardados));
+                
+                console.log('✅ XML guardado en localStorage:', xmlData.id);
+                showAlert(`✅ XML guardado localmente. Serie: ${xmlData.serie} Folio: ${xmlData.folio}`, 'success');
+                
+                return xmlData;
+            } catch (error) {
+                console.error('❌ Error guardando XML en localStorage:', error);
+                showAlert('❌ Error guardando XML localmente', 'error');
+                throw error;
+            }
+        }
+        
         // Función para cargar receptores guardados en el selector
         function cargarListaReceptores() {
             const selector = document.getElementById('receptorGuardado');
@@ -1170,10 +1209,29 @@
                     console.error('Error guardando receptor:', error);
                 }
                 
-                // Guardar automáticamente si está habilitado y el usuario está logueado
+                // Guardar automáticamente el XML generado
                 const autoSave = document.getElementById('autoSave').checked;
-                if (autoSave && currentUser) {
-                    await guardarXMLEnBD(xmlFinal, sellado, infoSellado);
+                console.log('🔍 Estado de guardado:', { autoSave, currentUser: !!currentUser });
+                
+                if (autoSave) {
+                    if (currentUser) {
+                        // Guardar en base de datos si el usuario está logueado
+                        console.log('💾 Guardando XML en base de datos...');
+                        try {
+                            await guardarXMLEnBD(xmlFinal, sellado, infoSellado);
+                            console.log('✅ XML guardado en base de datos exitosamente');
+                        } catch (error) {
+                            console.error('❌ Error guardando en BD:', error);
+                            // Fallback a localStorage si falla la BD
+                            guardarXMLEnLocalStorage(xmlFinal, sellado, infoSellado);
+                        }
+                    } else {
+                        // Guardar en localStorage si no hay usuario logueado
+                        console.log('💾 Guardando XML en localStorage (usuario no logueado)...');
+                        guardarXMLEnLocalStorage(xmlFinal, sellado, infoSellado);
+                    }
+                } else {
+                    console.log('⚠️ Guardado automático deshabilitado');
                 }
 
                 // Descargar automáticamente si está habilitado
