@@ -438,38 +438,47 @@ async function createEmisor(userId, data, headers) {
         try {
           // Decodificar el certificado desde base64
           const cerBuffer = Buffer.from(certificado_cer, 'base64');
-          const cerString = cerBuffer.toString('utf8');
           
-          // Buscar el número de serie en el certificado
-          // El número de serie está en formato hexadecimal en el certificado
-          const serialMatch = cerString.match(/Serial Number:\s*([a-fA-F0-9:]+)/i) || 
-                             cerString.match(/serialNumber=([a-fA-F0-9]+)/i);
+          // Usar crypto nativo de Node.js para procesar el certificado X.509
+          const crypto = require('crypto');
           
-          if (serialMatch) {
-            // Limpiar el número de serie (quitar : y espacios)
-            const serialHex = serialMatch[1].replace(/[:\s]/g, '');
-            // Convertir de hex a decimal y tomar los últimos 20 dígitos
-            const serialDecimal = BigInt('0x' + serialHex).toString();
-            numeroCertificado = serialDecimal.slice(-20); // Máximo 20 caracteres
-            console.log('🔢 Número de certificado extraído del .cer:', numeroCertificado);
-          } else {
-            console.log('⚠️ No se pudo extraer el número de serie del certificado, usando fallback');
-            // Fallback: generar número basado en hash del certificado
-            const crypto = require('crypto');
-            const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
-            numeroCertificado = hash.slice(-20); // Últimos 20 caracteres del hash
-          }
-          
-          // Buscar fechas de vigencia en el certificado
-          const notBeforeMatch = cerString.match(/Not Before:\s*([^\n]+)/i);
-          const notAfterMatch = cerString.match(/Not After:\s*([^\n]+)/i);
-          
-          if (notBeforeMatch) {
-            vigenciaDesde = new Date(notBeforeMatch[1]).toISOString();
-          }
-          
-          if (notAfterMatch) {
-            vigenciaHasta = new Date(notAfterMatch[1]).toISOString();
+          try {
+            // Crear objeto X509Certificate (Node.js 15.6+)
+            const cert = new crypto.X509Certificate(cerBuffer);
+            
+            // Extraer número de serie REAL del certificado
+            numeroCertificado = cert.serialNumber;
+            console.log('🔢 CREATE: Número de certificado REAL extraído:', numeroCertificado);
+            
+            // Extraer fechas de vigencia REALES
+            vigenciaDesde = cert.validFrom;
+            vigenciaHasta = cert.validTo;
+            
+            console.log('📅 CREATE: Fechas de vigencia extraídas:', {
+              desde: vigenciaDesde,
+              hasta: vigenciaHasta
+            });
+            
+          } catch (x509Error) {
+            console.log('⚠️ CREATE: Error con X509Certificate, intentando método alternativo:', x509Error.message);
+            
+            // Método alternativo: convertir a PEM y usar openssl-like parsing
+            const pemCert = '-----BEGIN CERTIFICATE-----\n' + 
+                           certificado_cer.match(/.{1,64}/g).join('\n') + 
+                           '\n-----END CERTIFICATE-----';
+            
+            // Extraer número de serie del PEM
+            const serialMatch = pemCert.match(/Serial Number:\s*([a-fA-F0-9:]+)/i);
+            if (serialMatch) {
+              const serialHex = serialMatch[1].replace(/[:\s]/g, '');
+              numeroCertificado = BigInt('0x' + serialHex).toString();
+            } else {
+              // Fallback: usar hash del certificado
+              const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
+              numeroCertificado = hash.slice(-20);
+            }
+            
+            console.log('🔢 CREATE: Número de certificado (método alternativo):', numeroCertificado);
           }
           
         } catch (certParseError) {
@@ -749,37 +758,47 @@ async function updateEmisor(userId, emisorId, data, headers) {
         try {
           // Decodificar el certificado desde base64
           const cerBuffer = Buffer.from(certificado_cer, 'base64');
-          const cerString = cerBuffer.toString('utf8');
           
-          // Buscar el número de serie en el certificado
-          const serialMatch = cerString.match(/Serial Number:\s*([a-fA-F0-9:]+)/i) || 
-                             cerString.match(/serialNumber=([a-fA-F0-9]+)/i);
+          // Usar crypto nativo de Node.js para procesar el certificado X.509
+          const crypto = require('crypto');
           
-          if (serialMatch) {
-            // Limpiar el número de serie (quitar : y espacios)
-            const serialHex = serialMatch[1].replace(/[:\s]/g, '');
-            // Convertir de hex a decimal y tomar los últimos 20 dígitos
-            const serialDecimal = BigInt('0x' + serialHex).toString();
-            numeroCertificado = serialDecimal.slice(-20); // Máximo 20 caracteres
-            console.log('🔢 UPDATE: Número de certificado extraído del .cer:', numeroCertificado);
-          } else {
-            console.log('⚠️ UPDATE: No se pudo extraer el número de serie del certificado, usando fallback');
-            // Fallback: generar número basado en hash del certificado
-            const crypto = require('crypto');
-            const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
-            numeroCertificado = hash.slice(-20); // Últimos 20 caracteres del hash
-          }
-          
-          // Buscar fechas de vigencia en el certificado
-          const notBeforeMatch = cerString.match(/Not Before:\s*([^\n]+)/i);
-          const notAfterMatch = cerString.match(/Not After:\s*([^\n]+)/i);
-          
-          if (notBeforeMatch) {
-            vigenciaDesde = new Date(notBeforeMatch[1]).toISOString();
-          }
-          
-          if (notAfterMatch) {
-            vigenciaHasta = new Date(notAfterMatch[1]).toISOString();
+          try {
+            // Crear objeto X509Certificate (Node.js 15.6+)
+            const cert = new crypto.X509Certificate(cerBuffer);
+            
+            // Extraer número de serie REAL del certificado
+            numeroCertificado = cert.serialNumber;
+            console.log('🔢 UPDATE: Número de certificado REAL extraído:', numeroCertificado);
+            
+            // Extraer fechas de vigencia REALES
+            vigenciaDesde = cert.validFrom;
+            vigenciaHasta = cert.validTo;
+            
+            console.log('📅 UPDATE: Fechas de vigencia extraídas:', {
+              desde: vigenciaDesde,
+              hasta: vigenciaHasta
+            });
+            
+          } catch (x509Error) {
+            console.log('⚠️ UPDATE: Error con X509Certificate, intentando método alternativo:', x509Error.message);
+            
+            // Método alternativo: convertir a PEM y usar openssl-like parsing
+            const pemCert = '-----BEGIN CERTIFICATE-----\n' + 
+                           certificado_cer.match(/.{1,64}/g).join('\n') + 
+                           '\n-----END CERTIFICATE-----';
+            
+            // Extraer número de serie del PEM
+            const serialMatch = pemCert.match(/Serial Number:\s*([a-fA-F0-9:]+)/i);
+            if (serialMatch) {
+              const serialHex = serialMatch[1].replace(/[:\s]/g, '');
+              numeroCertificado = BigInt('0x' + serialHex).toString();
+            } else {
+              // Fallback: usar hash del certificado
+              const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
+              numeroCertificado = hash.slice(-20);
+            }
+            
+            console.log('🔢 UPDATE: Número de certificado (método alternativo):', numeroCertificado);
           }
           
         } catch (certParseError) {

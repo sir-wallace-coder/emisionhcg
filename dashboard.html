@@ -1301,6 +1301,98 @@
             }
         }
         
+        // Función para mostrar emisores en la tabla (FALTANTE CRÍTICA)
+        function mostrarEmisores(emisores) {
+            console.log('📋 Mostrando emisores en tabla:', emisores.length);
+            
+            const emisoresContent = document.getElementById('emisoresContent');
+            if (!emisoresContent) {
+                console.error('❌ Contenedor emisoresContent no encontrado');
+                return;
+            }
+            
+            // Limpiar contenido actual
+            emisoresContent.innerHTML = '';
+            
+            if (!emisores || emisores.length === 0) {
+                emisoresContent.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No hay emisores registrados</h5>
+                        <p class="text-muted">Haz clic en "Nuevo Emisor" para agregar tu primer emisor</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Crear tabla de emisores
+            const tablaHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>RFC</th>
+                                <th>Razón Social</th>
+                                <th>Código Postal</th>
+                                <th>Régimen Fiscal</th>
+                                <th>Estado CSD</th>
+                                <th>Certificado</th>
+                                <th>Vigencia</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${emisores.map(emisor => `
+                                <tr>
+                                    <td><strong>${emisor.rfc}</strong></td>
+                                    <td>${emisor.nombre}</td>
+                                    <td>${emisor.codigo_postal}</td>
+                                    <td>${emisor.regimen_fiscal}</td>
+                                    <td>
+                                        <span class="badge ${
+                                            emisor.estado_csd === 'activo' ? 'bg-success' : 
+                                            emisor.estado_csd === 'pendiente' ? 'bg-warning' : 'bg-secondary'
+                                        }">
+                                            ${emisor.estado_csd || 'pendiente'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        ${emisor.numero_certificado ? 
+                                            `<small class="text-muted">${emisor.numero_certificado}</small>` : 
+                                            '<span class="text-muted">Sin certificado</span>'
+                                        }
+                                    </td>
+                                    <td>
+                                        ${emisor.vigencia_hasta ? 
+                                            `<small class="text-muted">${emisor.vigencia_hasta}</small>` : 
+                                            '<span class="text-muted">N/A</span>'
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="editEmisor('${emisor.id}')" 
+                                                    title="Editar emisor">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="eliminarEmisor('${emisor.id}')" 
+                                                    title="Eliminar emisor">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            emisoresContent.innerHTML = tablaHTML;
+            console.log('✅ Tabla de emisores actualizada exitosamente');
+        }
+        
         // Initialize dashboard when DOM is ready
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
