@@ -1900,68 +1900,118 @@
             actualizarContadorResultados();
         }
 
+        // 📅 FUNCIÓN AUXILIAR: Obtener fecha compatible de XML
+        function obtenerFechaXML(xml) {
+            // Buscar fecha en todos los campos posibles (compatibilidad completa)
+            const fechaValida = xml.fecha || xml.fecha_creacion || xml.created_at || xml.fecha_generacion;
+            
+            if (fechaValida) {
+                const fechaObj = new Date(fechaValida);
+                if (!isNaN(fechaObj.getTime())) {
+                    return fechaObj;
+                }
+            }
+            
+            // Si no hay fecha válida, retornar fecha muy antigua para que no pase filtros
+            return new Date('1900-01-01');
+        }
+
         function filtrarPorFecha(xmls, filtro) {
             const ahora = new Date();
             const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
             
+            console.log('🔍 Aplicando filtro de fecha:', filtro, 'Total XMLs:', xmls.length);
+            
             switch (filtro) {
                 case 'hoy':
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
-                        return fechaXml >= hoy;
+                    const resultadoHoy = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
+                        const cumple = fechaXml >= hoy;
+                        if (cumple) console.log('✅ XML cumple filtro HOY:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro HOY - Encontrados:', resultadoHoy.length);
+                    return resultadoHoy;
                     
                 case 'esta_semana':
                     const inicioSemana = new Date(hoy);
                     inicioSemana.setDate(hoy.getDate() - hoy.getDay());
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
-                        return fechaXml >= inicioSemana;
+                    const resultadoSemana = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
+                        const cumple = fechaXml >= inicioSemana;
+                        if (cumple) console.log('✅ XML cumple filtro SEMANA:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro ESTA SEMANA - Encontrados:', resultadoSemana.length);
+                    return resultadoSemana;
                     
                 case 'este_mes':
                     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
-                        return fechaXml >= inicioMes;
+                    const resultadoMes = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
+                        const cumple = fechaXml >= inicioMes;
+                        if (cumple) console.log('✅ XML cumple filtro MES:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro ESTE MES - Encontrados:', resultadoMes.length);
+                    return resultadoMes;
                     
                 case 'mes_anterior':
                     const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
-                    const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0);
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
-                        return fechaXml >= inicioMesAnterior && fechaXml <= finMesAnterior;
+                    const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59);
+                    const resultadoMesAnterior = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
+                        const cumple = fechaXml >= inicioMesAnterior && fechaXml <= finMesAnterior;
+                        if (cumple) console.log('✅ XML cumple filtro MES ANTERIOR:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro MES ANTERIOR - Encontrados:', resultadoMesAnterior.length);
+                    return resultadoMesAnterior;
                     
                 case 'ultimos_3_meses':
                     const hace3Meses = new Date(ahora.getFullYear(), ahora.getMonth() - 3, 1);
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
-                        return fechaXml >= hace3Meses;
+                    const resultado3Meses = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
+                        const cumple = fechaXml >= hace3Meses;
+                        if (cumple) console.log('✅ XML cumple filtro 3 MESES:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro ÚLTIMOS 3 MESES - Encontrados:', resultado3Meses.length);
+                    return resultado3Meses;
                     
                 case 'este_ano':
                     const inicioAno = new Date(ahora.getFullYear(), 0, 1);
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
-                        return fechaXml >= inicioAno;
+                    const resultadoAno = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
+                        const cumple = fechaXml >= inicioAno;
+                        if (cumple) console.log('✅ XML cumple filtro AÑO:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro ESTE AÑO - Encontrados:', resultadoAno.length);
+                    return resultadoAno;
                     
                 case 'personalizado':
                     const fechaDesde = document.getElementById('fechaDesde').value;
                     const fechaHasta = document.getElementById('fechaHasta').value;
                     
-                    if (!fechaDesde && !fechaHasta) return xmls;
+                    if (!fechaDesde && !fechaHasta) {
+                        console.log('⚠️ Filtro personalizado sin fechas definidas');
+                        return xmls;
+                    }
                     
-                    return xmls.filter(xml => {
-                        const fechaXml = new Date(xml.fecha_creacion);
+                    const resultadoPersonalizado = xmls.filter(xml => {
+                        const fechaXml = obtenerFechaXML(xml);
                         const cumpleDesde = !fechaDesde || fechaXml >= new Date(fechaDesde);
                         const cumpleHasta = !fechaHasta || fechaXml <= new Date(fechaHasta + 'T23:59:59');
-                        return cumpleDesde && cumpleHasta;
+                        const cumple = cumpleDesde && cumpleHasta;
+                        if (cumple) console.log('✅ XML cumple filtro PERSONALIZADO:', xml.serie, xml.folio, fechaXml);
+                        return cumple;
                     });
+                    console.log('📊 Filtro PERSONALIZADO - Encontrados:', resultadoPersonalizado.length);
+                    return resultadoPersonalizado;
                     
                 default:
+                    console.log('📄 Sin filtro de fecha - Mostrando todos');
                     return xmls;
             }
         }
