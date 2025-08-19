@@ -933,6 +933,9 @@
                 if (emisoresData) {
                     const emisores = JSON.parse(emisoresData);
                     console.log('🏢 Emisores loaded:', emisores.length);
+                    displayEmisoresSimple(emisores);
+                } else {
+                    displayEmisoresEmpty();
                 }
                 
             } catch (error) {
@@ -941,6 +944,112 @@
             }
         }
         
+        // Simple Emisores display function
+        function displayEmisoresSimple(emisores) {
+            const emisoresContent = document.getElementById('emisoresContent');
+            if (!emisoresContent) return;
+            
+            if (emisores.length === 0) {
+                displayEmisoresEmpty();
+                return;
+            }
+            
+            console.log('🏢 Renderizando', emisores.length, 'emisores');
+            
+            const tableHTML = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>RFC</th>
+                                <th>Razón Social</th>
+                                <th>Código Postal</th>
+                                <th>Régimen Fiscal</th>
+                                <th>Estado CSD</th>
+                                <th>Fecha Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${emisores.map(emisor => {
+                                // Determinar estado del CSD
+                                let estadoCSD = 'Sin CSD';
+                                let badgeClass = 'bg-secondary';
+                                
+                                if (emisor.certificado_cer && emisor.certificado_key) {
+                                    if (emisor.numero_certificado) {
+                                        estadoCSD = 'Activo';
+                                        badgeClass = 'bg-success';
+                                    } else {
+                                        estadoCSD = 'Procesando';
+                                        badgeClass = 'bg-warning';
+                                    }
+                                } else if (emisor.certificado_cer || emisor.certificado_key) {
+                                    estadoCSD = 'Incompleto';
+                                    badgeClass = 'bg-warning';
+                                }
+                                
+                                // Formatear fecha
+                                const fecha = emisor.created_at ? new Date(emisor.created_at).toLocaleDateString('es-MX') : 'N/A';
+                                
+                                return `
+                                    <tr>
+                                        <td><strong>${emisor.rfc || 'N/A'}</strong></td>
+                                        <td>${emisor.nombre || 'Sin nombre'}</td>
+                                        <td>${emisor.codigo_postal || 'N/A'}</td>
+                                        <td>${emisor.regimen_fiscal || 'N/A'}</td>
+                                        <td><span class="badge ${badgeClass}">${estadoCSD}</span></td>
+                                        <td>${fecha}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editarEmisor('${emisor.id}')" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarEmisor('${emisor.id}')" title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            emisoresContent.innerHTML = tableHTML;
+            
+            // Actualizar contador de emisores
+            const emisoresActivosElement = document.getElementById('emisoresActivos');
+            if (emisoresActivosElement) {
+                emisoresActivosElement.textContent = emisores.length;
+            }
+        }
+        
+        // Display empty state for emisores
+        function displayEmisoresEmpty() {
+            const emisoresContent = document.getElementById('emisoresContent');
+            if (!emisoresContent) return;
+            
+            emisoresContent.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h4>No hay emisores registrados</h4>
+                    <p>Registra tu primer emisor para comenzar a generar CFDIs</p>
+                    <button class="btn btn-primary" onclick="openEmisorModal()">
+                        <i class="fas fa-plus"></i> Registrar Primer Emisor
+                    </button>
+                </div>
+            `;
+            
+            // Actualizar contador
+            const emisoresActivosElement = document.getElementById('emisoresActivos');
+            if (emisoresActivosElement) {
+                emisoresActivosElement.textContent = '0';
+            }
+        }
+
         // Simple XML display function
         function displayXMLsSimple(xmls) {
             const xmlsContent = document.getElementById('xmlsContent');
@@ -1318,6 +1427,9 @@
                         const modal = bootstrap.Modal.getInstance(document.getElementById('modalEmisor'));
                         modal.hide();
                         
+                        // Refrescar lista de emisores inmediatamente
+                        refreshEmisorList();
+                        
                         // Recargar datos si existe el dashboard
                         if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
                             await window.dashboardMain.loadInitialData();
@@ -1531,6 +1643,78 @@
                 reader.onerror = reject;
                 reader.readAsText(file, 'UTF-8');
             });
+        }
+        
+        // ===== FUNCIONES DE GESTIÓN DE EMISORES =====
+        
+        function editarEmisor(emisorId) {
+            console.log('✏️ Editando emisor:', emisorId);
+            // TODO: Implementar edición de emisor
+            alert('Función de edición en desarrollo');
+        }
+        
+        // Alias para compatibilidad (por si hay referencias con nombre diferente)
+        function editEmisor(emisorId) {
+            return editarEmisor(emisorId);
+        }
+        
+        function eliminarEmisor(emisorId) {
+            console.log('🗑️ Eliminando emisor:', emisorId);
+            
+            if (!confirm('¿Estás seguro de que deseas eliminar este emisor?')) {
+                return;
+            }
+            
+            try {
+                // Cargar emisores actuales
+                const emisoresData = localStorage.getItem('emisores');
+                if (!emisoresData) {
+                    alert('No se encontraron emisores');
+                    return;
+                }
+                
+                let emisores = JSON.parse(emisoresData);
+                const emisorIndex = emisores.findIndex(e => e.id === emisorId);
+                
+                if (emisorIndex === -1) {
+                    alert('Emisor no encontrado');
+                    return;
+                }
+                
+                // Eliminar emisor
+                const emisorEliminado = emisores.splice(emisorIndex, 1)[0];
+                
+                // Guardar cambios
+                localStorage.setItem('emisores', JSON.stringify(emisores));
+                
+                // Actualizar vista
+                displayEmisoresSimple(emisores);
+                
+                console.log('✅ Emisor eliminado:', emisorEliminado.rfc);
+                alert(`Emisor ${emisorEliminado.rfc} eliminado exitosamente`);
+                
+            } catch (error) {
+                console.error('❌ Error eliminando emisor:', error);
+                alert('Error eliminando emisor: ' + error.message);
+            }
+        }
+        
+        // Función para refrescar la lista de emisores tras registro
+        function refreshEmisorList() {
+            console.log('🔄 Refrescando lista de emisores...');
+            
+            try {
+                const emisoresData = localStorage.getItem('emisores');
+                if (emisoresData) {
+                    const emisores = JSON.parse(emisoresData);
+                    displayEmisoresSimple(emisores);
+                    console.log('✅ Lista de emisores actualizada');
+                } else {
+                    displayEmisoresEmpty();
+                }
+            } catch (error) {
+                console.error('❌ Error refrescando emisores:', error);
+            }
         }
         
         // ===== NOTA: CARGA DE DATOS REALES =====
