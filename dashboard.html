@@ -1823,9 +1823,25 @@
                     
                     if (response.ok) {
                         const result = await response.json();
-                        if (result.success) {
+                        console.log('✅ Respuesta exitosa del backend:', result);
+                        
+                        // El backend devuelve { message: '...', xml: {...} } cuando es exitoso
+                        if (result.message && result.xml) {
+                            importedCount++;
+                            console.log(`✅ XML importado exitosamente: ${file.name}`);
+                        } else {
+                            console.warn('⚠️ Respuesta exitosa pero estructura inesperada:', result);
+                            // Asumir éxito si response.ok es true
                             importedCount++;
                         }
+                    } else {
+                        // Manejar errores HTTP
+                        const errorResult = await response.json().catch(() => null);
+                        console.error(`❌ Error importando ${file.name}:`, {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorResult
+                        });
                     }
                 }
                 
