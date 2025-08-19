@@ -1915,6 +1915,14 @@
         
         // ===== FUNCIONES GLOBALES REQUERIDAS =====
         
+        // ALIAS DE FUNCIONES PARA COMPATIBILIDAD
+        // En caso de que haya referencias incorrectas en producción
+        window.viewXML = viewXMLSimple;
+        window.viewXMLSimple = viewXMLSimple;
+        window.descargarXML = descargarXML;
+        window.editarXML = editarXML;
+        window.sellarXML = sellarXML;
+        
         // Función global para cambiar tabs (requerida por onclick en HTML)
         function showTab(tabName) {
             console.log(`🔄 Cambiando a tab: ${tabName}`);
