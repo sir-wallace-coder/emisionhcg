@@ -1822,9 +1822,12 @@
                 
                 // VALIDAR QUE SE ENCONTRÓ EMISOR CON CSD
                 if (!emisorConCSD) {
+                    // Obtener información de localStorage para el mensaje
+                    const emisoresLocalStorage = StorageUtils.getEmisores();
+                    
                     const errorMessage = `❌ No se encontró un emisor con CSD para el RFC: ${xml.emisor_rfc}\n\n` +
                         `🔍 Búsqueda realizada en:\n` +
-                        `• LocalStorage: ${emisoresData ? 'Revisado' : 'Vacío'}\n` +
+                        `• LocalStorage: ${emisoresLocalStorage.length > 0 ? `${emisoresLocalStorage.length} emisores encontrados` : 'Vacío'}\n` +
                         `• Base de datos: ${StorageUtils.getToken() ? 'Revisado' : 'Sin sesión'}\n\n` +
                         `📝 Para solucionar:\n` +
                         `1. Verifica que el emisor esté registrado\n` +
