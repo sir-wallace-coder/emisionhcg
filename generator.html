@@ -482,54 +482,126 @@
             }
         }
 
-        // Función para cargar emisores del usuario desde localStorage
+        // Función para cargar emisores del usuario desde base de datos
         async function cargarEmisores() {
-            console.log('📋 CFDI GENERATOR: Cargando emisores desde localStorage...');
+            console.log('🏢 CFDI GENERATOR: Cargando emisores desde base de datos...');
             
             try {
-                // Cargar emisores desde localStorage (consistente con dashboard)
-                const emisoresGuardados = localStorage.getItem('cfdi_emisores');
-                if (emisoresGuardados) {
-                    emisoresUsuario = JSON.parse(emisoresGuardados);
-                    console.log(`✅ ${emisoresUsuario.length} emisores cargados desde localStorage`);
+                // Verificar si hay usuario autenticado
+                const token = localStorage.getItem('token');
+                let emisoresCargados = [];
+                
+                if (token) {
+                    console.log('🔐 Usuario autenticado, cargando desde base de datos...');
+                    
+                    try {
+                        // Cargar emisores desde la base de datos
+                        const response = await fetch('/.netlify/functions/emisores', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            emisoresCargados = data.emisores || [];
+                            console.log(`✅ ${emisoresCargados.length} emisores cargados desde base de datos`);
+                            
+                            // Guardar en localStorage como cache
+                            localStorage.setItem('emisores', JSON.stringify(emisoresCargados));
+                            
+                        } else {
+                            console.warn('⚠️ Error en respuesta de BD, usando localStorage como fallback');
+                            throw new Error('Error en respuesta de BD');
+                        }
+                        
+                    } catch (dbError) {
+                        console.warn('⚠️ Error conectando a BD, usando localStorage:', dbError.message);
+                        
+                        // Fallback a localStorage
+                        const emisoresLocal = localStorage.getItem('emisores');
+                        if (emisoresLocal) {
+                            emisoresCargados = JSON.parse(emisoresLocal);
+                            console.log(`📄 ${emisoresCargados.length} emisores cargados desde localStorage (fallback)`);
+                        }
+                    }
+                    
                 } else {
-                    emisoresUsuario = [];
-                    console.log('📄 No hay emisores guardados');
+                    console.log('👤 Sin usuario autenticado, usando localStorage únicamente');
+                    
+                    // Sin usuario, usar localStorage
+                    const emisoresLocal = localStorage.getItem('emisores');
+                    if (emisoresLocal) {
+                        emisoresCargados = JSON.parse(emisoresLocal);
+                        console.log(`📄 ${emisoresCargados.length} emisores cargados desde localStorage`);
+                    }
                 }
+                
+                // Asignar emisores cargados
+                emisoresUsuario = emisoresCargados;
                 
                 // Actualizar el select de emisores
                 const select = document.getElementById('emisorSelect');
                 if (select) {
                     select.innerHTML = '<option value="">Seleccionar emisor o llenar manualmente</option>';
                     
-                    emisoresUsuario.forEach(emisor => {
-                        const option = document.createElement('option');
-                        option.value = emisor.id;
-                        option.textContent = `${emisor.rfc} - ${emisor.nombre}`;
-                        select.appendChild(option);
-                    });
+                    if (emisoresUsuario.length > 0) {
+                        emisoresUsuario.forEach(emisor => {
+                            const option = document.createElement('option');
+                            option.value = emisor.id;
+                            option.textContent = `${emisor.rfc} - ${emisor.razon_social || emisor.nombre}`;
+                            select.appendChild(option);
+                        });
+                        
+                        console.log(`✅ Select de emisores actualizado con ${emisoresUsuario.length} opciones`);
+                    } else {
+                        console.log('📄 No hay emisores disponibles para mostrar');
+                    }
                     
-                    console.log(`✅ Select de emisores actualizado con ${emisoresUsuario.length} opciones`);
                 } else {
                     console.error('❌ Select de emisores no encontrado en el DOM');
                 }
+                
             } catch (error) {
                 console.error('❌ Error cargando emisores:', error);
                 emisoresUsuario = [];
+                
+                // Intentar mostrar mensaje de error al usuario
+                const select = document.getElementById('emisorSelect');
+                if (select) {
+                    select.innerHTML = '<option value="">Error cargando emisores - Llenar manualmente</option>';
+                }
             }
         }
 
         // Función para cargar datos del emisor seleccionado
         function cargarDatosEmisor() {
             const emisorId = document.getElementById('emisorSelect').value;
-            if (!emisorId) return;
+            if (!emisorId) {
+                console.log('📋 No hay emisor seleccionado, limpiando campos...');
+                // Limpiar campos si no hay emisor seleccionado
+                document.getElementById('emisorRfc').value = '';
+                document.getElementById('emisorNombre').value = '';
+                document.getElementById('emisorCodigoPostal').value = '';
+                document.getElementById('emisorRegimenFiscal').value = '';
+                return;
+            }
 
             const emisor = emisoresUsuario.find(e => e.id === emisorId);
             if (emisor) {
-                document.getElementById('emisorRfc').value = emisor.rfc;
-                document.getElementById('emisorNombre').value = emisor.nombre;
-                document.getElementById('emisorCodigoPostal').value = emisor.codigo_postal;
-                document.getElementById('emisorRegimenFiscal').value = emisor.regimen_fiscal;
+                console.log('🏢 Cargando datos del emisor:', emisor.rfc);
+                
+                // Cargar datos con compatibilidad para ambas estructuras (BD y localStorage)
+                document.getElementById('emisorRfc').value = emisor.rfc || '';
+                document.getElementById('emisorNombre').value = emisor.razon_social || emisor.nombre || '';
+                document.getElementById('emisorCodigoPostal').value = emisor.codigo_postal || '';
+                document.getElementById('emisorRegimenFiscal').value = emisor.regimen_fiscal || '';
+                
+                console.log('✅ Datos del emisor cargados exitosamente');
+            } else {
+                console.warn('⚠️ Emisor no encontrado con ID:', emisorId);
             }
         }
 
