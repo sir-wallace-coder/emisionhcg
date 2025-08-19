@@ -527,14 +527,14 @@
                         <div class="form-group">
                             <label>Período</label>
                             <select id="filtroFecha" onchange="aplicarFiltros()">
-                                <option value="todos">Todos los períodos</option>
-                                <option value="hoy">Hoy</option>
-                                <option value="esta_semana">Esta semana</option>
-                                <option value="este_mes" selected>Este mes</option>
-                                <option value="mes_anterior">Mes anterior</option>
-                                <option value="ultimos_3_meses">Últimos 3 meses</option>
-                                <option value="este_ano">Este año</option>
-                                <option value="personalizado">Rango personalizado</option>
+                                <option value="todos" selected>📄 Todos los comprobantes</option>
+                                <option value="hoy">📅 Hoy</option>
+                                <option value="esta_semana">📆 Esta semana</option>
+                                <option value="este_mes">📊 Este mes</option>
+                                <option value="mes_anterior">📋 Mes anterior</option>
+                                <option value="ultimos_3_meses">📈 Últimos 3 meses</option>
+                                <option value="este_ano">🗓️ Este año</option>
+                                <option value="personalizado">🎯 Rango personalizado</option>
                             </select>
                         </div>
                         <div class="form-group" id="rangoPersonalizado" style="display: none;">
@@ -1983,7 +1983,7 @@
         }
 
         function limpiarFiltros() {
-            document.getElementById('filtroFecha').value = 'este_mes';
+            document.getElementById('filtroFecha').value = 'todos'; // 📄 Todos los comprobantes por defecto
             document.getElementById('tipoBusqueda').value = 'folio';
             document.getElementById('terminoBusqueda').value = '';
             document.getElementById('filtroEstado').value = 'todos';
