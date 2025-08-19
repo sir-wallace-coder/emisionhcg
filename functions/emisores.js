@@ -42,86 +42,96 @@ function procesarCertificadoSimplificado(cerBase64) {
 }
 
 function validarLlavePrivadaSimplificada(keyBase64, password) {
-  console.log('🔍 DEBUG KEY VALIDATION: Iniciando validación de llave privada');
-  console.log('🔍 DEBUG KEY VALIDATION: Datos de entrada:', {
-    keyBase64_length: keyBase64 ? keyBase64.length : 0,
-    keyBase64_preview: keyBase64 ? keyBase64.substring(0, 50) + '...' : 'VACIO',
-    password_length: password ? password.length : 0,
-    password_present: !!password
-  });
-  
   try {
-    // Validar datos de entrada
-    if (!keyBase64 || keyBase64.trim() === '') {
-      console.error('❌ DEBUG KEY VALIDATION: keyBase64 está vacío');
+    console.log('🔍 DEBUG KEY VALIDATION: Iniciando validación de llave privada ENCRIPTADA...');
+    console.log('🔍 DEBUG KEY VALIDATION: keyBase64 length:', keyBase64 ? keyBase64.length : 'undefined');
+    console.log('🔍 DEBUG KEY VALIDATION: password provided:', !!password);
+    
+    if (!keyBase64 || !password) {
+      console.log('❌ DEBUG KEY VALIDATION: keyBase64 o password faltantes');
       return {
         valida: false,
-        mensaje: 'El archivo de llave privada (.key) está vacío'
+        mensaje: 'keyBase64 y password son requeridos'
       };
     }
     
-    if (!password || password.trim() === '') {
-      console.error('❌ DEBUG KEY VALIDATION: password está vacío');
-      return {
-        valida: false,
-        mensaje: 'La contraseña de la llave privada es obligatoria'
-      };
-    }
-    
-    // Convertir llave privada a PEM
-    console.log('🔍 DEBUG KEY VALIDATION: Convirtiendo keyBase64 a buffer...');
+    // 🔧 FIX CRÍTICO: Manejar llave encriptada del SAT
+    console.log('🔍 DEBUG KEY VALIDATION: Procesando llave encriptada del SAT...');
     const keyBuffer = Buffer.from(keyBase64, 'base64');
-    console.log(' DEBUG KEY VALIDATION: Buffer creado, tamaño:', keyBuffer.length);
+    console.log('🔍 DEBUG KEY VALIDATION: Buffer creado, tamaño:', keyBuffer.length);
     
-    // Intentar crear objeto de llave privada para validar
-    console.log(' DEBUG KEY VALIDATION: Intentando crear llave privada...');
-    // FIX CRÍTICO: Generar formato RSA PRIVATE KEY (PKCS#1) para compatibilidad con forge
+    // Intentar como llave encriptada PKCS#8 primero (formato común del SAT)
     try {
-      console.log(' DEBUG KEY VALIDATION: Intentando formato RSA PRIVATE KEY...');
-      const keyPem = '-----BEGIN RSA PRIVATE KEY-----\n' + 
-                    keyBase64.match(/.{1,64}/g).join('\n') + 
-                    '\n-----END RSA PRIVATE KEY-----';
+      console.log('🔍 DEBUG KEY VALIDATION: Intentando formato ENCRYPTED PRIVATE KEY...');
+      const encryptedKeyPem = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
+                             keyBase64.match(/.{1,64}/g).join('\n') + 
+                             '\n-----END ENCRYPTED PRIVATE KEY-----';
       
-      console.log(' DEBUG KEY VALIDATION: PEM generado (RSA), longitud:', keyPem.length);
-      console.log(' DEBUG KEY VALIDATION: PEM preview:', keyPem.substring(0, 100) + '...');
+      console.log('🔍 DEBUG KEY VALIDATION: PEM encriptado generado, longitud:', encryptedKeyPem.length);
+      console.log('🔍 DEBUG KEY VALIDATION: PEM preview:', encryptedKeyPem.substring(0, 100) + '...');
       
-      // Validar que se puede crear la llave con passphrase
-      console.log(' DEBUG KEY VALIDATION: Validando con crypto.createPrivateKey...');
-      crypto.createPrivateKey({ key: keyPem, passphrase: password });
+      // Desencriptar y validar con crypto.createPrivateKey
+      console.log('🔍 DEBUG KEY VALIDATION: Desencriptando con password...');
+      const privateKeyObj = crypto.createPrivateKey({ 
+        key: encryptedKeyPem, 
+        passphrase: password,
+        format: 'pem'
+      });
       
-      console.log(' DEBUG KEY VALIDATION: ÉXITO - Llave privada válida en formato RSA PRIVATE KEY');
+      // Exportar como RSA PRIVATE KEY para compatibilidad con forge
+      console.log('🔍 DEBUG KEY VALIDATION: Exportando como RSA PRIVATE KEY...');
+      const rsaKeyPem = privateKeyObj.export({
+        type: 'pkcs1',
+        format: 'pem'
+      });
+      
+      console.log('✅ DEBUG KEY VALIDATION: ÉXITO - Llave encriptada desencriptada y convertida a RSA PRIVATE KEY');
+      console.log('🔍 DEBUG KEY VALIDATION: RSA PEM length:', rsaKeyPem.length);
+      console.log('🔍 DEBUG KEY VALIDATION: RSA PEM preview:', rsaKeyPem.substring(0, 100) + '...');
+      
       return {
         valida: true,
-        llavePrivadaPem: keyPem
+        llavePrivadaPem: rsaKeyPem
       };
-    } catch (firstError) {
-      console.log('⚠️ DEBUG KEY VALIDATION: Formato RSA PRIVATE KEY falló, intentando PRIVATE KEY...');
-      console.log('⚠️ DEBUG KEY VALIDATION: Error RSA PRIVATE KEY:', firstError.message);
       
+    } catch (encryptedError) {
+      console.log('⚠️ DEBUG KEY VALIDATION: Formato ENCRYPTED PRIVATE KEY falló, intentando otros...');
+      console.log('⚠️ DEBUG KEY VALIDATION: Error:', encryptedError.message);
+      
+      // Fallback: intentar como llave no encriptada
       try {
-        const keyPemPKCS8 = '-----BEGIN PRIVATE KEY-----\n' + 
-                           keyBase64.match(/.{1,64}/g).join('\n') + 
-                           '\n-----END PRIVATE KEY-----';
+        console.log('🔍 DEBUG KEY VALIDATION: Intentando como llave no encriptada...');
+        const keyPem = '-----BEGIN PRIVATE KEY-----\n' + 
+                      keyBase64.match(/.{1,64}/g).join('\n') + 
+                      '\n-----END PRIVATE KEY-----';
         
-        console.log('🔍 DEBUG KEY VALIDATION: PEM PKCS8 generado, longitud:', keyPemPKCS8.length);
-        console.log('🔍 DEBUG KEY VALIDATION: PEM PKCS8 preview:', keyPemPKCS8.substring(0, 100) + '...');
+        const privateKeyObj = crypto.createPrivateKey({ 
+          key: keyPem, 
+          passphrase: password,
+          format: 'pem'
+        });
         
-        // Validar que se puede crear la llave
-        console.log('🔍 DEBUG KEY VALIDATION: Validando PKCS8 con crypto.createPrivateKey...');
-        crypto.createPrivateKey({ key: keyPemPKCS8, passphrase: password });
+        // Exportar como RSA PRIVATE KEY
+        const rsaKeyPem = privateKeyObj.export({
+          type: 'pkcs1',
+          format: 'pem'
+        });
         
-        console.log('✅ DEBUG KEY VALIDATION: ÉXITO - Llave privada válida en formato PRIVATE KEY (fallback)');
+        console.log('✅ DEBUG KEY VALIDATION: ÉXITO - Llave no encriptada convertida a RSA PRIVATE KEY');
         return {
           valida: true,
-          llavePrivadaPem: keyPemPKCS8
+          llavePrivadaPem: rsaKeyPem
         };
-      } catch (secondError) {
-        console.log('❌ DEBUG KEY VALIDATION: Ambos formatos fallaron');
-        console.log('❌ DEBUG KEY VALIDATION: Error PRIVATE KEY:', secondError.message);
-        throw new Error('No se pudo validar la llave privada en ningún formato: RSA(' + firstError.message + '), PKCS8(' + secondError.message + ')');
+        
+      } catch (finalError) {
+        console.log('❌ DEBUG KEY VALIDATION: Todos los formatos fallaron');
+        console.log('❌ DEBUG KEY VALIDATION: Error final:', finalError.message);
+        throw new Error('No se pudo procesar la llave privada: Encriptada(' + encryptedError.message + '), NoEncriptada(' + finalError.message + ')');
       }
     }
+    
   } catch (error) {
+    console.log('❌ DEBUG KEY VALIDATION: Error general:', error.message);
     return {
       valida: false,
       mensaje: 'Error validando llave privada: ' + error.message
