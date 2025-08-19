@@ -684,6 +684,14 @@ async function updateEmisor(userId, emisorId, data, headers) {
     if (regimen_fiscal) updateData.regimen_fiscal = regimen_fiscal;
 
     // === PROCESAMIENTO DE CERTIFICADOS CSD ===
+    console.log('🔍 UPDATE DIAGNÓSTICO: Verificando certificados recibidos:', {
+      tiene_cer: !!certificado_cer,
+      tiene_key: !!certificado_key,
+      tiene_password: !!password_key,
+      cer_length: certificado_cer ? certificado_cer.length : 0,
+      key_length: certificado_key ? certificado_key.length : 0
+    });
+    
     if (certificado_cer && certificado_key && password_key) {
       console.log('🔧 EMISOR UPDATE: Procesando certificados CSD...');
       
@@ -747,6 +755,16 @@ async function updateEmisor(userId, emisorId, data, headers) {
         updateData.vigencia_hasta = vigenciaHasta ? vigenciaHasta.split('T')[0] : null;
         updateData.estado_csd = 'activo'; // Marcar como activo si tiene certificados completos
         
+        console.log('🔍 UPDATE DIAGNÓSTICO: Datos de certificado agregados a updateData:', {
+          certificado_cer_length: updateData.certificado_cer ? updateData.certificado_cer.length : 0,
+          certificado_key_length: updateData.certificado_key ? updateData.certificado_key.length : 0,
+          password_key_presente: !!updateData.password_key,
+          numero_certificado: updateData.numero_certificado,
+          vigencia_desde: updateData.vigencia_desde,
+          vigencia_hasta: updateData.vigencia_hasta,
+          estado_csd: updateData.estado_csd
+        });
+        
         console.log('✅ UPDATE: Certificados CSD procesados exitosamente');
         
       } catch (csdError) {
@@ -780,6 +798,19 @@ async function updateEmisor(userId, emisorId, data, headers) {
     }
 
     console.log('✅ UPDATE: Emisor actualizado exitosamente:', emisor.id);
+    
+    console.log('🔍 UPDATE DIAGNÓSTICO: Datos guardados en BD (verificación):', {
+      id: emisor.id,
+      rfc: emisor.rfc,
+      nombre: emisor.nombre,
+      tiene_cer: !!emisor.certificado_cer,
+      tiene_key: !!emisor.certificado_key,
+      tiene_password: !!emisor.password_key,
+      numero_certificado: emisor.numero_certificado,
+      vigencia_desde: emisor.vigencia_desde,
+      vigencia_hasta: emisor.vigencia_hasta,
+      estado_csd: emisor.estado_csd
+    });
     
     // No devolver datos sensibles
     const { certificado_key: _, password_key: __, ...safeEmisor } = emisor;
