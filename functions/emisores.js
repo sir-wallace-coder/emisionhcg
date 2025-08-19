@@ -116,10 +116,28 @@ async function getEmisores(userId, headers, emisorId = null) {
 
     if (error) throw error;
 
-    // No devolver datos sensibles
+    // No devolver datos sensibles pero agregar propiedades calculadas
     const safeEmisores = emisores.map(emisor => {
+      console.log('✅ GET EMISORES: Procesando emisor:', {
+        id: emisor.id,
+        rfc: emisor.rfc,
+        nombre: emisor.nombre,
+        tiene_cer: !!emisor.certificado_cer,
+        tiene_key: !!emisor.certificado_key,
+        numero_certificado: emisor.numero_certificado,
+        estado_csd: emisor.estado_csd
+      });
+      
       const { certificado_key, password_key, ...safeEmisor } = emisor;
-      return safeEmisor;
+      
+      // Agregar propiedades calculadas para el frontend
+      return {
+        ...safeEmisor,
+        tiene_cer: !!emisor.certificado_cer,
+        tiene_key: !!emisor.certificado_key,
+        certificado_cer_presente: !!emisor.certificado_cer,
+        certificado_key_presente: !!emisor.certificado_key
+      };
     });
 
     return {
