@@ -198,7 +198,7 @@ async function saveXML(userId, data, headers) {
     }
 
     // Validar estados permitidos
-    const estadosValidos = ['generado', 'sellado', 'timbrado', 'cancelado'];
+    const estadosValidos = ['generado', 'sellado', 'timbrado', 'cancelado', 'importado'];
     if (estado && !estadosValidos.includes(estado)) {
       return {
         statusCode: 400,
