@@ -1476,49 +1476,96 @@
         }
 
         async function cargarXMLs() {
+            console.log('🔍 Cargando XMLs desde todas las fuentes...');
+            let xmlsBaseDatos = [];
+            let xmlsLocales = [];
+            
             try {
+                // 1. Intentar cargar XMLs desde la base de datos (si hay token)
                 const token = localStorage.getItem('cfdi_token');
-                const response = await fetch('/.netlify/functions/xmls', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                if (token) {
+                    console.log('💾 Cargando XMLs desde base de datos...');
+                    const response = await fetch('/.netlify/functions/xmls', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        xmlsBaseDatos = await response.json();
+                        console.log('✅ XMLs cargados desde BD:', xmlsBaseDatos.length);
+                    } else {
+                        console.log('⚠️ No se pudieron cargar XMLs desde BD');
+                    }
+                }
+                
+                // 2. Cargar XMLs desde localStorage
+                console.log('📱 Cargando XMLs desde localStorage...');
+                const xmlsGuardados = JSON.parse(localStorage.getItem('xmlsGuardados') || '[]');
+                xmlsLocales = xmlsGuardados.map(xml => ({
+                    ...xml,
+                    origen: 'localStorage',
+                    id: xml.id || Date.now().toString()
+                }));
+                console.log('✅ XMLs cargados desde localStorage:', xmlsLocales.length);
+                
+                // 3. Combinar XMLs de ambas fuentes (evitar duplicados por ID)
+                const xmlsCombinados = [...xmlsBaseDatos];
+                xmlsLocales.forEach(xmlLocal => {
+                    const existeEnBD = xmlsBaseDatos.find(xmlBD => 
+                        xmlBD.serie === xmlLocal.serie && 
+                        xmlBD.folio === xmlLocal.folio &&
+                        xmlBD.emisor_rfc === xmlLocal.emisor_rfc
+                    );
+                    if (!existeEnBD) {
+                        xmlsCombinados.push(xmlLocal);
                     }
                 });
-
-                if (response.ok) {
-                    todosLosXMLs = await response.json();
-                    xmls = [...todosLosXMLs]; // Mantener compatibilidad
+                
+                // 4. Ordenar por fecha (más recientes primero)
+                xmlsCombinados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                
+                console.log('🎯 Total XMLs combinados:', xmlsCombinados.length);
+                
+                // 5. Asignar a variables globales
+                todosLosXMLs = xmlsCombinados;
+                xmls = [...todosLosXMLs];
+                xmlsFiltrados = [...todosLosXMLs];
+                
+                // 6. Mostrar resultados
+                if (todosLosXMLs.length === 0) {
+                    document.getElementById('xmlsContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #6c757d;">
+                            <h3>📄 No hay XMLs generados</h3>
+                            <p>Aún no has generado ningún XML CFDI.</p>
+                            <a href="/generator.html" class="btn btn-primary" style="margin-top: 15px;">➕ Generar Primer XML</a>
+                        </div>
+                    `;
+                } else {
+                    aplicarFiltros();
+                }
+                cargarEmisoresEnFiltro();
+                
+            } catch (error) {
+                console.error('❌ Error cargando XMLs:', error);
+                
+                // Fallback: solo mostrar XMLs locales si falla todo
+                const xmlsGuardados = JSON.parse(localStorage.getItem('xmlsGuardados') || '[]');
+                if (xmlsGuardados.length > 0) {
+                    console.log('🔄 Fallback: mostrando solo XMLs locales');
+                    todosLosXMLs = xmlsGuardados.map(xml => ({ ...xml, origen: 'localStorage' }));
+                    xmls = [...todosLosXMLs];
                     xmlsFiltrados = [...todosLosXMLs];
-                    
-                    if (todosLosXMLs.length === 0) {
-                        document.getElementById('xmlsContent').innerHTML = `
-                            <div style="text-align: center; padding: 40px; color: #6c757d;">
-                                <h3>📄 No hay XMLs generados</h3>
-                                <p>Aún no has generado ningún XML CFDI.</p>
-                                <a href="/generator.html" class="btn btn-primary" style="margin-top: 15px;">➕ Generar Primer XML</a>
-                            </div>
-                        `;
-                    } else {
-                        aplicarFiltros();
-                    }
-                    cargarEmisoresEnFiltro();
+                    aplicarFiltros();
                 } else {
                     document.getElementById('xmlsContent').innerHTML = `
                         <div style="text-align: center; padding: 40px; color: #dc3545;">
-                            <h3>⚠️ Error cargando XMLs</h3>
-                            <p>No se pudieron cargar los XMLs. Verifica tu conexión.</p>
+                            <h3>⚠️ Error de conexión</h3>
+                            <p>No se pudo conectar con el servidor y no hay XMLs locales.</p>
                             <button onclick="cargarXMLs()" class="btn btn-secondary" style="margin-top: 15px;">🔄 Reintentar</button>
                         </div>
                     `;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('xmlsContent').innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #dc3545;">
-                        <h3>⚠️ Error de conexión</h3>
-                        <p>No se pudo conectar con el servidor.</p>
-                        <button onclick="cargarXMLs()" class="btn btn-secondary" style="margin-top: 15px;">🔄 Reintentar</button>
-                    </div>
-                `;
             }
         }
 
