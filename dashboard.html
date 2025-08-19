@@ -2409,20 +2409,44 @@
                 btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
                 btnGuardar.disabled = true;
                 
+                // 🔍 DIAGNÓSTICO: Log completo de datos enviados al backend
+                console.log('🔧 FRONTEND: Enviando datos de actualización al backend:', {
+                    emisorId: emisorId,
+                    datos_enviados: {
+                        rfc: emisorData.rfc,
+                        nombre: emisorData.nombre,
+                        codigo_postal: emisorData.codigo_postal,
+                        regimen_fiscal: emisorData.regimen_fiscal,
+                        tiene_cer: !!emisorData.certificado_cer,
+                        tiene_key: !!emisorData.certificado_key,
+                        tiene_password: !!emisorData.password_key,
+                        cer_length: emisorData.certificado_cer ? emisorData.certificado_cer.length : 0,
+                        key_length: emisorData.certificado_key ? emisorData.certificado_key.length : 0
+                    }
+                });
+                
                 // Enviar al backend
                 // Buscar token en ambas claves para compatibilidad
                 const token = localStorage.getItem('token') || localStorage.getItem('cfdi_token');
-                const response = await fetch('/.netlify/functions/emisores', {
-                    method: 'POST',
+                console.log('🌐 FRONTEND: Realizando petición PUT a /.netlify/functions/emisores...');
+                const response = await fetch('/.netlify/functions/emisores?id=' + emisorId, {
+                    method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(emisorData)
                 });
                 
+                console.log('📝 FRONTEND: Respuesta del backend recibida:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
+                });
+                
                 if (response.ok) {
                     const result = await response.json();
+                    console.log('✅ FRONTEND: Datos de respuesta del backend:', result);
                     if (result.success) {
                         alert('✅ Emisor registrado exitosamente');
                         
