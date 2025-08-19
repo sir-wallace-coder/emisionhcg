@@ -451,12 +451,18 @@ async function createEmisor(userId, data, headers) {
             console.log('🔢 CREATE: Número de certificado REAL extraído:', numeroCertificado);
             
             // Extraer fechas de vigencia REALES
-            vigenciaDesde = cert.validFrom;
-            vigenciaHasta = cert.validTo;
+            const validFromRaw = cert.validFrom;  // "Apr  2 17:48:48 2021 GMT"
+            const validToRaw = cert.validTo;      // "Apr  2 17:48:48 2021 GMT"
             
-            console.log('📅 CREATE: Fechas de vigencia extraídas:', {
-              desde: vigenciaDesde,
-              hasta: vigenciaHasta
+            // Convertir fechas X.509 a formato PostgreSQL (YYYY-MM-DD)
+            vigenciaDesde = validFromRaw ? new Date(validFromRaw).toISOString().split('T')[0] : null;
+            vigenciaHasta = validToRaw ? new Date(validToRaw).toISOString().split('T')[0] : null;
+            
+            console.log('📅 CREATE: Fechas de vigencia extraídas y convertidas:', {
+              desde_raw: validFromRaw,
+              hasta_raw: validToRaw,
+              desde_formatted: vigenciaDesde,
+              hasta_formatted: vigenciaHasta
             });
             
           } catch (x509Error) {
@@ -556,8 +562,8 @@ async function createEmisor(userId, data, headers) {
       emisorData.password_key = certificadoInfo.password_key;
       emisorData.numero_certificado = certificadoInfo.numero_certificado;
       // Convertir fechas ISO a formato DATE para PostgreSQL
-      emisorData.vigencia_desde = certificadoInfo.vigencia_desde ? certificadoInfo.vigencia_desde.split('T')[0] : null;
-      emisorData.vigencia_hasta = certificadoInfo.vigencia_hasta ? certificadoInfo.vigencia_hasta.split('T')[0] : null;
+      emisorData.vigencia_desde = certificadoInfo.vigencia_desde; // Ya convertido a formato YYYY-MM-DD
+      emisorData.vigencia_hasta = certificadoInfo.vigencia_hasta; // Ya convertido a formato YYYY-MM-DD
     }
 
     // 7. Insertar emisor en base de datos
@@ -771,12 +777,18 @@ async function updateEmisor(userId, emisorId, data, headers) {
             console.log('🔢 UPDATE: Número de certificado REAL extraído:', numeroCertificado);
             
             // Extraer fechas de vigencia REALES
-            vigenciaDesde = cert.validFrom;
-            vigenciaHasta = cert.validTo;
+            const validFromRaw = cert.validFrom;  // "Apr  2 17:48:48 2021 GMT"
+            const validToRaw = cert.validTo;      // "Apr  2 17:48:48 2021 GMT"
             
-            console.log('📅 UPDATE: Fechas de vigencia extraídas:', {
-              desde: vigenciaDesde,
-              hasta: vigenciaHasta
+            // Convertir fechas X.509 a formato PostgreSQL (YYYY-MM-DD)
+            vigenciaDesde = validFromRaw ? new Date(validFromRaw).toISOString().split('T')[0] : null;
+            vigenciaHasta = validToRaw ? new Date(validToRaw).toISOString().split('T')[0] : null;
+            
+            console.log('📅 UPDATE: Fechas de vigencia extraídas y convertidas:', {
+              desde_raw: validFromRaw,
+              hasta_raw: validToRaw,
+              desde_formatted: vigenciaDesde,
+              hasta_formatted: vigenciaHasta
             });
             
           } catch (x509Error) {
@@ -815,8 +827,8 @@ async function updateEmisor(userId, emisorId, data, headers) {
         updateData.certificado_key = certificado_key;
         updateData.password_key = password_key;
         updateData.numero_certificado = numeroCertificado;
-        updateData.vigencia_desde = vigenciaDesde ? vigenciaDesde.split('T')[0] : null;
-        updateData.vigencia_hasta = vigenciaHasta ? vigenciaHasta.split('T')[0] : null;
+        updateData.vigencia_desde = vigenciaDesde; // Ya convertido a formato YYYY-MM-DD
+        updateData.vigencia_hasta = vigenciaHasta; // Ya convertido a formato YYYY-MM-DD
         updateData.estado_csd = 'activo'; // Marcar como activo si tiene certificados completos
         
         console.log('🔍 UPDATE DIAGNÓSTICO: Datos de certificado agregados a updateData:', {
