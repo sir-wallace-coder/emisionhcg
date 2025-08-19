@@ -1118,7 +1118,7 @@
                                 return `
                                     <tr>
                                         <td><strong>${emisor.rfc || 'N/A'}</strong></td>
-                                        <td>${emisor.nombre || 'Sin nombre'}</td>
+                                        <td>${emisor.nombre || emisor.razon_social || emisor.nombre_comercial || emisor.name || 'Sin nombre'}</td>
                                         <td>${emisor.codigo_postal || 'N/A'}</td>
                                         <td>${emisor.regimen_fiscal || 'N/A'}</td>
                                         <td><span class="badge ${badgeClass}">${estadoCSD}</span></td>
