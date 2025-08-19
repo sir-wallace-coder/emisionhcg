@@ -858,6 +858,134 @@
         </div>
     </div>
 
+    <!-- Modal de Edición de Emisores -->
+    <div class="modal fade" id="modalEditarEmisor" tabindex="-1" aria-labelledby="modalEditarEmisorLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="modalEditarEmisorLabel">
+                        <i class="fas fa-edit"></i> Editar Emisor
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarEmisor">
+                        <!-- ID oculto del emisor -->
+                        <input type="hidden" id="editEmisorId" value="">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editEmisorRFC" class="form-label">RFC del Emisor *</label>
+                                    <input type="text" class="form-control" id="editEmisorRFC" maxlength="13" required readonly>
+                                    <small class="text-muted">El RFC no se puede modificar</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editEmisorNombre" class="form-label">Razón Social *</label>
+                                    <input type="text" class="form-control" id="editEmisorNombre" maxlength="300" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editEmisorCP" class="form-label">Código Postal *</label>
+                                    <input type="text" class="form-control" id="editEmisorCP" maxlength="5" pattern="[0-9]{5}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editEmisorRegimen" class="form-label">Régimen Fiscal *</label>
+                                    <select class="form-select" id="editEmisorRegimen" required>
+                                        <option value="">Selecciona un régimen fiscal</option>
+                                        <option value="601">601 - General de Ley Personas Morales</option>
+                                        <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+                                        <option value="605">605 - Sueldos y Salarios e Ingresos Asimilados a Salarios</option>
+                                        <option value="606">606 - Arrendamiento</option>
+                                        <option value="607">607 - Régimen de Enajenación o Adquisición de Bienes</option>
+                                        <option value="608">608 - Demás ingresos</option>
+                                        <option value="610">610 - Residentes en el Extranjero sin Establecimiento Permanente en México</option>
+                                        <option value="611">611 - Ingresos por Dividendos (socios y accionistas)</option>
+                                        <option value="612">612 - Personas Físicas con Actividades Empresariales y Profesionales</option>
+                                        <option value="614">614 - Ingresos por intereses</option>
+                                        <option value="615">615 - Régimen de los ingresos por obtención de premios</option>
+                                        <option value="616">616 - Sin obligaciones fiscales</option>
+                                        <option value="620">620 - Sociedades Cooperativas de Producción que optan por diferir sus ingresos</option>
+                                        <option value="621">621 - Incorporación Fiscal</option>
+                                        <option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+                                        <option value="623">623 - Opcional para Grupos de Sociedades</option>
+                                        <option value="624">624 - Coordinados</option>
+                                        <option value="625">625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
+                                        <option value="626">626 - Régimen Simplificado de Confianza</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información de CSD actual -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-certificate"></i> Certificados de Sello Digital (CSD)</h6>
+                            <div id="editInfoCSDActual" class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Cargando información de CSD...
+                            </div>
+                        </div>
+                        
+                        <!-- Opción para actualizar CSD -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editActualizarCSD">
+                                <label class="form-check-label" for="editActualizarCSD">
+                                    <strong>Actualizar Certificados CSD</strong>
+                                </label>
+                            </div>
+                            <small class="text-muted">Marca esta opción si deseas cambiar los certificados .cer y .key</small>
+                        </div>
+                        
+                        <!-- Sección de CSD (oculta por defecto) -->
+                        <div id="editSeccionCSD" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editCertificadoCer" class="form-label">Archivo .cer *</label>
+                                        <input type="file" class="form-control" id="editCertificadoCer" accept=".cer">
+                                        <small class="text-muted">Certificado público del SAT</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editCertificadoKey" class="form-label">Archivo .key *</label>
+                                        <input type="file" class="form-control" id="editCertificadoKey" accept=".key">
+                                        <small class="text-muted">Llave privada del certificado</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editPasswordKey" class="form-label">Contraseña de la Llave Privada *</label>
+                                <input type="password" class="form-control" id="editPasswordKey" placeholder="Contraseña del archivo .key">
+                                <small class="text-muted">Contraseña proporcionada por el SAT</small>
+                            </div>
+                            
+                            <!-- Información del certificado procesado -->
+                            <div id="editInfoCertificado" class="mt-3"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="actualizarEmisor()">
+                        <i class="fas fa-save"></i> Actualizar Emisor
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts - Modular Architecture -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -1649,8 +1777,48 @@
         
         function editarEmisor(emisorId) {
             console.log('✏️ Editando emisor:', emisorId);
-            // TODO: Implementar edición de emisor
-            alert('Función de edición en desarrollo');
+            
+            try {
+                // Cargar emisores desde localStorage
+                const emisoresData = localStorage.getItem('emisores');
+                if (!emisoresData) {
+                    alert('No se encontraron emisores');
+                    return;
+                }
+                
+                const emisores = JSON.parse(emisoresData);
+                const emisor = emisores.find(e => e.id === emisorId);
+                
+                if (!emisor) {
+                    alert('Emisor no encontrado');
+                    return;
+                }
+                
+                console.log('📝 Cargando datos del emisor:', emisor);
+                
+                // Cargar datos en el formulario de edición
+                document.getElementById('editEmisorId').value = emisor.id;
+                document.getElementById('editEmisorRFC').value = emisor.rfc || '';
+                document.getElementById('editEmisorNombre').value = emisor.nombre || '';
+                document.getElementById('editEmisorCP').value = emisor.codigo_postal || '';
+                document.getElementById('editEmisorRegimen').value = emisor.regimen_fiscal || '';
+                
+                // Mostrar información de CSD actual
+                mostrarInfoCSDActual(emisor);
+                
+                // Configurar listeners para la sección de CSD
+                setupEditCSDListeners();
+                
+                // Abrir modal
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarEmisor'));
+                modal.show();
+                
+                console.log('✅ Modal de edición abierto exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error abriendo modal de edición:', error);
+                alert('Error cargando datos del emisor: ' + error.message);
+            }
         }
         
         // Alias para compatibilidad (por si hay referencias con nombre diferente)
@@ -1714,6 +1882,225 @@
                 }
             } catch (error) {
                 console.error('❌ Error refrescando emisores:', error);
+            }
+        }
+        
+        // ===== FUNCIONES DE SOPORTE PARA EDICIÓN DE EMISORES =====
+        
+        function mostrarInfoCSDActual(emisor) {
+            const infoContainer = document.getElementById('editInfoCSDActual');
+            
+            let infoHTML = '';
+            let alertClass = 'alert-secondary';
+            
+            if (emisor.certificado_cer && emisor.certificado_key) {
+                if (emisor.numero_certificado) {
+                    alertClass = 'alert-success';
+                    infoHTML = `
+                        <i class="fas fa-check-circle"></i> <strong>CSD Activo</strong><br>
+                        <small>
+                            <strong>Número de Certificado:</strong> ${emisor.numero_certificado}<br>
+                            ${emisor.vigencia_desde ? `<strong>Vigente desde:</strong> ${new Date(emisor.vigencia_desde).toLocaleDateString('es-MX')}<br>` : ''}
+                            ${emisor.vigencia_hasta ? `<strong>Vigente hasta:</strong> ${new Date(emisor.vigencia_hasta).toLocaleDateString('es-MX')}` : ''}
+                        </small>
+                    `;
+                } else {
+                    alertClass = 'alert-warning';
+                    infoHTML = `
+                        <i class="fas fa-clock"></i> <strong>CSD en Procesamiento</strong><br>
+                        <small>Los certificados están cargados pero aún no se ha extraído la información</small>
+                    `;
+                }
+            } else if (emisor.certificado_cer || emisor.certificado_key) {
+                alertClass = 'alert-warning';
+                infoHTML = `
+                    <i class="fas fa-exclamation-triangle"></i> <strong>CSD Incompleto</strong><br>
+                    <small>
+                        ${emisor.certificado_cer ? '✅ Archivo .cer cargado<br>' : '❌ Falta archivo .cer<br>'}
+                        ${emisor.certificado_key ? '✅ Archivo .key cargado' : '❌ Falta archivo .key'}
+                    </small>
+                `;
+            } else {
+                alertClass = 'alert-secondary';
+                infoHTML = `
+                    <i class="fas fa-info-circle"></i> <strong>Sin CSD</strong><br>
+                    <small>No hay certificados de sello digital configurados</small>
+                `;
+            }
+            
+            infoContainer.className = `alert ${alertClass}`;
+            infoContainer.innerHTML = infoHTML;
+        }
+        
+        function setupEditCSDListeners() {
+            // Listener para mostrar/ocultar sección de CSD
+            const checkboxCSD = document.getElementById('editActualizarCSD');
+            const seccionCSD = document.getElementById('editSeccionCSD');
+            
+            checkboxCSD.addEventListener('change', function() {
+                if (this.checked) {
+                    seccionCSD.style.display = 'block';
+                    // Hacer campos requeridos
+                    document.getElementById('editCertificadoCer').required = true;
+                    document.getElementById('editCertificadoKey').required = true;
+                    document.getElementById('editPasswordKey').required = true;
+                } else {
+                    seccionCSD.style.display = 'none';
+                    // Quitar campos requeridos
+                    document.getElementById('editCertificadoCer').required = false;
+                    document.getElementById('editCertificadoKey').required = false;
+                    document.getElementById('editPasswordKey').required = false;
+                    // Limpiar campos
+                    document.getElementById('editCertificadoCer').value = '';
+                    document.getElementById('editCertificadoKey').value = '';
+                    document.getElementById('editPasswordKey').value = '';
+                    document.getElementById('editInfoCertificado').innerHTML = '';
+                }
+            });
+            
+            // Listeners para archivos CSD
+            document.getElementById('editCertificadoCer').addEventListener('change', procesarEditCertificadoCER);
+            document.getElementById('editCertificadoKey').addEventListener('change', procesarEditCertificadoKEY);
+        }
+        
+        function procesarEditCertificadoCER(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const cerContent = e.target.result;
+                    
+                    // Mostrar información del certificado
+                    const cerInfo = `
+                        <div class="alert alert-success">
+                            <small class="text-success"><i class="fas fa-check"></i> Certificado .cer cargado (${file.name})</small>
+                        </div>
+                    `;
+                    
+                    document.getElementById('editInfoCertificado').innerHTML = cerInfo;
+                };
+                reader.readAsArrayBuffer(file);
+                
+            } catch (error) {
+                console.error('Error procesando .cer:', error);
+            }
+        }
+        
+        function procesarEditCertificadoKEY(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const keyContent = e.target.result;
+                    
+                    // Mostrar información de la llave
+                    const keyInfo = `
+                        <div class="alert alert-success">
+                            <small class="text-success"><i class="fas fa-check"></i> Llave privada .key cargada (${file.name})</small>
+                        </div>
+                    `;
+                    
+                    const existingInfo = document.getElementById('editInfoCertificado').innerHTML;
+                    document.getElementById('editInfoCertificado').innerHTML = existingInfo + keyInfo;
+                };
+                reader.readAsArrayBuffer(file);
+                
+            } catch (error) {
+                console.error('Error procesando .key:', error);
+            }
+        }
+        
+        // Función principal para actualizar emisor
+        async function actualizarEmisor() {
+            try {
+                // Validar formulario
+                const form = document.getElementById('formEditarEmisor');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                
+                // Deshabilitar botón y mostrar loading
+                const btnActualizar = document.querySelector('#modalEditarEmisor .btn-warning');
+                btnActualizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+                btnActualizar.disabled = true;
+                
+                // Recopilar datos del formulario
+                const emisorId = document.getElementById('editEmisorId').value;
+                const nombre = document.getElementById('editEmisorNombre').value.trim();
+                const codigoPostal = document.getElementById('editEmisorCP').value.trim();
+                const regimenFiscal = document.getElementById('editEmisorRegimen').value;
+                const actualizarCSD = document.getElementById('editActualizarCSD').checked;
+                
+                console.log('🔄 Actualizando emisor:', emisorId);
+                
+                // Preparar datos para actualizar
+                const datosActualizacion = {
+                    id: emisorId,
+                    nombre: nombre,
+                    codigo_postal: codigoPostal,
+                    regimen_fiscal: regimenFiscal
+                };
+                
+                // Si se va a actualizar CSD, procesar archivos
+                if (actualizarCSD) {
+                    const cerFile = document.getElementById('editCertificadoCer').files[0];
+                    const keyFile = document.getElementById('editCertificadoKey').files[0];
+                    const passwordKey = document.getElementById('editPasswordKey').value;
+                    
+                    if (!cerFile || !keyFile || !passwordKey) {
+                        alert('❌ Para actualizar CSD debes proporcionar ambos archivos (.cer y .key) y la contraseña');
+                        return;
+                    }
+                    
+                    // Convertir archivos a base64
+                    datosActualizacion.certificado_cer = await fileToBase64(cerFile);
+                    datosActualizacion.certificado_key = await fileToBase64(keyFile);
+                    datosActualizacion.password_key = passwordKey;
+                }
+                
+                // Actualizar en localStorage
+                const emisoresData = localStorage.getItem('emisores');
+                if (emisoresData) {
+                    let emisores = JSON.parse(emisoresData);
+                    const emisorIndex = emisores.findIndex(e => e.id === emisorId);
+                    
+                    if (emisorIndex !== -1) {
+                        // Actualizar datos
+                        emisores[emisorIndex] = { ...emisores[emisorIndex], ...datosActualizacion };
+                        emisores[emisorIndex].updated_at = new Date().toISOString();
+                        
+                        // Guardar cambios
+                        localStorage.setItem('emisores', JSON.stringify(emisores));
+                        
+                        console.log('✅ Emisor actualizado en localStorage');
+                    }
+                }
+                
+                // TODO: Actualizar en backend (Supabase) cuando esté disponible
+                
+                // Mostrar éxito
+                alert('✅ Emisor actualizado exitosamente');
+                
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarEmisor'));
+                modal.hide();
+                
+                // Refrescar lista
+                refreshEmisorList();
+                
+            } catch (error) {
+                console.error('❌ Error actualizando emisor:', error);
+                alert('Error actualizando emisor: ' + error.message);
+            } finally {
+                // Restaurar botón
+                const btnActualizar = document.querySelector('#modalEditarEmisor .btn-warning');
+                btnActualizar.innerHTML = '<i class="fas fa-save"></i> Actualizar Emisor';
+                btnActualizar.disabled = false;
             }
         }
         
