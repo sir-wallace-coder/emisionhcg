@@ -3455,6 +3455,14 @@ async function importarXML() {
                 showAlert('⚠️ Error copiando al portapapeles', 'warning');
             });
         }
+        
+        // Cerrar modal XML al hacer clic fuera
+        window.addEventListener('click', function(event) {
+            const xmlModal = document.getElementById('xmlModal');
+            if (event.target === xmlModal) {
+                cerrarModalXML();
+            }
+        });
     </script>
     
     <!-- Modal para Ver XML -->
