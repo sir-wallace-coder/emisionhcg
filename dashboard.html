@@ -2084,10 +2084,8 @@
                 modal.hide();
                 
                 // Recargar datos
-                if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
-                    await window.dashboardMain.loadInitialData();
-                    await window.dashboardMain.renderAllData();
-                }
+                // 🚨 FIX CRÍTICO: NO usar dashboardMain que sobrescribe con columnas incorrectas
+                console.log('🚨 CORRECCIÓN: NO se usará dashboardMain para evitar columnas incorrectas');
                 
                 alert('✅ XML actualizado exitosamente');
                 
@@ -2774,11 +2772,8 @@
                         // Refrescar lista de emisores inmediatamente
                         refreshEmisorList();
                         
-                        // Recargar datos si existe el dashboard
-                        if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
-                            await window.dashboardMain.loadInitialData();
-                            await window.dashboardMain.renderAllData();
-                        }
+                        // 🚨 FIX CRÍTICO: NO usar dashboardMain que sobrescribe con columnas incorrectas
+                        console.log('🚨 CORRECCIÓN: NO se usará dashboardMain para evitar columnas incorrectas');
                         
                     } else {
                         alert('❌ Error: ' + (result.error || 'Error desconocido'));
