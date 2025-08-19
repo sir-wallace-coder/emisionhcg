@@ -1154,65 +1154,12 @@
             }
         }
         
-        function guardarEmisor() {
-            console.log('💾 Guardar emisor');
-            if (typeof crearEmisor === 'function') {
-                return crearEmisor();
-            } else {
-                console.error('❌ Función crearEmisor no disponible');
-                alert('Error: Sistema de guardado no disponible');
-            }
-        }
+        // 🚨 TODAS LAS FUNCIONES DUPLICADAS Y ERRÓNEAS ELIMINADAS DEFINITIVAMENTE
+        // PROHIBIDO volver a usar estas funciones que causan columnas incorrectas
+        // SOLO usar las funciones principales: mostrarEmisores(), cargarEmisoresDesdeBackend(), etc.
         
-        function validarXMLs() {
-            console.log('✅ Validar XMLs');
-            if (typeof validarXMLsImportados === 'function') {
-                return validarXMLsImportados();
-            } else {
-                console.error('❌ Función validarXMLsImportados no disponible');
-                alert('Error: Sistema de validación no disponible');
-            }
-        }
-        
-        function importarXMLs() {
-            console.log('📎 Importar XMLs');
-            if (typeof procesarImportacionXMLs === 'function') {
-                return procesarImportacionXMLs();
-            } else {
-                console.error('❌ Función procesarImportacionXMLs no disponible');
-                alert('Error: Sistema de importación no disponible');
-            }
-        }
-        
-        function actualizarEmisor() {
-            console.log('🔄 Actualizar emisor');
-            if (typeof editarEmisorCompleto === 'function') {
-                return editarEmisorCompleto();
-            } else {
-                console.error('❌ Función editarEmisorCompleto no disponible');
-                alert('Error: Sistema de actualización no disponible');
-            }
-        }
-        
-        function eliminarEmisor(emisorId) {
-            console.log('🗑️ Eliminar emisor:', emisorId);
-            if (typeof borrarEmisor === 'function') {
-                return borrarEmisor(emisorId);
-            } else {
-                console.error('❌ Función borrarEmisor no disponible');
-                alert('Error: Sistema de eliminación no disponible');
-            }
-        }
-        
-        function viewXMLSimple(xmlId) {
-            console.log('👁️ Ver XML simple:', xmlId);
-            if (typeof verXMLSimple === 'function') {
-                return verXMLSimple(xmlId);
-            } else {
-                console.error('❌ Función verXMLSimple no disponible');
-                alert('Error: Sistema de visualización no disponible');
-            }
-        }
+        // 🚨 FUNCIONES DUPLICADAS ELIMINADAS DEFINITIVAMENTE
+        // NO volver a usar estas funciones que causan columnas incorrectas
         
         function descargarXML(xmlId) {
             console.log('💾 Descargar XML:', xmlId);
