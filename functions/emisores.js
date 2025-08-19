@@ -243,13 +243,35 @@ async function getEmisores(userId, headers, emisorId = null) {
         estado_csd: emisor.estado_csd
       });
       
+      // 🔧 CALCULAR PROPIEDADES ANTES de eliminar campos sensibles (igual que en lista)
+      const tieneCer = !!emisor.certificado_cer;
+      const tieneKey = !!emisor.certificado_key;
+      
+      console.log('🔍 DEBUG EMISOR INDIVIDUAL: Calculando propiedades:', {
+        id: emisor.id,
+        rfc: emisor.rfc,
+        certificado_cer_length: emisor.certificado_cer ? emisor.certificado_cer.length : 0,
+        certificado_key_length: emisor.certificado_key ? emisor.certificado_key.length : 0,
+        tieneCer: tieneCer,
+        tieneKey: tieneKey
+      });
+      
       // No devolver datos sensibles para emisor individual
       const { certificado_key, password_key, ...safeEmisor } = emisor;
+      
+      // Agregar propiedades calculadas para el frontend (igual que en lista)
+      const emisorConPropiedades = {
+        ...safeEmisor,
+        tiene_cer: tieneCer,
+        tiene_key: tieneKey,
+        certificado_cer_presente: tieneCer,
+        certificado_key_presente: tieneKey
+      };
       
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, emisor: safeEmisor })
+        body: JSON.stringify({ success: true, emisor: emisorConPropiedades })
       };
     }
     
