@@ -91,6 +91,16 @@ async function getXMLs(userId, headers) {
 
 async function saveXML(userId, data, headers) {
   try {
+    console.log('📎 XML IMPORT: Datos recibidos:', {
+      keys: Object.keys(data),
+      xml_content_length: data.xml_content?.length || 0,
+      version_cfdi: data.version_cfdi,
+      emisor_rfc: data.emisor_rfc,
+      folio: data.folio,
+      total: data.total,
+      estado: data.estado
+    });
+    
     const {
       xml_content,
       version_cfdi,
@@ -105,6 +115,36 @@ async function saveXML(userId, data, headers) {
       sello,
       estado
     } = data;
+    
+    // Validar campos obligatorios ANTES de validaciones de longitud
+    const camposObligatorios = {
+      xml_content: xml_content,
+      version_cfdi: version_cfdi,
+      emisor_rfc: emisor_rfc,
+      emisor_nombre: emisor_nombre,
+      receptor_rfc: receptor_rfc,
+      receptor_nombre: receptor_nombre,
+      folio: folio,
+      total: total
+    };
+    
+    console.log('📋 XML: Validando campos obligatorios...');
+    for (const [campo, valor] of Object.entries(camposObligatorios)) {
+      if (!valor || valor.toString().trim() === '') {
+        console.error(`❌ Campo obligatorio faltante: ${campo}`);
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: `Campo obligatorio '${campo}' está vacío o faltante`,
+            tipo: 'CAMPO_OBLIGATORIO_FALTANTE',
+            campo: campo,
+            valor_recibido: valor,
+            campos_recibidos: Object.keys(data)
+          })
+        };
+      }
+    }
 
     // === VALIDACIONES DE LONGITUD DE CAMPOS CRÍTICOS ===
     const validacionCampos = {
@@ -186,7 +226,7 @@ async function saveXML(userId, data, headers) {
       receptor_nombre,
       serie: serie || null, // Permitir serie vacía
       folio,
-      total: parseFloat(total),
+      total: isNaN(parseFloat(total)) ? 0.00 : parseFloat(total),
       uuid: uuid || null, // UUID opcional hasta timbrado
       sello: sello || null, // Sello opcional hasta sellado
       estado: estado || 'generado',
@@ -225,11 +265,47 @@ async function saveXML(userId, data, headers) {
       })
     };
   } catch (error) {
-    console.error('Save XML error:', error);
+    console.error('❌ XML IMPORT ERROR:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      stack: error.stack
+    });
+    
+    // Determinar tipo de error y respuesta apropiada
+    let statusCode = 500;
+    let errorResponse = {
+      error: 'Error interno del servidor al guardar XML',
+      tipo: 'ERROR_INTERNO'
+    };
+    
+    // Error de base de datos (Supabase/PostgreSQL)
+    if (error.code) {
+      statusCode = 400;
+      errorResponse = {
+        error: `Error de base de datos: ${error.message}`,
+        tipo: 'ERROR_BASE_DATOS',
+        codigo_bd: error.code,
+        detalles_bd: error.details,
+        sugerencia_bd: error.hint
+      };
+    }
+    
+    // Error de validación JSON
+    if (error.name === 'SyntaxError') {
+      statusCode = 400;
+      errorResponse = {
+        error: 'Datos JSON inválidos en la solicitud',
+        tipo: 'JSON_INVALIDO',
+        mensaje_original: error.message
+      };
+    }
+    
     return {
-      statusCode: 500,
+      statusCode,
       headers,
-      body: JSON.stringify({ error: 'Error al guardar XML' })
+      body: JSON.stringify(errorResponse)
     };
   }
 }
