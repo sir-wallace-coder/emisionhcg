@@ -1254,6 +1254,70 @@
             }
         }
         
+        // Función para cargar emisores desde backend (requerida por actualizarEmisor)
+        async function cargarEmisoresDesdeBackend() {
+            console.log('🔄 Cargando emisores desde backend...');
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.log('⚠️ Sin token, usando localStorage');
+                    return cargarEmisoresDesdeLocalStorage();
+                }
+                
+                const response = await fetch('/.netlify/functions/emisores', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const emisores = await response.json();
+                    console.log('✅ Emisores cargados desde backend:', emisores.length);
+                    
+                    // Actualizar localStorage como cache
+                    localStorage.setItem('emisores', JSON.stringify(emisores));
+                    
+                    // Refrescar la tabla de emisores
+                    if (typeof mostrarEmisores === 'function') {
+                        mostrarEmisores(emisores);
+                    } else {
+                        console.log('⚠️ Función mostrarEmisores no disponible');
+                    }
+                    
+                    return emisores;
+                } else {
+                    console.error('❌ Error cargando emisores desde backend');
+                    return cargarEmisoresDesdeLocalStorage();
+                }
+            } catch (error) {
+                console.error('❌ Error en cargarEmisoresDesdeBackend:', error);
+                return cargarEmisoresDesdeLocalStorage();
+            }
+        }
+        
+        // Función fallback para cargar desde localStorage
+        function cargarEmisoresDesdeLocalStorage() {
+            console.log('📦 Cargando emisores desde localStorage...');
+            try {
+                const emisores = JSON.parse(localStorage.getItem('emisores') || '[]');
+                console.log('✅ Emisores cargados desde localStorage:', emisores.length);
+                
+                // Refrescar la tabla de emisores
+                if (typeof mostrarEmisores === 'function') {
+                    mostrarEmisores(emisores);
+                } else {
+                    console.log('⚠️ Función mostrarEmisores no disponible');
+                }
+                
+                return emisores;
+            } catch (error) {
+                console.error('❌ Error cargando desde localStorage:', error);
+                return [];
+            }
+        }
+        
         // Initialize dashboard when DOM is ready
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
