@@ -1424,7 +1424,9 @@
                         mostrarEmisores(emisores);
                     } else {
                         console.log('📋 No hay emisores para mostrar');
-                        displayEmisoresEmpty();
+                        // 🚨 FIX CRÍTICO: NO usar displayEmisoresEmpty que muestra columnas incorrectas
+                        console.log('🚨 CORRECCIÓN: NO se usará displayEmisoresEmpty para evitar columnas incorrectas');
+                        mostrarEmisores([]); // Usar mostrarEmisores con array vacío
                     }
                     
                     // Cargar XMLs también
@@ -1487,7 +1489,9 @@
                     console.log('🚨 CORRECCIÓN FALLBACK: Usando mostrarEmisores() con datos del backend');
                     mostrarEmisores(emisores);
                 } else {
-                    displayEmisoresEmpty();
+                    // 🚨 FIX CRÍTICO: NO usar displayEmisoresEmpty que muestra columnas incorrectas
+                    console.log('🚨 CORRECCIÓN: NO se usará displayEmisoresEmpty para evitar columnas incorrectas');
+                    mostrarEmisores([]); // Usar mostrarEmisores con array vacío
                 }
                 
             } catch (error) {
@@ -3232,10 +3236,14 @@
                         mostrarEmisores(emisores);
                     } else {
                         console.error('❌ Función mostrarEmisores no disponible');
-                        displayEmisoresEmpty();
+                        // 🚨 FIX CRÍTICO: NO usar displayEmisoresEmpty que muestra columnas incorrectas
+                    console.log('🚨 CORRECCIÓN: NO se usará displayEmisoresEmpty para evitar columnas incorrectas');
+                    mostrarEmisores([]); // Usar mostrarEmisores con array vacío
                     }
                 } else {
-                    displayEmisoresEmpty();
+                    // 🚨 FIX CRÍTICO: NO usar displayEmisoresEmpty que muestra columnas incorrectas
+                    console.log('🚨 CORRECCIÓN: NO se usará displayEmisoresEmpty para evitar columnas incorrectas');
+                    mostrarEmisores([]); // Usar mostrarEmisores con array vacío
                     console.log('📝 No hay emisores para mostrar');
                 }
             } catch (error) {
