@@ -1447,28 +1447,49 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
             
-            // Wait for all modules to load
+            // 🔧 FIX CRÍTICO: Usar directamente las funciones correctas sin depender de CFDIDashboardMain
             setTimeout(async () => {
                 try {
-                    // Check if CFDIDashboardMain class is available
-                    if (typeof CFDIDashboardMain !== 'undefined') {
-                        console.log('✅ CFDIDashboardMain class found, creating instance...');
+                    console.log('🚀 CFDI Dashboard - Inicialización directa con funciones correctas...');
+                    
+                    // ✅ SOLUCIÓN DEFINITIVA: Usar directamente cargarEmisoresDesdeBackend() + mostrarEmisores()
+                    console.log('🚨 CORRECCIÓN DEFINITIVA: Cargando emisores desde backend con función correcta');
+                    
+                    // Cargar emisores desde backend (datos actualizados)
+                    const emisores = await cargarEmisoresDesdeBackend();
+                    
+                    if (emisores && emisores.length > 0) {
+                        console.log('✅ Emisores cargados desde backend en inicialización:', emisores.length);
+                        console.log('📊 VERIFICACIÓN: Datos del primer emisor:', {
+                            nombre: emisores[0].nombre,
+                            estado_csd: emisores[0].estado_csd,
+                            numero_certificado: emisores[0].numero_certificado,
+                            vigencia_hasta: emisores[0].vigencia_hasta
+                        });
                         
-                        // Create instance and initialize
-                        window.dashboardMain = new CFDIDashboardMain();
-                        await window.dashboardMain.initialize();
-                        
-                        console.log('🎉 Dashboard initialized successfully!');
+                        // ✅ Usar mostrarEmisores() que es la función correcta
+                        console.log('🚨 USANDO mostrarEmisores() - Función correcta con columnas completas');
+                        mostrarEmisores(emisores);
                     } else {
-                        console.error('❌ CFDIDashboardMain class not found');
-                        
-                        // Fallback: try to load data manually
-                        console.log('🔄 Attempting fallback initialization...');
-                        loadFallbackData();
+                        console.log('📋 No hay emisores para mostrar');
+                        displayEmisoresEmpty();
                     }
+                    
+                    // Cargar XMLs también
+                    const xmls = StorageUtils.getXMLs();
+                    if (xmls.length > 0) {
+                        displayXMLsSimple(xmls);
+                    } else {
+                        displayEmptyState();
+                    }
+                    
+                    console.log('🎉 Dashboard inicializado correctamente con datos del backend!');
+                    
                 } catch (error) {
-                    console.error('❌ Error initializing dashboard:', error);
-                    loadFallbackData();
+                    console.error('❌ Error en inicialización directa:', error);
+                    // Solo como último recurso usar fallback
+                    console.log('🔄 Usando fallback como último recurso...');
+                    await loadFallbackData();
                 }
             }, 500); // Wait 500ms for modules to load
         });
