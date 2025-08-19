@@ -42,19 +42,53 @@ function procesarCertificadoSimplificado(cerBase64) {
 }
 
 function validarLlavePrivadaSimplificada(keyBase64, password) {
+  console.log('🔍 DEBUG KEY VALIDATION: Iniciando validación de llave privada');
+  console.log('🔍 DEBUG KEY VALIDATION: Datos de entrada:', {
+    keyBase64_length: keyBase64 ? keyBase64.length : 0,
+    keyBase64_preview: keyBase64 ? keyBase64.substring(0, 50) + '...' : 'VACIO',
+    password_length: password ? password.length : 0,
+    password_present: !!password
+  });
+  
   try {
+    // Validar datos de entrada
+    if (!keyBase64 || keyBase64.trim() === '') {
+      console.error('❌ DEBUG KEY VALIDATION: keyBase64 está vacío');
+      return {
+        valida: false,
+        mensaje: 'El archivo de llave privada (.key) está vacío'
+      };
+    }
+    
+    if (!password || password.trim() === '') {
+      console.error('❌ DEBUG KEY VALIDATION: password está vacío');
+      return {
+        valida: false,
+        mensaje: 'La contraseña de la llave privada es obligatoria'
+      };
+    }
+    
     // Convertir llave privada a PEM
+    console.log('🔍 DEBUG KEY VALIDATION: Convirtiendo keyBase64 a buffer...');
     const keyBuffer = Buffer.from(keyBase64, 'base64');
+    console.log('🔍 DEBUG KEY VALIDATION: Buffer creado, tamaño:', keyBuffer.length);
     
     // Intentar crear objeto de llave privada para validar
+    console.log('🔍 DEBUG KEY VALIDATION: Intentando crear llave privada...');
     try {
+      console.log('🔍 DEBUG KEY VALIDATION: Intentando formato PRIVATE KEY...');
       const keyPem = '-----BEGIN PRIVATE KEY-----\n' + 
                     keyBase64.match(/.{1,64}/g).join('\n') + 
                     '\n-----END PRIVATE KEY-----';
       
+      console.log('🔍 DEBUG KEY VALIDATION: PEM generado, longitud:', keyPem.length);
+      console.log('🔍 DEBUG KEY VALIDATION: PEM preview:', keyPem.substring(0, 100) + '...');
+      
       // Validar que se puede crear la llave
+      console.log('🔍 DEBUG KEY VALIDATION: Validando con crypto.createPrivateKey...');
       crypto.createPrivateKey({ key: keyPem, passphrase: password });
       
+      console.log('✅ DEBUG KEY VALIDATION: ÉXITO - Llave privada válida en formato PRIVATE KEY');
       return {
         valida: true,
         llavePrivadaPem: keyPem
@@ -834,18 +868,35 @@ async function updateEmisor(userId, emisorId, data, headers) {
         
         // 2. Validar y convertir llave privada .key a PEM
         console.log('🔑 UPDATE: Validando y convirtiendo llave privada .key a PEM...');
+        console.log('🔍 DEBUG UPDATE: Datos de llave recibidos:', {
+          certificado_key_length: certificado_key.length,
+          password_key_length: password_key.length,
+          certificado_key_preview: certificado_key.substring(0, 50) + '...'
+        });
+        
         const keyInfo = validarLlavePrivadaSimplificada(certificado_key, password_key);
         
         if (!keyInfo.valida) {
+          console.error('❌ ERROR: Llave privada inválida:', keyInfo.mensaje);
           return {
             statusCode: 400,
             headers,
-            body: JSON.stringify({ 
-              error: 'Error validando llave privada .key: ' + keyInfo.mensaje,
-              tipo: 'CERTIFICADO_KEY_INVALIDO'
+            body: JSON.stringify({
+              error: 'Llave privada inválida: ' + keyInfo.mensaje,
+              tipo: 'validacion_llave',
+              detalles: keyInfo.mensaje
             })
           };
         }
+        
+        console.log('✅ ÉXITO: Llave privada validada correctamente');
+        console.log('🔍 DEBUG UPDATE: Llave PEM generada, longitud:', keyInfo.llavePrivadaPem.length);
+        console.log('🔍 DEBUG UPDATE: Asignando a updateData.certificado_key...');
+        updateData.certificado_key = keyInfo.llavePrivadaPem;
+        console.log('🔍 DEBUG UPDATE: updateData.certificado_key asignado:', {
+          assigned: !!updateData.certificado_key,
+          length: updateData.certificado_key ? updateData.certificado_key.length : 0
+        });
         
         // 3. Validar que el certificado y la llave privada coincidan
         console.log('🔗 UPDATE: Validando coincidencia certificado-llave...');
@@ -897,7 +948,19 @@ async function updateEmisor(userId, emisorId, data, headers) {
 
     console.log('🔧 UPDATE: Actualizando emisor en BD...', Object.keys(updateData));
     
+    // 🚨 LOGGING CRÍTICO: Verificar updateData antes de enviar a BD
+    console.log('🔍 DEBUG BD ANTES: updateData completo antes de enviar:', {
+      keys: Object.keys(updateData),
+      certificado_cer_present: !!updateData.certificado_cer,
+      certificado_key_present: !!updateData.certificado_key,
+      certificado_key_length: updateData.certificado_key ? updateData.certificado_key.length : 0,
+      password_key_present: !!updateData.password_key,
+      numero_certificado: updateData.numero_certificado,
+      estado_csd: updateData.estado_csd
+    });
+    
     // Actualizar emisor en base de datos
+    console.log('🔍 DEBUG BD: Ejecutando supabase.update...');
     const { data: emisor, error } = await supabase
       .from('emisores')
       .update(updateData)
@@ -905,6 +968,12 @@ async function updateEmisor(userId, emisorId, data, headers) {
       .eq('usuario_id', userId)
       .select()
       .single();
+    
+    console.log('🔍 DEBUG BD: Respuesta de supabase:', {
+      error: !!error,
+      data_present: !!emisor,
+      error_details: error
+    });
 
     if (error) {
       console.error('❌ UPDATE: Error actualizando en BD:', error);
@@ -913,18 +982,35 @@ async function updateEmisor(userId, emisorId, data, headers) {
 
     console.log('✅ UPDATE: Emisor actualizado exitosamente:', emisor.id);
     
-    console.log('🔍 UPDATE DIAGNÓSTICO: Datos guardados en BD (verificación):', {
+    // 🚨 LOGGING CRÍTICO: Verificar si la llave se guardó en BD
+    console.log('🔍 DEBUG BD DESPUÉS: Datos retornados por supabase:', {
       id: emisor.id,
       rfc: emisor.rfc,
       nombre: emisor.nombre,
-      tiene_cer: !!emisor.certificado_cer,
-      tiene_key: !!emisor.certificado_key,
-      tiene_password: !!emisor.password_key,
+      certificado_cer_length: emisor.certificado_cer ? emisor.certificado_cer.length : 0,
+      certificado_key_length: emisor.certificado_key ? emisor.certificado_key.length : 0,
+      certificado_cer_present: !!emisor.certificado_cer,
+      certificado_key_present: !!emisor.certificado_key,
+      password_key_present: !!emisor.password_key,
       numero_certificado: emisor.numero_certificado,
       vigencia_desde: emisor.vigencia_desde,
       vigencia_hasta: emisor.vigencia_hasta,
-      estado_csd: emisor.estado_csd
+      estado_csd: emisor.estado_csd,
+      all_fields: Object.keys(emisor)
     });
+    
+    // 🚨 ALERTA CRÍTICA: Si certificado_key no está presente después de la actualización
+    if (!emisor.certificado_key) {
+      console.error('🚨 ALERTA CRÍTICA: certificado_key NO se guardó en la base de datos!');
+      console.error('🚨 DATOS ENVIADOS vs DATOS GUARDADOS:', {
+        enviado_certificado_key: !!updateData.certificado_key,
+        enviado_certificado_key_length: updateData.certificado_key ? updateData.certificado_key.length : 0,
+        guardado_certificado_key: !!emisor.certificado_key,
+        guardado_certificado_key_length: emisor.certificado_key ? emisor.certificado_key.length : 0
+      });
+    } else {
+      console.log('✅ ÉXITO CRÍTICO: certificado_key SÍ se guardó en la base de datos!');
+    }
     
     // No devolver datos sensibles
     const { certificado_key: _, password_key: __, ...safeEmisor } = emisor;
