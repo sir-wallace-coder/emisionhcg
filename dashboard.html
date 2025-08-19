@@ -1572,7 +1572,12 @@
                 });
                 
                 // 4. Ordenar por fecha (más recientes primero)
-                xmlsCombinados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                // Ordenar por fecha con compatibilidad completa
+                xmlsCombinados.sort((a, b) => {
+                    const fechaA = a.fecha || a.fecha_creacion || a.created_at || new Date().toISOString();
+                    const fechaB = b.fecha || b.fecha_creacion || b.created_at || new Date().toISOString();
+                    return new Date(fechaB) - new Date(fechaA);
+                });
                 
                 console.log('🎯 Total XMLs combinados:', xmlsCombinados.length);
                 
@@ -1681,29 +1686,34 @@
                     </thead>
                     <tbody>
                         ${xmls.map(xml => {
-                            // Procesar fecha correctamente
+                            // Procesar fecha correctamente - COMPATIBILIDAD COMPLETA
                             let fechaMostrar = 'Sin fecha';
                             try {
-                                if (xml.fecha_creacion) {
-                                    fechaMostrar = new Date(xml.fecha_creacion).toLocaleDateString('es-MX', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
-                                } else if (xml.created_at) {
-                                    fechaMostrar = new Date(xml.created_at).toLocaleDateString('es-MX', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
+                                // Buscar fecha en todos los campos posibles (compatibilidad completa)
+                                const fechaValida = xml.fecha || xml.fecha_creacion || xml.created_at || xml.fecha_generacion;
+                                
+                                if (fechaValida) {
+                                    const fechaObj = new Date(fechaValida);
+                                    if (!isNaN(fechaObj.getTime())) {
+                                        fechaMostrar = fechaObj.toLocaleDateString('es-MX', {
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                        console.log('✅ Fecha procesada correctamente:', fechaValida, '→', fechaMostrar);
+                                    } else {
+                                        console.warn('⚠️ Fecha inválida encontrada:', fechaValida);
+                                        fechaMostrar = 'Fecha inválida';
+                                    }
+                                } else {
+                                    console.warn('⚠️ No se encontró campo de fecha en XML:', Object.keys(xml));
+                                    fechaMostrar = 'Sin fecha';
                                 }
                             } catch (e) {
-                                console.warn('⚠️ Error procesando fecha para mostrar:', e);
-                                fechaMostrar = 'Fecha inválida';
+                                console.error('❌ Error procesando fecha para mostrar:', e);
+                                fechaMostrar = 'Error en fecha';
                             }
                             
                             // Determinar si se puede editar (no sellado)
