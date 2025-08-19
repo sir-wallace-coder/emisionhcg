@@ -1800,39 +1800,49 @@
             const xmlsCount = (typeof xmls !== 'undefined' && xmls) ? xmls.length : (todosLosXMLs ? todosLosXMLs.length : 0);
             const emisoresCount = (typeof emisores !== 'undefined' && emisores) ? emisores.length : 0;
             
-            // Verificar que los elementos existan antes de actualizar
-            const totalXMLsElement = document.getElementById('totalXMLs');
-            const totalEmisoresElement = document.getElementById('totalEmisores');
+            // ✅ CORREGIR IDs DE ELEMENTOS DOM - ESTADÍSTICAS
+            const totalXMLsElement = document.getElementById('totalXMLsCount'); // ✅ ID CORRECTO
+            const totalEmisoresElement = document.getElementById('totalEmisoresCount'); // ✅ ID CORRECTO
+            
+            console.log('📊 Actualizando estadísticas - XMLs:', xmlsCount, 'Emisores:', emisoresCount);
             
             if (totalXMLsElement) {
                 totalXMLsElement.textContent = xmlsCount;
+                console.log('✅ Total XMLs actualizado:', xmlsCount);
             } else {
-                console.warn('⚠️ Elemento totalXMLs no encontrado en DOM');
+                console.warn('⚠️ Elemento totalXMLsCount no encontrado en DOM');
             }
             
             if (totalEmisoresElement) {
                 totalEmisoresElement.textContent = emisoresCount;
+                console.log('✅ Total Emisores actualizado:', emisoresCount);
             } else {
-                console.warn('⚠️ Elemento totalEmisores no encontrado en DOM');
+                console.warn('⚠️ Elemento totalEmisoresCount no encontrado en DOM');
             }
             
-            // Calcular XMLs de este mes
+            // 📅 CALCULAR XMLs DE ESTE MES CON COMPATIBILIDAD COMPLETA
             const xmlsArray = xmls || todosLosXMLs || [];
             const thisMonth = xmlsArray.filter(xml => {
                 try {
-                    const xmlDate = new Date(xml.fecha_creacion);
+                    // ✅ USAR FUNCIÓN COMPATIBLE DE FECHA
+                    const fechaValida = xml.fecha || xml.fecha_creacion || xml.created_at || xml.fecha_generacion;
+                    const xmlDate = new Date(fechaValida);
                     const now = new Date();
                     return xmlDate.getMonth() === now.getMonth() && 
                            xmlDate.getFullYear() === now.getFullYear();
                 } catch (error) {
+                    console.warn('⚠️ Error procesando fecha para estadísticas:', error);
                     return false;
                 }
             }).length;
             
-            // Verificar que el elemento exista antes de actualizar
-            const xmlsThisMonthElement = document.getElementById('xmlsThisMonth');
+            console.log('📅 XMLs de este mes calculados:', thisMonth);
+            
+            // ✅ CORREGIR ID DE ELEMENTO DOM - XMLs ESTE MES
+            const xmlsThisMonthElement = document.getElementById('xmlsThisMonthCount'); // ✅ ID CORRECTO
             if (xmlsThisMonthElement) {
                 xmlsThisMonthElement.textContent = thisMonth;
+                console.log('✅ XMLs este mes actualizado:', thisMonth);
             } else {
                 console.warn('⚠️ Elemento xmlsThisMonth no encontrado en DOM');
             }
@@ -2335,15 +2345,19 @@
                 const xmlsArray = todosLosXMLs || [];
                 const thisMonth = xmlsArray.filter(xml => {
                     try {
-                        const xmlDate = new Date(xml.fecha);
+                        // ✅ USAR COMPATIBILIDAD COMPLETA DE FECHAS
+                        const fechaValida = xml.fecha || xml.fecha_creacion || xml.created_at || xml.fecha_generacion;
+                        const xmlDate = new Date(fechaValida);
                         const now = new Date();
                         return xmlDate.getMonth() === now.getMonth() && 
                                xmlDate.getFullYear() === now.getFullYear();
                     } catch (error) {
+                        console.warn('⚠️ Error procesando fecha en updateStatistics:', error);
                         return false;
                     }
                 }).length;
                 xmlsThisMonthElement.textContent = thisMonth;
+                console.log('✅ updateStatistics - XMLs este mes:', thisMonth);
             }
         }
 
@@ -3067,11 +3081,19 @@
         
         // Función para ver contenido del XML
         function viewXML(xmlId) {
-            const xml = xmls.find(x => x.id === xmlId);
+            // 🔍 OBTENER XMLs DE TODAS LAS FUENTES
+            const xmlsFromStorage = JSON.parse(localStorage.getItem('xmls_generados') || '[]');
+            const xml = xmlsFromStorage.find(x => x.id === xmlId);
+            
+            console.log('🔍 Buscando XML ID:', xmlId, 'Total XMLs:', xmlsFromStorage.length);
+            
             if (!xml) {
                 showAlert('❌ Error: XML no encontrado', 'error');
+                console.error('❌ XML no encontrado. ID buscado:', xmlId);
                 return;
             }
+            
+            console.log('✅ XML encontrado:', xml.serie, xml.folio);
             
             // Crear modal para mostrar el XML
             const modal = document.createElement('div');
