@@ -959,53 +959,10 @@
             }
         }
         
-        // ===== CORRECCIÓN DE CARGA DE DATOS REALES =====
-        
-        // Función para forzar carga de datos reales desde BD
-        async function forceLoadRealData() {
-            console.log('🔄 Forzando carga de datos reales desde BD...');
-            
-            try {
-                // Verificar autenticación
-                const token = localStorage.getItem('cfdi_token');
-                if (!token) {
-                    console.log('⚠️ No hay token de autenticación, usando datos locales');
-                    return false;
-                }
-                
-                // Cargar datos usando el sistema modular
-                if (typeof CFDIStorage !== 'undefined') {
-                    console.log('📊 Cargando XMLs desde BD...');
-                    const xmls = await CFDIStorage.loadXMLs();
-                    
-                    console.log('🏢 Cargando emisores desde BD...');
-                    const emisores = await CFDIStorage.loadEmisores();
-                    
-                    // Forzar renderizado si existe la instancia del dashboard
-                    if (window.dashboardMain) {
-                        console.log('🔄 Actualizando dashboard con datos reales...');
-                        await window.dashboardMain.renderAllData();
-                        await window.dashboardMain.updateStats();
-                    }
-                    
-                    console.log('✅ Datos reales cargados exitosamente');
-                    return true;
-                } else {
-                    console.error('❌ CFDIStorage no está disponible');
-                    return false;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error cargando datos reales:', error);
-                return false;
-            }
-        }
-        
-        // Ejecutar carga de datos reales después de la inicialización
-        setTimeout(async () => {
-            console.log('🚀 Ejecutando carga de datos reales...');
-            await forceLoadRealData();
-        }, 2000); // Esperar 2 segundos para que todo esté inicializado
+        // ===== NOTA: CARGA DE DATOS REALES =====
+        // Los datos reales ahora se cargan automáticamente durante la inicialización
+        // del dashboard usando el sistema híbrido (Supabase + localStorage)
+        // No es necesario forzar la carga por separado.
     </script>
 </body>
 </html>

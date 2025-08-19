@@ -53,37 +53,55 @@ class CFDIDashboardMain {
         logSystem('Cargando datos iniciales del dashboard', 'info');
         
         try {
-            // Cargar XMLs desde localStorage
-            const xmlsData = localStorage.getItem(CFDI_CONFIG.storageKeys.xmls);
-            if (xmlsData) {
-                try {
-                    xmls = JSON.parse(xmlsData);
-                    logSystem('XMLs cargados desde localStorage', 'success', { count: xmls.length });
-                } catch (e) {
+            // ===== USAR SISTEMA HÍBRIDO (SUPABASE + LOCALSTORAGE) =====
+            
+            // Cargar XMLs usando el sistema híbrido (BD primero, localStorage fallback)
+            if (typeof CFDIStorage !== 'undefined' && CFDIStorage.loadXMLs) {
+                logSystem('Usando sistema híbrido para cargar XMLs (BD + localStorage)', 'info');
+                xmls = await CFDIStorage.loadXMLs();
+                logSystem('XMLs cargados con sistema híbrido', 'success', { count: xmls.length });
+            } else {
+                // Fallback: cargar solo desde localStorage
+                logSystem('CFDIStorage no disponible, usando localStorage directo', 'warning');
+                const xmlsData = localStorage.getItem(CFDI_CONFIG.storageKeys.xmls);
+                if (xmlsData) {
+                    try {
+                        xmls = JSON.parse(xmlsData);
+                        logSystem('XMLs cargados desde localStorage (fallback)', 'success', { count: xmls.length });
+                    } catch (e) {
+                        xmls = [];
+                        logSystem('Error parseando XMLs, inicializando array vacío', 'warning');
+                    }
+                } else {
                     xmls = [];
-                    logSystem('Error parseando XMLs, inicializando array vacío', 'warning');
+                    logSystem('No hay XMLs guardados, inicializando array vacío', 'info');
                 }
-            } else {
-                xmls = [];
-                logSystem('No hay XMLs guardados, inicializando array vacío', 'info');
             }
             
-            // Cargar emisores desde localStorage
-            const emisoresData = localStorage.getItem(CFDI_CONFIG.storageKeys.emisores);
-            if (emisoresData) {
-                try {
-                    emisores = JSON.parse(emisoresData);
-                    logSystem('Emisores cargados desde localStorage', 'success', { count: emisores.length });
-                } catch (e) {
+            // Cargar emisores usando el sistema híbrido (BD primero, localStorage fallback)
+            if (typeof CFDIStorage !== 'undefined' && CFDIStorage.loadEmisores) {
+                logSystem('Usando sistema híbrido para cargar emisores (BD + localStorage)', 'info');
+                emisores = await CFDIStorage.loadEmisores();
+                logSystem('Emisores cargados con sistema híbrido', 'success', { count: emisores.length });
+            } else {
+                // Fallback: cargar solo desde localStorage
+                logSystem('CFDIStorage no disponible, usando localStorage directo', 'warning');
+                const emisoresData = localStorage.getItem(CFDI_CONFIG.storageKeys.emisores);
+                if (emisoresData) {
+                    try {
+                        emisores = JSON.parse(emisoresData);
+                        logSystem('Emisores cargados desde localStorage (fallback)', 'success', { count: emisores.length });
+                    } catch (e) {
+                        emisores = [];
+                        logSystem('Error parseando emisores, inicializando array vacío', 'warning');
+                    }
+                } else {
                     emisores = [];
-                    logSystem('Error parseando emisores, inicializando array vacío', 'warning');
+                    logSystem('No hay emisores guardados, inicializando array vacío', 'info');
                 }
-            } else {
-                emisores = [];
-                logSystem('No hay emisores guardados, inicializando array vacío', 'info');
             }
             
-            // Cargar logs del sistema
+            // Cargar logs del sistema (solo localStorage, no necesita BD)
             const savedLogs = localStorage.getItem(CFDI_CONFIG.storageKeys.logs);
             if (savedLogs) {
                 try {
@@ -96,6 +114,12 @@ class CFDIDashboardMain {
             } else {
                 systemLogs = [];
             }
+            
+            logSystem('Datos iniciales cargados exitosamente', 'success', {
+                xmls: xmls.length,
+                emisores: emisores.length,
+                logs: systemLogs.length
+            });
             
         } catch (error) {
             logSystem('Error cargando datos iniciales', 'error', error);
