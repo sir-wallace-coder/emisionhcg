@@ -3260,7 +3260,15 @@
             let infoHTML = '';
             let alertClass = 'alert-secondary';
             
-            if (emisor.certificado_cer && emisor.certificado_key) {
+            // 🔧 FIX CRÍTICO: Usar campos correctos que existen en el frontend
+            console.log('🔍 DEBUG CSD VALIDATION: Validando estado CSD con campos correctos:', {
+                certificado_cer_presente: emisor.certificado_cer_presente,
+                certificado_key_presente: emisor.certificado_key_presente,
+                numero_certificado: emisor.numero_certificado,
+                estado_csd: emisor.estado_csd
+            });
+            
+            if (emisor.certificado_cer_presente && emisor.certificado_key_presente) {
                 if (emisor.numero_certificado) {
                     alertClass = 'alert-success';
                     infoHTML = `
@@ -3278,13 +3286,13 @@
                         <small>Los certificados están cargados pero aún no se ha extraído la información</small>
                     `;
                 }
-            } else if (emisor.certificado_cer || emisor.certificado_key) {
+            } else if (emisor.certificado_cer_presente || emisor.certificado_key_presente) {
                 alertClass = 'alert-warning';
                 infoHTML = `
                     <i class="fas fa-exclamation-triangle"></i> <strong>CSD Incompleto</strong><br>
                     <small>
-                        ${emisor.certificado_cer ? '✅ Archivo .cer cargado<br>' : '❌ Falta archivo .cer<br>'}
-                        ${emisor.certificado_key ? '✅ Archivo .key cargado' : '❌ Falta archivo .key'}
+                        ${emisor.certificado_cer_presente ? '✅ Archivo .cer cargado<br>' : '❌ Falta archivo .cer<br>'}
+                        ${emisor.certificado_key_presente ? '✅ Archivo .key cargado' : '❌ Falta archivo .key'}
                     </small>
                 `;
             } else {
