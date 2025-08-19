@@ -1005,6 +1005,24 @@
     <script src="js/dashboard/cfdi-dashboard-main.js"></script>
 
     <script>
+        // ===== FUNCIONES CRÍTICAS INMEDIATAS =====
+        
+        // FUNCIÓN CRÍTICA: editEmisor (DEBE ESTAR DISPONIBLE INMEDIATAMENTE)
+        window.editEmisor = function(emisorId) {
+            console.log('✏️ CRÍTICO: Editando emisor:', emisorId);
+            try {
+                // Buscar función principal
+                if (typeof editarEmisor === 'function') {
+                    return editarEmisor(emisorId);
+                }
+                // Fallback directo
+                alert('Función de edición no disponible. Recarga la página.');
+            } catch (error) {
+                console.error('❌ Error crítico editEmisor:', error);
+                alert('Error crítico: ' + error.message);
+            }
+        };
+        
         // ===== FUNCIONES GLOBALES REQUERIDAS POR ONCLICK =====
         
         // Función global para cambiar tabs (requerida por onclick en HTML)
