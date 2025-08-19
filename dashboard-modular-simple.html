@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard CFDI - Sistema Profesional</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Estilos personalizados -->
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .sidebar {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 56px);
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            background: white;
+            border-radius: 0 8px 8px 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: var(--light-color);
+            border: none;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.5em 0.75em;
+        }
+        
+        .btn {
+            border-radius: 6px;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background: var(--light-color);
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .xml-content {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .search-container {
+            margin-bottom: 20px;
+        }
+        
+        .filters-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .logs-container {
+            max-height: 500px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .log-entry {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border-left: 4px solid;
+        }
+        
+        .log-entry.info {
+            background: #e7f3ff;
+            border-left-color: var(--info-color);
+        }
+        
+        .log-entry.success {
+            background: #e8f5e8;
+            border-left-color: var(--success-color);
+        }
+        
+        .log-entry.warning {
+            background: #fff8e1;
+            border-left-color: var(--warning-color);
+        }
+        
+        .log-entry.error {
+            background: #ffebee;
+            border-left-color: var(--danger-color);
+        }
+        
+        .responsive-table {
+            overflow-x: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+            }
+            
+            .stats-card {
+                margin-bottom: 15px;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-file-invoice-dollar me-2"></i>
+                Sistema CFDI Profesional
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i>
+                        <span id="userDisplayName">Usuario</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-action="profile"><i class="fas fa-user me-2"></i>Perfil</a></li>
+                        <li><a class="dropdown-item" href="#" data-action="settings"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" data-action="logout"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Estadísticas -->
+            <div class="col-12">
+                <div class="row mt-4" id="statsContainer">
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number" id="totalXMLs">0</div>
+                            <div class="text-muted">XMLs Generados</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number" id="xmlsThisMonth">0</div>
+                            <div class="text-muted">XMLs Este Mes</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number" id="activeEmisores">0</div>
+                            <div class="text-muted">Emisores Activos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number" id="systemLogs">0</div>
+                            <div class="text-muted">Logs del Sistema</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegación de Tabs -->
+            <div class="col-12 mt-4">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active tab-link" data-tab="xmls" href="#" role="tab">
+                            <i class="fas fa-file-alt me-2"></i>XMLs CFDI
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link tab-link" data-tab="emisores" href="#" role="tab">
+                            <i class="fas fa-building me-2"></i>Emisores
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link tab-link" data-tab="logs" href="#" role="tab">
+                            <i class="fas fa-list-alt me-2"></i>Logs del Sistema
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Contenido de Tabs -->
+                <div class="tab-content">
+                    <!-- Tab XMLs -->
+                    <div id="xmlsTab" class="tab-content-panel">
+                        <!-- Filtros y Búsqueda -->
+                        <div class="filters-container">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Buscar XMLs:</label>
+                                    <input type="text" id="xmlSearch" class="form-control" placeholder="Buscar por serie, folio, RFC...">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Filtrar por estado:</label>
+                                    <select id="xmlFilter" class="form-select">
+                                        <option value="todos">Todos los comprobantes</option>
+                                        <option value="borrador">Borrador</option>
+                                        <option value="sellado">Sellado</option>
+                                        <option value="timbrado">Timbrado</option>
+                                        <option value="cancelado">Cancelado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5 d-flex align-items-end">
+                                    <button class="btn btn-primary me-2" data-action="newXML">
+                                        <i class="fas fa-plus me-1"></i>Generar nuevo XML
+                                    </button>
+                                    <button class="btn btn-outline-primary" data-action="importXML">
+                                        <i class="fas fa-upload me-1"></i>Importar XML
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de XMLs -->
+                        <div class="table-container">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Serie-Folio</th>
+                                            <th>Emisor</th>
+                                            <th>Receptor</th>
+                                            <th>Total</th>
+                                            <th>Fecha</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="xmlTableBody">
+                                        <!-- Contenido dinámico -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Emisores -->
+                    <div id="emisoresTab" class="tab-content-panel" style="display: none;">
+                        <!-- Botones de acción -->
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5>Gestión de Emisores</h5>
+                            <div>
+                                <button class="btn btn-primary" data-action="newEmisor">
+                                    <i class="fas fa-plus me-1"></i>Nuevo Emisor
+                                </button>
+                                <button class="btn btn-outline-secondary" data-action="exportEmisores">
+                                    <i class="fas fa-download me-1"></i>Exportar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Emisores -->
+                        <div class="table-container">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>RFC</th>
+                                            <th>Razón Social</th>
+                                            <th>Código Postal</th>
+                                            <th>Régimen Fiscal</th>
+                                            <th>CSD</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="emisorTableBody">
+                                        <!-- Contenido dinámico -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Logs -->
+                    <div id="logsTab" class="tab-content-panel" style="display: none;">
+                        <!-- Controles de logs -->
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5>Logs del Sistema</h5>
+                            <div>
+                                <button class="btn btn-outline-danger btn-sm" data-action="clearLogs">
+                                    <i class="fas fa-trash me-1"></i>Limpiar
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" data-action="exportLogs">
+                                    <i class="fas fa-download me-1"></i>Exportar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Contenedor de logs -->
+                        <div class="logs-container" id="logsContainer">
+                            <!-- Contenido dinámico -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Emisor -->
+    <div id="emisorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="emisorModalTitle">Agregar Emisor</h2>
+                <span class="close" onclick="closeEmisorModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="emisorForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emisorRFC" class="form-label">RFC *</label>
+                                <input type="text" class="form-control" id="emisorRFC" name="rfc" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emisorCodigoPostal" class="form-label">Código Postal *</label>
+                                <input type="text" class="form-control" id="emisorCodigoPostal" name="codigo_postal" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emisorRazonSocial" class="form-label">Razón Social *</label>
+                        <input type="text" class="form-control" id="emisorRazonSocial" name="razon_social" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emisorRegimenFiscal" class="form-label">Régimen Fiscal *</label>
+                        <select class="form-select" id="emisorRegimenFiscal" name="regimen_fiscal" required>
+                            <option value="">Seleccionar régimen fiscal</option>
+                            <option value="601">General de Ley Personas Morales</option>
+                            <option value="603">Personas Morales con Fines no Lucrativos</option>
+                            <option value="605">Sueldos y Salarios e Ingresos Asimilados a Salarios</option>
+                            <option value="606">Arrendamiento</option>
+                            <option value="607">Régimen de Enajenación o Adquisición de Bienes</option>
+                            <option value="608">Demás ingresos</option>
+                            <option value="610">Residentes en el Extranjero sin Establecimiento Permanente en México</option>
+                            <option value="611">Ingresos por Dividendos (socios y accionistas)</option>
+                            <option value="612">Personas Físicas con Actividades Empresariales y Profesionales</option>
+                            <option value="614">Ingresos por intereses</option>
+                            <option value="615">Régimen de los ingresos por obtención de premios</option>
+                            <option value="616">Sin obligaciones fiscales</option>
+                            <option value="620">Sociedades Cooperativas de Producción que optan por diferir sus ingresos</option>
+                            <option value="621">Incorporación Fiscal</option>
+                            <option value="622">Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+                            <option value="623">Opcional para Grupos de Sociedades</option>
+                            <option value="624">Coordinados</option>
+                            <option value="625">Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
+                            <option value="626">Régimen Simplificado de Confianza</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emisorEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="emisorEmail" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emisorTelefono" class="form-label">Teléfono</label>
+                                <input type="tel" class="form-control" id="emisorTelefono" name="telefono">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6>Certificados CSD (Opcional)</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emisorCertificado" class="form-label">Certificado (.cer)</label>
+                                <input type="file" class="form-control" id="emisorCertificado" accept=".cer">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emisorLlavePrivada" class="form-label">Llave Privada (.key)</label>
+                                <input type="file" class="form-control" id="emisorLlavePrivada" accept=".key">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="passwordLlave" class="form-label">Contraseña de la Llave Privada</label>
+                        <input type="password" class="form-control" id="passwordLlave" name="password_llave">
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" onclick="closeEmisorModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Emisor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Módulos CFDI (en orden de dependencia) -->
+    <script src="/js/core/cfdi-core.js"></script>
+    <script src="/js/core/cfdi-storage.js"></script>
+    <script src="/js/core/cfdi-auth.js"></script>
+    <script src="/js/ui/cfdi-ui-components.js"></script>
+    <script src="/js/services/cfdi-xml-service.js"></script>
+    <script src="/js/services/cfdi-emisor-service.js"></script>
+    <script src="/js/dashboard/cfdi-dashboard-main.js"></script>
+    
+    <!-- Módulos adicionales del dashboard (se crearán después) -->
+    <script src="/js/dashboard/cfdi-dashboard-stats.js"></script>
+    <script src="/js/dashboard/cfdi-dashboard-tables.js"></script>
+    <script src="/js/dashboard/cfdi-dashboard-logs.js"></script>
+    
+    <script>
+        // Inicialización final del dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            logSystem('Dashboard modular cargado exitosamente', 'success');
+            
+            // Mostrar información del usuario si está disponible
+            const userDisplayName = document.getElementById('userDisplayName');
+            if (currentUser && userDisplayName) {
+                userDisplayName.textContent = currentUser.nombre || currentUser.email || 'Usuario';
+            }
+        });
+    </script>
+</body>
+</html>
