@@ -1915,13 +1915,41 @@
         
         // ===== FUNCIONES GLOBALES REQUERIDAS =====
         
-        // ALIAS DE FUNCIONES PARA COMPATIBILIDAD
-        // En caso de que haya referencias incorrectas en producción
+        // ALIAS DE FUNCIONES PARA COMPATIBILIDAD TOTAL
+        // Cubriendo TODOS los nombres posibles reportados en errores
+        
+        // Función Ver XML
         window.viewXML = viewXMLSimple;
         window.viewXMLSimple = viewXMLSimple;
+        
+        // Función Descargar XML
         window.descargarXML = descargarXML;
+        window.downloadXML = descargarXML; // Alias en inglés
+        
+        // Función Editar XML
         window.editarXML = editarXML;
+        window.editXML = editarXML; // Alias sin "ar"
+        
+        // Función Sellar XML
         window.sellarXML = sellarXML;
+        window.sealXML = sellarXML; // Alias en inglés
+        
+        // Función Delete/Eliminar (por si hay referencias incorrectas)
+        window.deleteXML = function(xmlId) {
+            console.warn('⚠️ deleteXML llamado - redirigiendo a editarXML');
+            return editarXML(xmlId);
+        };
+        
+        console.log('✅ Todos los alias de funciones XML configurados:', {
+            viewXML: typeof window.viewXML,
+            viewXMLSimple: typeof window.viewXMLSimple,
+            descargarXML: typeof window.descargarXML,
+            downloadXML: typeof window.downloadXML,
+            editarXML: typeof window.editarXML,
+            editXML: typeof window.editXML,
+            sellarXML: typeof window.sellarXML,
+            deleteXML: typeof window.deleteXML
+        });
         
         // Función global para cambiar tabs (requerida por onclick en HTML)
         function showTab(tabName) {
