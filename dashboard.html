@@ -1355,37 +1355,57 @@
             console.log('📄 Abriendo modal de importar XML...');
             
             try {
-                // Limpiar formulario y estados
-                document.getElementById('xmlFiles').value = '';
-                document.getElementById('filesList').style.display = 'none';
-                document.getElementById('validationResults').style.display = 'none';
-                document.getElementById('btnValidar').disabled = true;
-                document.getElementById('btnImportar').disabled = true;
+                // Verificar que el modal existe
+                const modalElement = document.getElementById('modalImportXML');
+                if (!modalElement) {
+                    console.error('❌ Modal modalImportXML no encontrado en el DOM');
+                    alert('Error: Modal de importación no encontrado');
+                    return;
+                }
                 
-                // Configurar event listeners para archivos XML ANTES de mostrar el modal
+                // Verificar que los elementos del formulario existen
+                const xmlFiles = document.getElementById('xmlFiles');
+                const filesList = document.getElementById('filesList');
+                const validationResults = document.getElementById('validationResults');
+                const btnValidar = document.getElementById('btnValidar');
+                const btnImportar = document.getElementById('btnImportar');
+                
+                // Limpiar formulario y estados solo si los elementos existen
+                if (xmlFiles) xmlFiles.value = '';
+                if (filesList) filesList.style.display = 'none';
+                if (validationResults) validationResults.style.display = 'none';
+                if (btnValidar) btnValidar.disabled = true;
+                if (btnImportar) btnImportar.disabled = true;
+                
+                // Configurar event listeners para archivos XML
                 setupXMLFileListeners();
                 
-                // Mostrar modal con configuración específica para evitar problemas de z-index
-                const modalElement = document.getElementById('modalImportXML');
+                // Crear y mostrar modal con configuración robusta
                 const modal = new bootstrap.Modal(modalElement, {
-                    backdrop: true,
+                    backdrop: 'static', // No cerrar al hacer clic fuera
                     keyboard: true,
                     focus: true
                 });
                 
-                // Forzar z-index correcto
-                modalElement.style.zIndex = '1060';
-                
+                // Mostrar modal
                 modal.show();
                 
-                // Verificar que el modal se abrió correctamente
+                // Verificar apertura con timeout más largo
                 setTimeout(() => {
-                    if (modalElement.classList.contains('show')) {
+                    const isVisible = modalElement.classList.contains('show') || 
+                                    modalElement.style.display === 'block' ||
+                                    window.getComputedStyle(modalElement).display === 'block';
+                    
+                    if (isVisible) {
                         console.log('✅ Modal de importar XML abierto exitosamente');
                     } else {
                         console.error('❌ Modal de XML no se abrió correctamente');
+                        // Intentar forzar apertura
+                        modalElement.style.display = 'block';
+                        modalElement.classList.add('show');
+                        modalElement.setAttribute('aria-hidden', 'false');
                     }
-                }, 100);
+                }, 200);
                 
             } catch (error) {
                 console.error('❌ Error abriendo modal de importar XML:', error);

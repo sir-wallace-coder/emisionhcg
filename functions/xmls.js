@@ -172,27 +172,45 @@ async function saveXML(userId, data, headers) {
       };
     }
 
+    console.log('💾 Preparando datos para inserción en BD...');
+    
+    // Preparar datos con todos los campos del esquema
+    const xmlData = {
+      usuario_id: userId,
+      emisor_id: null, // Campo requerido por esquema, null si no hay emisor específico
+      xml_content,
+      version_cfdi,
+      emisor_rfc,
+      emisor_nombre,
+      receptor_rfc,
+      receptor_nombre,
+      serie: serie || null, // Permitir serie vacía
+      folio,
+      total: parseFloat(total),
+      uuid: uuid || null, // UUID opcional hasta timbrado
+      sello: sello || null, // Sello opcional hasta sellado
+      estado: estado || 'generado',
+      fecha_timbrado: null // NULL hasta que se timbre
+      // created_at y updated_at se manejan automáticamente por la BD
+    };
+    
+    console.log('📋 Datos validados para inserción:', {
+      usuario_id: xmlData.usuario_id,
+      version_cfdi: xmlData.version_cfdi,
+      emisor_rfc: xmlData.emisor_rfc,
+      receptor_rfc: xmlData.receptor_rfc,
+      serie: xmlData.serie,
+      folio: xmlData.folio,
+      total: xmlData.total,
+      estado: xmlData.estado,
+      tiene_uuid: !!xmlData.uuid,
+      tiene_sello: !!xmlData.sello
+    });
+    
     // Guardar XML
     const { data: xmlRecord, error } = await supabase
       .from('xmls_generados')
-      .insert([
-        {
-          usuario_id: userId,
-          xml_content,
-          version_cfdi,
-          emisor_rfc,
-          emisor_nombre,
-          receptor_rfc,
-          receptor_nombre,
-          serie,
-          folio,
-          total: parseFloat(total),
-          uuid,
-          sello,
-          estado,
-          created_at: new Date().toISOString()
-        }
-      ])
+      .insert([xmlData])
       .select()
       .single();
 
