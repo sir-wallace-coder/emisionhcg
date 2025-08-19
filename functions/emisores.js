@@ -652,6 +652,8 @@ async function createEmisor(userId, data, headers) {
 
 async function updateEmisor(userId, emisorId, data, headers) {
   try {
+    console.log('🔧 EMISOR UPDATE: Iniciando actualización de emisor...', emisorId);
+    
     if (!emisorId) {
       return {
         statusCode: 400,
@@ -660,17 +662,125 @@ async function updateEmisor(userId, emisorId, data, headers) {
       };
     }
 
+    const {
+      rfc,
+      nombre,
+      codigo_postal,
+      regimen_fiscal,
+      certificado_cer,
+      certificado_key,
+      password_key
+    } = data;
+
+    // Preparar datos básicos para actualización
+    let updateData = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Actualizar campos básicos si se proporcionan
+    if (rfc) updateData.rfc = rfc.toUpperCase().trim();
+    if (nombre) updateData.nombre = nombre.trim();
+    if (codigo_postal) updateData.codigo_postal = codigo_postal;
+    if (regimen_fiscal) updateData.regimen_fiscal = regimen_fiscal;
+
+    // === PROCESAMIENTO DE CERTIFICADOS CSD ===
+    if (certificado_cer && certificado_key && password_key) {
+      console.log('🔧 EMISOR UPDATE: Procesando certificados CSD...');
+      
+      try {
+        // Extraer información REAL del certificado .cer (misma lógica que createEmisor)
+        let numeroCertificado = null;
+        let vigenciaDesde = null;
+        let vigenciaHasta = null;
+        
+        try {
+          // Decodificar el certificado desde base64
+          const cerBuffer = Buffer.from(certificado_cer, 'base64');
+          const cerString = cerBuffer.toString('utf8');
+          
+          // Buscar el número de serie en el certificado
+          const serialMatch = cerString.match(/Serial Number:\s*([a-fA-F0-9:]+)/i) || 
+                             cerString.match(/serialNumber=([a-fA-F0-9]+)/i);
+          
+          if (serialMatch) {
+            // Limpiar el número de serie (quitar : y espacios)
+            const serialHex = serialMatch[1].replace(/[:\s]/g, '');
+            // Convertir de hex a decimal y tomar los últimos 20 dígitos
+            const serialDecimal = BigInt('0x' + serialHex).toString();
+            numeroCertificado = serialDecimal.slice(-20); // Máximo 20 caracteres
+            console.log('🔢 UPDATE: Número de certificado extraído del .cer:', numeroCertificado);
+          } else {
+            console.log('⚠️ UPDATE: No se pudo extraer el número de serie del certificado, usando fallback');
+            // Fallback: generar número basado en hash del certificado
+            const crypto = require('crypto');
+            const hash = crypto.createHash('sha256').update(cerBuffer).digest('hex');
+            numeroCertificado = hash.slice(-20); // Últimos 20 caracteres del hash
+          }
+          
+          // Buscar fechas de vigencia en el certificado
+          const notBeforeMatch = cerString.match(/Not Before:\s*([^\n]+)/i);
+          const notAfterMatch = cerString.match(/Not After:\s*([^\n]+)/i);
+          
+          if (notBeforeMatch) {
+            vigenciaDesde = new Date(notBeforeMatch[1]).toISOString();
+          }
+          
+          if (notAfterMatch) {
+            vigenciaHasta = new Date(notAfterMatch[1]).toISOString();
+          }
+          
+        } catch (certParseError) {
+          console.error('❌ UPDATE: Error extrayendo datos del certificado:', certParseError);
+          // Fallback: generar número basado en timestamp y RFC
+          const timestamp = Date.now().toString().slice(-8);
+          const rfcShort = (updateData.rfc || 'UNKNOWN').slice(0, 8);
+          numeroCertificado = `${rfcShort}${timestamp}`;
+          console.log('🔢 UPDATE: Usando número de certificado fallback:', numeroCertificado);
+        }
+        
+        // Agregar datos de certificado a la actualización
+        updateData.certificado_cer = certificado_cer;
+        updateData.certificado_key = certificado_key;
+        updateData.password_key = password_key;
+        updateData.numero_certificado = numeroCertificado;
+        updateData.vigencia_desde = vigenciaDesde ? vigenciaDesde.split('T')[0] : null;
+        updateData.vigencia_hasta = vigenciaHasta ? vigenciaHasta.split('T')[0] : null;
+        updateData.estado_csd = 'activo'; // Marcar como activo si tiene certificados completos
+        
+        console.log('✅ UPDATE: Certificados CSD procesados exitosamente');
+        
+      } catch (csdError) {
+        console.error('❌ UPDATE: Error procesando certificados CSD:', csdError);
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Error procesando certificados CSD',
+            tipo: 'CSD_PROCESSING_ERROR',
+            detalle: csdError.message
+          })
+        };
+      }
+    }
+
+    console.log('🔧 UPDATE: Actualizando emisor en BD...', Object.keys(updateData));
+    
+    // Actualizar emisor en base de datos
     const { data: emisor, error } = await supabase
       .from('emisores')
-      .update(data)
       .update(updateData)
       .eq('id', emisorId)
       .eq('usuario_id', userId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ UPDATE: Error actualizando en BD:', error);
+      throw error;
+    }
 
+    console.log('✅ UPDATE: Emisor actualizado exitosamente:', emisor.id);
+    
     // No devolver datos sensibles
     const { certificado_key: _, password_key: __, ...safeEmisor } = emisor;
 
@@ -678,16 +788,20 @@ async function updateEmisor(userId, emisorId, data, headers) {
       statusCode: 200,
       headers,
       body: JSON.stringify({
+        success: true,
         message: 'Emisor actualizado exitosamente',
         emisor: safeEmisor
       })
     };
   } catch (error) {
-    console.error('Update emisor error:', error);
+    console.error('❌ UPDATE: Error actualizando emisor:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Error al actualizar emisor' })
+      body: JSON.stringify({ 
+        error: 'Error al actualizar emisor',
+        detalle: error.message
+      })
     };
   }
 }
