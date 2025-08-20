@@ -388,11 +388,29 @@ async function updateXML(userId, data, headers) {
       .select();
 
     if (error) {
-      console.error('❌ Error actualizando XML:', error);
+      console.error('❌ ERROR SUPABASE COMPLETO:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        full_error: error
+      });
+      
+      console.error('❌ DATOS QUE CAUSARON ERROR:', {
+        updateData: updateData,
+        id: id,
+        userId: userId
+      });
+      
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Error al actualizar XML en base de datos' })
+        body: JSON.stringify({ 
+          error: 'Error al actualizar XML en base de datos',
+          supabase_error: error.message,
+          details: error.details,
+          hint: error.hint
+        })
       };
     }
 
