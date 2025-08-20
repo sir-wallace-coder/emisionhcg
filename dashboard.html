@@ -1882,7 +1882,7 @@
                     const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
                     const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
                     xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
-                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml xml = xmls.find(x => x.id === xmlId);xml = xmls.find(x => x.id === xmlId); xml.sello ? "Sí" : "No");
+                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml && xml.sello ? "Sí" : "No");
                 }
                 
                 // Si no se encuentra y hay usuario autenticado, cargar desde BD
@@ -2111,7 +2111,7 @@
                     const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
                     const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
                     xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
-                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml xml = xmls.find(x => x.id === xmlId);xml = xmls.find(x => x.id === xmlId); xml.sello ? "Sí" : "No");
+                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml && xml.sello ? "Sí" : "No");
                 }
                 
                 if (!xml) {
