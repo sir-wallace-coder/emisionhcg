@@ -2456,14 +2456,55 @@
         // Hacer StorageUtils disponible globalmente
         window.StorageUtils = StorageUtils;
         
+        // ===== FUNCIÓN CORRECTA PARA VER XML =====
+        
+        // Función para ver XML en modal (NO descargar)
+        function verXML(xmlId) {
+            console.log('👁️ Ver XML en modal:', xmlId);
+            
+            try {
+                // Obtener XML desde localStorage
+                const xmlsData = localStorage.getItem('xmls_generados');
+                if (!xmlsData) {
+                    alert('❌ No hay XMLs en el almacenamiento local');
+                    return;
+                }
+                
+                const xmls = JSON.parse(xmlsData);
+                const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
+                
+                // Priorizar XML sellado para visualización
+                const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
+                const xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
+                
+                if (!xml) {
+                    alert('❌ XML no encontrado');
+                    return;
+                }
+                
+                console.log('✅ XML encontrado para visualización:', {
+                    id: xml.id,
+                    estado: xml.estado,
+                    tiene_sello: xml.sello ? 'Sí' : 'No'
+                });
+                
+                // Mostrar modal con el XML
+                mostrarModalVerXML(xml);
+                
+            } catch (error) {
+                console.error('❌ Error al ver XML:', error);
+                alert('❌ Error al cargar XML para visualización');
+            }
+        }
+        
         // ===== FUNCIONES GLOBALES REQUERIDAS =====
         
         // ALIAS DE FUNCIONES PARA COMPATIBILIDAD TOTAL
         // Cubriendo TODOS los nombres posibles reportados en errores
         
-        // Función Ver XML - usar descargarXML como fallback
-        window.viewXML = descargarXML;
-        window.viewXMLSimple = descargarXML;
+        // Función Ver XML - CORREGIDA para mostrar modal
+        window.viewXML = verXML;
+        window.viewXMLSimple = verXML;
         
         // Función Descargar XML
         window.descargarXML = descargarXML;
