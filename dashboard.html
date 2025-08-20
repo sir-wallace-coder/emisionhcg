@@ -1095,15 +1095,7 @@
             }
         }
         
-        function downloadXML(xmlId) {
-            console.log('💾 Descargar XML:', xmlId);
-            if (typeof descargarXML === 'function') {
-                return descargarXML(xmlId);
-            } else {
-                console.error('❌ Función descargarXML no disponible');
-                alert('Error: Sistema de descarga no disponible');
-            }
-        }
+        // ❌ FUNCIÓN DUPLICADA ELIMINADA - usar alias window.downloadXML = descargarXML
         
         function deleteXML(xmlId) {
             console.log('🗑️ Eliminar XML:', xmlId);
@@ -1807,7 +1799,7 @@
                     const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
                     const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
                     xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
-                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml xml = xmls.find(x => x.id === xmlId);xml = xmls.find(x => x.id === xmlId); xml.sello ? "Sí" : "No");
+                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml && xml.sello ? "Sí" : "No");
                 }
                 
                 // Si no se encuentra y hay usuario autenticado, cargar desde BD
