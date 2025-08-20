@@ -241,7 +241,73 @@ function validarSelloDigital(cadenaOriginal, selloBase64, certificadoPem) {
 }
 
 /**
- * Agrega el sello digital a un XML CFDI
+ * Agrega SOLO los certificados (NoCertificado y Certificado) al XML CFDI
+ * @param {string} xmlContent - Contenido del XML CFDI
+ * @param {string} noCertificado - Número de certificado
+ * @param {string} certificadoBase64 - Certificado en base64
+ * @returns {string} XML con certificados agregados
+ */
+function agregarCertificadosAlXML(xmlContent, noCertificado, certificadoBase64) {
+    try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        
+        // Obtener el elemento comprobante
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+        if (!comprobante) {
+            throw new Error('No se encontró el elemento cfdi:Comprobante');
+        }
+        
+        // Agregar SOLO certificados (NoCertificado y Certificado)
+        comprobante.setAttribute('NoCertificado', noCertificado);
+        comprobante.setAttribute('Certificado', certificadoBase64);
+        
+        // Serializar el XML modificado
+        const serializer = new XMLSerializer();
+        const xmlConCertificados = serializer.serializeToString(xmlDoc);
+        
+        return xmlConCertificados;
+        
+    } catch (error) {
+        console.error('Error agregando certificados al XML:', error);
+        throw new Error('Error al agregar certificados al XML: ' + error.message);
+    }
+}
+
+/**
+ * Agrega SOLO el sello digital a un XML CFDI que ya tiene certificados
+ * @param {string} xmlContent - Contenido del XML CFDI con certificados
+ * @param {string} selloDigital - Sello digital en base64
+ * @returns {string} XML con sello agregado
+ */
+function agregarSoloSelloAlXML(xmlContent, selloDigital) {
+    try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        
+        // Obtener el elemento comprobante
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+        if (!comprobante) {
+            throw new Error('No se encontró el elemento cfdi:Comprobante');
+        }
+        
+        // Agregar SOLO el sello
+        comprobante.setAttribute('Sello', selloDigital);
+        
+        // Serializar el XML modificado
+        const serializer = new XMLSerializer();
+        const xmlSellado = serializer.serializeToString(xmlDoc);
+        
+        return xmlSellado;
+        
+    } catch (error) {
+        console.error('Error agregando sello al XML:', error);
+        throw new Error('Error al agregar sello al XML: ' + error.message);
+    }
+}
+
+/**
+ * Agrega el sello digital a un XML CFDI (FUNCIÓN LEGACY - MANTENER COMPATIBILIDAD)
  * @param {string} xmlContent - Contenido del XML CFDI
  * @param {string} selloDigital - Sello digital en base64
  * @param {string} noCertificado - Número de certificado
@@ -288,22 +354,25 @@ function agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoB
  */
 function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, version = '4.0') {
     try {
-        // 1. Generar cadena original
-        const cadenaOriginal = generarCadenaOriginal(xmlContent, version);
-        
-        // 2. Generar sello digital
-        const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
-        
-        // 3. Convertir certificado a base64 (sin headers PEM)
+        // 1. Convertir certificado a base64 (sin headers PEM)
         const certificadoBase64 = certificadoPem
             .replace(/-----BEGIN CERTIFICATE-----/g, '')
             .replace(/-----END CERTIFICATE-----/g, '')
             .replace(/\n/g, '');
         
-        // 4. Agregar sello al XML
-        const xmlSellado = agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoBase64);
+        // 2. CRÍTICO: Agregar NoCertificado y Certificado al XML ANTES de generar cadena original
+        const xmlConCertificados = agregarCertificadosAlXML(xmlContent, noCertificado, certificadoBase64);
         
-        // 5. Validar el sello generado
+        // 3. Generar cadena original del XML con certificados (sin Sello)
+        const cadenaOriginal = generarCadenaOriginal(xmlConCertificados, version);
+        
+        // 4. Generar sello digital basado en cadena original correcta
+        const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
+        
+        // 5. Agregar SOLO el sello al XML con certificados
+        const xmlSellado = agregarSoloSelloAlXML(xmlConCertificados, selloDigital);
+        
+        // 6. Validar el sello generado
         const selloValido = validarSelloDigital(cadenaOriginal, selloDigital, certificadoPem);
         
         return {
@@ -328,6 +397,8 @@ module.exports = {
     generarCadenaOriginal,
     generarSelloDigital,
     validarSelloDigital,
+    agregarCertificadosAlXML,
+    agregarSoloSelloAlXML,
     agregarSelloAlXML,
     sellarCFDI
 };
