@@ -368,8 +368,7 @@ async function updateXML(userId, data, headers) {
         sello: sello,
         xml_content: xml_content,
         cadena_original: cadena_original,
-        numero_certificado: numero_certificado,
-        fecha_sellado: new Date().toISOString()
+        numero_certificado: numero_certificado
       })
       .eq('id', id)
       .eq('user_id', userId)
