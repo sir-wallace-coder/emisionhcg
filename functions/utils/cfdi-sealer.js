@@ -257,10 +257,11 @@ function agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoB
             throw new Error('No se encontró el elemento cfdi:Comprobante');
         }
         
-        // Agregar atributos del sello
-        comprobante.setAttribute('Sello', selloDigital);
+        // Agregar atributos del sello EN ORDEN CORRECTO SAT
+        // CRÍTICO: NoCertificado PRIMERO, luego Certificado, SELLO AL FINAL
         comprobante.setAttribute('NoCertificado', noCertificado);
         comprobante.setAttribute('Certificado', certificadoBase64);
+        comprobante.setAttribute('Sello', selloDigital); // SELLO SIEMPRE AL FINAL
         
         // Serializar el XML modificado
         const serializer = new XMLSerializer();
