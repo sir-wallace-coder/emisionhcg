@@ -1623,32 +1623,12 @@
         }
         
         // Simple XML viewer
-        // Función mejorada para ver XML en modal profesional
-        async function viewXMLSimple(xmlId) {
-            console.log('👁️ Abriendo vista de XML:', xmlId);
-            
-            try {
-                // Cargar XML desde localStorage o BD
-                let xml = null;
-                
-                // Primero intentar desde localStorage
-                const xmlsData = localStorage.getItem('xmls_generados');
-                if (xmlsData) {
-                    const xmls = JSON.parse(xmlsData);
-                    xml = xmls.find(x => x.id === xmlId);
                 }
-                
-                // Si no se encuentra y hay usuario autenticado, cargar desde BD
-                if (!xml) {
-                    const token = StorageUtils.getToken();
-                    if (token) {
-                        console.log('💾 Cargando XML desde base de datos...');
-                        const response = await fetch('/.netlify/functions/xmls', {
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                xml = data.xmls.find(x => x.id === xmlId);
                         });
                         
                         if (response.ok) {
@@ -1823,7 +1803,11 @@
                 const xmlsData = localStorage.getItem('xmls_generados');
                 if (xmlsData) {
                     const xmls = JSON.parse(xmlsData);
-                    xml = xmls.find(x => x.id === xmlId);
+                    // 🔧 FIX CRÍTICO: Priorizar XML sellado
+                    const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
+                    const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
+                    xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
+                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml xml = xmls.find(x => x.id === xmlId);xml = xmls.find(x => x.id === xmlId); xml.sello ? "Sí" : "No");
                 }
                 
                 // Si no se encuentra y hay usuario autenticado, cargar desde BD
@@ -1902,7 +1886,11 @@
                 const xmlsData = localStorage.getItem('xmls_generados');
                 if (xmlsData) {
                     const xmls = JSON.parse(xmlsData);
-                    xml = xmls.find(x => x.id === xmlId);
+                    // 🔧 FIX CRÍTICO: Priorizar XML sellado
+                    const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
+                    const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
+                    xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
+                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml xml = xmls.find(x => x.id === xmlId);xml = xmls.find(x => x.id === xmlId); xml.sello ? "Sí" : "No");
                 }
                 
                 // Si no se encuentra y hay usuario autenticado, cargar desde BD
@@ -2127,7 +2115,11 @@
                 const xmlsData = localStorage.getItem('xmls_generados');
                 if (xmlsData) {
                     const xmls = JSON.parse(xmlsData);
-                    xml = xmls.find(x => x.id === xmlId);
+                    // 🔧 FIX CRÍTICO: Priorizar XML sellado
+                    const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
+                    const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
+                    xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
+                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml xml = xmls.find(x => x.id === xmlId);xml = xmls.find(x => x.id === xmlId); xml.sello ? "Sí" : "No");
                 }
                 
                 if (!xml) {
