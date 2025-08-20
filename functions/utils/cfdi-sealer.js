@@ -51,11 +51,11 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
 function construirCadenaOriginal40(comprobante) {
     let cadena = '||';
     
-    // Atributos del comprobante en orden específico
-    // CRÍTICO: Mantener orden original SAT, omitir 'Sello' sin alterar posiciones
+    // Atributos del comprobante en orden específico SAT OFICIAL
+    // CRÍTICO: Orden exacto según XSLT oficial SAT - NO incluir 'Sello' ni 'Certificado'
     const atributos = [
-        'Version', 'Serie', 'Folio', 'Fecha', /* 'Sello' omitido */ 'FormaPago', 'NoCertificado',
-        'Certificado', 'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
+        'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
+        'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
         'TipoCambio', 'Total', 'TipoDeComprobante', 'Exportacion', 'MetodoPago',
         'LugarExpedicion', 'Confirmacion'
     ];
@@ -129,11 +129,11 @@ function construirCadenaOriginal40(comprobante) {
 function construirCadenaOriginal33(comprobante) {
     let cadena = '||';
     
-    // Atributos del comprobante para versión 3.3
-    // CRÍTICO: Mantener orden original SAT, omitir 'Sello' sin alterar posiciones
+    // Atributos del comprobante para versión 3.3 SAT OFICIAL
+    // CRÍTICO: Orden exacto según estándar SAT - NO incluir 'Sello' ni 'Certificado'
     const atributos = [
-        'Version', 'Serie', 'Folio', 'Fecha', /* 'Sello' omitido */ 'FormaPago', 'NoCertificado',
-        'Certificado', 'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
+        'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
+        'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
         'TipoCambio', 'Total', 'TipoDeComprobante', 'MetodoPago', 'LugarExpedicion'
     ];
     
