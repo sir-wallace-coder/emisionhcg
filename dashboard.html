@@ -2297,10 +2297,37 @@
                         console.log('⚠️ No se pudo actualizar XML sellado en localStorage');
                     }
                     
-                    // TODO: Actualizar en base de datos también
+                    // Actualizar XML sellado en base de datos
                     if (token) {
                         console.log('💾 Actualizando XML sellado en base de datos...');
-                        // Implementar actualización en BD cuando esté disponible el endpoint PUT
+                        
+                        try {
+                            const updateResponse = await fetch('/.netlify/functions/xmls', {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    id: xmlId,
+                                    estado: 'sellado',
+                                    sello: data.selloDigital,
+                                    xml_content: data.xmlSellado,
+                                    cadena_original: data.cadenaOriginal,
+                                    numero_certificado: data.numeroCertificado
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                const updateResult = await updateResponse.json();
+                                console.log('✅ XML sellado actualizado exitosamente en BD:', updateResult);
+                            } else {
+                                const updateError = await updateResponse.text();
+                                console.error('❌ Error actualizando XML en BD:', updateError);
+                            }
+                        } catch (updateError) {
+                            console.error('❌ Error en llamada PUT:', updateError);
+                        }
                     }
                     
                     // Recargar datos

@@ -38,6 +38,8 @@ exports.handler = async (event, context) => {
         return await getXMLs(userId, headers);
       case 'POST':
         return await saveXML(userId, body, headers);
+      case 'PUT':
+        return await updateXML(userId, body, headers);
       case 'DELETE':
         const xmlId = event.queryStringParameters?.id;
         return await deleteXML(userId, xmlId, headers);
@@ -339,6 +341,73 @@ async function deleteXML(userId, xmlId, headers) {
       statusCode: 500,
       headers,
       body: JSON.stringify({ error: 'Error al eliminar XML' })
+    };
+  }
+}
+
+// Función para actualizar XML existente (usado para sellado)
+async function updateXML(userId, data, headers) {
+  try {
+    const { id, estado, sello, xml_content, cadena_original, numero_certificado } = data;
+    
+    if (!id) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'ID del XML es requerido' })
+      };
+    }
+
+    console.log('🔄 Actualizando XML en BD:', { id, estado, tiene_sello: !!sello });
+
+    // Actualizar XML en la base de datos
+    const { data: result, error } = await supabase
+      .from('xmls')
+      .update({
+        estado: estado || 'sellado',
+        sello: sello,
+        xml_content: xml_content,
+        cadena_original: cadena_original,
+        numero_certificado: numero_certificado,
+        fecha_sellado: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select();
+
+    if (error) {
+      console.error('❌ Error actualizando XML:', error);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Error al actualizar XML en base de datos' })
+      };
+    }
+
+    if (!result || result.length === 0) {
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: 'XML no encontrado o no pertenece al usuario' })
+      };
+    }
+
+    console.log('✅ XML actualizado exitosamente en BD:', result[0].id);
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ 
+        message: 'XML actualizado exitosamente',
+        xml: result[0]
+      })
+    };
+  } catch (error) {
+    console.error('❌ Update XML error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Error al actualizar XML' })
     };
   }
 }
