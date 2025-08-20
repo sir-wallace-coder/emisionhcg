@@ -359,17 +359,30 @@ async function updateXML(userId, data, headers) {
     }
 
     console.log('🔄 Actualizando XML en BD:', { id, estado, tiene_sello: !!sello });
+    
+    // LOGGING DETALLADO PARA DIAGNÓSTICO
+    const updateData = {
+      estado: estado || 'sellado',
+      sello: sello,
+      xml_content: xml_content,
+      cadena_original: cadena_original,
+      numero_certificado: numero_certificado
+    };
+    
+    console.log('📊 DATOS PARA ACTUALIZAR:', {
+      id: id,
+      userId: userId,
+      estado: updateData.estado,
+      sello_length: updateData.sello ? updateData.sello.length : 0,
+      xml_content_length: updateData.xml_content ? updateData.xml_content.length : 0,
+      cadena_original_length: updateData.cadena_original ? updateData.cadena_original.length : 0,
+      numero_certificado: updateData.numero_certificado
+    });
 
     // Actualizar XML en la base de datos
     const { data: result, error } = await supabase
       .from('xmls')
-      .update({
-        estado: estado || 'sellado',
-        sello: sello,
-        xml_content: xml_content,
-        cadena_original: cadena_original,
-        numero_certificado: numero_certificado
-      })
+      .update(updateData)
       .eq('id', id)
       .eq('user_id', userId)
       .select();
