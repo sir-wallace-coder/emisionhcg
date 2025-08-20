@@ -1614,34 +1614,7 @@
             `;
         }
         
-        // Simple XML viewer
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                xml = data.xmls.find(x => x.id === xmlId);
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            xml = data.xmls.find(x => x.id === xmlId);
-                        }
-                    }
-                }
-                
-                if (!xml) {
-                    alert('❌ XML no encontrado');
-                    return;
-                }
-                
-                // Mostrar modal con XML
-                mostrarModalVerXML(xml);
-                
-            } catch (error) {
-                console.error('❌ Error cargando XML:', error);
-                alert('❌ Error cargando XML: ' + error.message);
-            }
+        // Simple XML viewer - código malformado eliminado
         }
         
         // Función para mostrar modal de ver XML
@@ -2462,9 +2435,9 @@
         // ALIAS DE FUNCIONES PARA COMPATIBILIDAD TOTAL
         // Cubriendo TODOS los nombres posibles reportados en errores
         
-        // Función Ver XML
-        window.viewXML = viewXMLSimple;
-        window.viewXMLSimple = viewXMLSimple;
+        // Función Ver XML - usar descargarXML como fallback
+        window.viewXML = descargarXML;
+        window.viewXMLSimple = descargarXML;
         
         // Función Descargar XML
         window.descargarXML = descargarXML;
