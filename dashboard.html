@@ -1851,6 +1851,22 @@
                     return;
                 }
                 
+                // 🔍 DEBUG: Verificar contenido del XML antes de descargar
+                console.log('🔍 DEBUG DESCARGA: XML encontrado:', {
+                    id: xml.id,
+                    estado: xml.estado,
+                    tiene_sello: xml.sello ? 'Sí' : 'No',
+                    xml_length: xml.xml_content ? xml.xml_content.length : 0,
+                    xml_preview: xml.xml_content ? xml.xml_content.substring(0, 300) + '...' : 'N/A'
+                });
+                
+                // Verificar si el XML contiene sello
+                if (xml.xml_content.includes('Sello=""')) {
+                    console.warn('⚠️ DEBUG DESCARGA: XML contiene sello vacío - puede ser XML original');
+                } else if (xml.xml_content.includes('Sello="') && !xml.xml_content.includes('Sello=""')) {
+                    console.log('✅ DEBUG DESCARGA: XML contiene sello - es XML sellado');
+                }
+                
                 // Crear nombre de archivo
                 const fileName = `${xml.emisor_rfc || 'XML'}_${xml.serie || 'A'}_${xml.folio || '1'}.xml`;
                 
