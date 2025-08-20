@@ -1335,7 +1335,7 @@
         // Función para construir el XML
         function construirXML() {
             const version = document.getElementById('versionCfdi').value;
-            const fecha = document.getElementById('fecha').value.replace('T', ' ');
+            const fecha = document.getElementById('fecha').value; // SAT requiere formato ISO 8601: YYYY-MM-DDTHH:MM:SS
             const serie = document.getElementById('serie').value || '';
             const folio = document.getElementById('folio').value;
             
