@@ -52,8 +52,9 @@ function construirCadenaOriginal40(comprobante) {
     let cadena = '||';
     
     // Atributos del comprobante en orden específico
+    // CRÍTICO: NO incluir 'Sello' para evitar dependencia circular CFDI40102
     const atributos = [
-        'Version', 'Serie', 'Folio', 'Fecha', 'Sello', 'FormaPago', 'NoCertificado',
+        'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
         'Certificado', 'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
         'TipoCambio', 'Total', 'TipoDeComprobante', 'Exportacion', 'MetodoPago',
         'LugarExpedicion', 'Confirmacion'
@@ -129,8 +130,9 @@ function construirCadenaOriginal33(comprobante) {
     let cadena = '||';
     
     // Atributos del comprobante para versión 3.3
+    // CRÍTICO: NO incluir 'Sello' para evitar dependencia circular CFDI40102
     const atributos = [
-        'Version', 'Serie', 'Folio', 'Fecha', 'Sello', 'FormaPago', 'NoCertificado',
+        'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
         'Certificado', 'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
         'TipoCambio', 'Total', 'TipoDeComprobante', 'MetodoPago', 'LugarExpedicion'
     ];
