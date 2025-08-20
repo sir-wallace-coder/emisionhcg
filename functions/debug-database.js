@@ -55,7 +55,7 @@ exports.handler = async (event, context) => {
         diagnostico.emisores.count = emisores.length;
         diagnostico.emisores.data = emisores.map(e => ({
           id: e.id,
-          user_id: e.user_id,
+          usuario_id: e.usuario_id,
           rfc: e.rfc,
           razon_social: e.razon_social,
           created_at: e.created_at
@@ -77,7 +77,7 @@ exports.handler = async (event, context) => {
         diagnostico.xmls.count = xmls.length;
         diagnostico.xmls.data = xmls.map(x => ({
           id: x.id,
-          user_id: x.user_id,
+          usuario_id: x.usuario_id,
           serie: x.serie,
           folio: x.folio,
           emisor_rfc: x.emisor_rfc,

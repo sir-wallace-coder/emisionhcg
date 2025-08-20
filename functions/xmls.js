@@ -451,7 +451,7 @@ async function updateXML(userId, data, headers) {
       .from('xmls_generados')
       .update(updateData)
       .eq('id', id)
-      .eq('user_id', userId)
+      .eq('usuario_id', userId)
       .select();
 
     if (error) {
