@@ -348,7 +348,7 @@ async function deleteXML(userId, xmlId, headers) {
 // Función para actualizar XML existente (usado para sellado)
 async function updateXML(userId, data, headers) {
   try {
-    const { id, estado, sello, xml_content, cadena_original, numero_certificado } = data;
+    const { id, estado, sello, xml_content } = data;
     
     if (!id) {
       return {
@@ -360,13 +360,11 @@ async function updateXML(userId, data, headers) {
 
     console.log('🔄 Actualizando XML en BD:', { id, estado, tiene_sello: !!sello });
     
-    // LOGGING DETALLADO PARA DIAGNÓSTICO
+    // LOGGING DETALLADO PARA DIAGNÓSTICO - SOLO CAMPOS QUE EXISTEN EN ESQUEMA
     const updateData = {
       estado: estado || 'sellado',
       sello: sello,
-      xml_content: xml_content,
-      cadena_original: cadena_original,
-      numero_certificado: numero_certificado
+      xml_content: xml_content
     };
     
     console.log('📊 DATOS PARA ACTUALIZAR:', {
@@ -374,14 +372,12 @@ async function updateXML(userId, data, headers) {
       userId: userId,
       estado: updateData.estado,
       sello_length: updateData.sello ? updateData.sello.length : 0,
-      xml_content_length: updateData.xml_content ? updateData.xml_content.length : 0,
-      cadena_original_length: updateData.cadena_original ? updateData.cadena_original.length : 0,
-      numero_certificado: updateData.numero_certificado
+      xml_content_length: updateData.xml_content ? updateData.xml_content.length : 0
     });
 
     // Actualizar XML en la base de datos
     const { data: result, error } = await supabase
-      .from('xmls')
+      .from('xmls_generados')
       .update(updateData)
       .eq('id', id)
       .eq('user_id', userId)
