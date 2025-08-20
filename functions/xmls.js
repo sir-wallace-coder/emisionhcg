@@ -216,6 +216,45 @@ async function saveXML(userId, data, headers) {
 
     console.log('💾 Preparando datos para inserción en BD...');
     
+    // VALIDACIONES DE LONGITUD PARA PREVENIR CONFLICTOS CON BD
+    const validaciones = {
+      version_cfdi: { valor: version_cfdi, max: 5, nombre: 'Version CFDI' },
+      emisor_rfc: { valor: emisor_rfc, max: 13, nombre: 'RFC Emisor' },
+      emisor_nombre: { valor: emisor_nombre, max: 300, nombre: 'Nombre Emisor' },
+      receptor_rfc: { valor: receptor_rfc, max: 13, nombre: 'RFC Receptor' },
+      receptor_nombre: { valor: receptor_nombre, max: 300, nombre: 'Nombre Receptor' },
+      serie: { valor: serie, max: 25, nombre: 'Serie' },
+      folio: { valor: folio, max: 40, nombre: 'Folio' },
+      uuid: { valor: uuid, max: 36, nombre: 'UUID' },
+      estado: { valor: estado || 'generado', max: 20, nombre: 'Estado' }
+    };
+    
+    // Verificar longitudes
+    for (const [campo, config] of Object.entries(validaciones)) {
+      if (config.valor && config.valor.length > config.max) {
+        console.error(`❌ LONGITUD EXCEDIDA: ${config.nombre}`, {
+          campo: campo,
+          longitud_actual: config.valor.length,
+          longitud_maxima: config.max,
+          valor_truncado: config.valor.substring(0, config.max)
+        });
+        
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: `El campo '${config.nombre}' excede la longitud máxima permitida`,
+            campo: campo,
+            longitud_actual: config.valor.length,
+            longitud_maxima: config.max,
+            tipo: 'LONGITUD_CAMPO_EXCEDIDA'
+          })
+        };
+      }
+    }
+    
+    console.log('✅ Validaciones de longitud pasadas exitosamente');
+    
     // Preparar datos con todos los campos del esquema
     const xmlData = {
       usuario_id: userId,
@@ -359,6 +398,38 @@ async function updateXML(userId, data, headers) {
     }
 
     console.log('🔄 Actualizando XML en BD:', { id, estado, tiene_sello: !!sello });
+    
+    // VALIDACIONES DE LONGITUD PARA PREVENIR CONFLICTOS CON BD
+    const validacionesUpdate = {
+      estado: { valor: estado || 'sellado', max: 20, nombre: 'Estado' }
+      // sello y xml_content son TEXT (sin límite)
+    };
+    
+    // Verificar longitudes en campos con restricción
+    for (const [campo, config] of Object.entries(validacionesUpdate)) {
+      if (config.valor && config.valor.length > config.max) {
+        console.error(`❌ LONGITUD EXCEDIDA EN UPDATE: ${config.nombre}`, {
+          campo: campo,
+          longitud_actual: config.valor.length,
+          longitud_maxima: config.max,
+          valor_truncado: config.valor.substring(0, config.max)
+        });
+        
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: `El campo '${config.nombre}' excede la longitud máxima permitida en actualización`,
+            campo: campo,
+            longitud_actual: config.valor.length,
+            longitud_maxima: config.max,
+            tipo: 'LONGITUD_CAMPO_EXCEDIDA_UPDATE'
+          })
+        };
+      }
+    }
+    
+    console.log('✅ Validaciones de longitud UPDATE pasadas exitosamente');
     
     // LOGGING DETALLADO PARA DIAGNÓSTICO - SOLO CAMPOS QUE EXISTEN EN ESQUEMA
     const updateData = {
