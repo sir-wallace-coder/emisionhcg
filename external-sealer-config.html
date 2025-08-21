@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración Servicio Externo - CFDI Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .config-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 2rem auto;
+            max-width: 1000px;
+            overflow: hidden;
+        }
+        
+        .config-header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .status-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .status-local {
+            border-left: 5px solid #2196F3;
+        }
+        
+        .status-externo {
+            border-left: 5px solid #FF9800;
+        }
+        
+        .btn-custom {
+            border-radius: 25px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-local {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-externo {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-test {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            color: white;
+        }
+        
+        .config-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="config-container">
+            <!-- Header -->
+            <div class="config-header">
+                <h1><i class="fas fa-cogs"></i> Configuración Servicio de Sellado</h1>
+                <p class="mb-0">Gestiona el método de sellado CFDI: Local vs Servicio Externo</p>
+            </div>
+            
+            <div class="p-4">
+                <!-- Alertas -->
+                <div id="alertContainer"></div>
+                
+                <!-- Estado Actual -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h3><i class="fas fa-info-circle text-primary"></i> Estado Actual del Sistema</h3>
+                        <div id="estadoActual" class="config-info">
+                            <div class="loading-spinner text-center">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p>Cargando configuración...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Métodos de Sellado -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card status-card status-local">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-home text-primary"></i> Sellado Local
+                                </h5>
+                                <p class="card-text">
+                                    Utiliza NodeCFDI en el servidor para sellar los CFDIs.
+                                    Requiere que las librerías funcionen correctamente.
+                                </p>
+                                <div class="d-grid">
+                                    <button class="btn btn-custom btn-local" onclick="configurarMetodo('local')">
+                                        <i class="fas fa-home"></i> Usar Sellado Local
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card status-card status-externo">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-cloud text-warning"></i> Servicio Externo
+                                </h5>
+                                <p class="card-text">
+                                    Envía certificados y datos a un servicio externo que 
+                                    devuelve el XML sellado. Más confiable para producción.
+                                </p>
+                                <div class="d-grid">
+                                    <button class="btn btn-custom btn-externo" onclick="configurarMetodo('externo')">
+                                        <i class="fas fa-cloud"></i> Usar Servicio Externo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Configuración del Servicio Externo -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h3><i class="fas fa-cloud-upload-alt text-warning"></i> Configuración Servicio Externo</h3>
+                        <div id="configuracionServicio" class="config-info">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Prueba de Conectividad -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h3><i class="fas fa-network-wired text-success"></i> Prueba de Conectividad</h3>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <button class="btn btn-custom btn-test" onclick="probarConectividad()">
+                                <i class="fas fa-wifi"></i> Probar Servicio Externo
+                            </button>
+                            <button class="btn btn-outline-secondary btn-custom" onclick="cargarConfiguracion()">
+                                <i class="fas fa-sync-alt"></i> Recargar Configuración
+                            </button>
+                        </div>
+                        <div id="resultadoPrueba" class="mt-3">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información Técnica -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-info-circle"></i> Información Técnica</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Sellado Local (NodeCFDI)</h6>
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-check text-success"></i> Procesamiento en servidor</li>
+                                            <li><i class="fas fa-check text-success"></i> Sin dependencias externas</li>
+                                            <li><i class="fas fa-exclamation text-warning"></i> Requiere librerías funcionando</li>
+                                            <li><i class="fas fa-exclamation text-warning"></i> Puede fallar con certificados específicos</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Servicio Externo</h6>
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-check text-success"></i> Mayor confiabilidad</li>
+                                            <li><i class="fas fa-check text-success"></i> Soporte especializado</li>
+                                            <li><i class="fas fa-check text-success"></i> Maneja todos los certificados SAT</li>
+                                            <li><i class="fas fa-exclamation text-warning"></i> Requiere conectividad</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let configuracionActual = null;
+        
+        // Cargar configuración al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarConfiguracion();
+        });
+        
+        /**
+         * Cargar configuración actual del sistema
+         */
+        async function cargarConfiguracion() {
+            try {
+                mostrarCargando('estadoActual');
+                
+                const response = await fetch('/api/external-sealer-config', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                configuracionActual = await response.json();
+                mostrarEstadoActual(configuracionActual);
+                mostrarConfiguracionServicio(configuracionActual);
+                
+            } catch (error) {
+                console.error('Error cargando configuración:', error);
+                mostrarAlerta('error', 'Error cargando configuración: ' + error.message);
+            }
+        }
+        
+        /**
+         * Configurar método de sellado
+         */
+        async function configurarMetodo(metodo) {
+            try {
+                mostrarAlerta('info', `Configurando método de sellado: ${metodo}...`);
+                
+                const response = await fetch('/api/external-sealer-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        metodo: metodo
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const resultado = await response.json();
+                
+                if (resultado.success) {
+                    mostrarAlerta('success', `✅ Método configurado exitosamente: ${resultado.metodo_actual}`);
+                    // Recargar configuración
+                    setTimeout(() => {
+                        cargarConfiguracion();
+                    }, 1000);
+                } else {
+                    throw new Error(resultado.mensaje || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                console.error('Error configurando método:', error);
+                mostrarAlerta('error', 'Error configurando método: ' + error.message);
+            }
+        }
+        
+        /**
+         * Probar conectividad con servicio externo
+         */
+        async function probarConectividad() {
+            try {
+                mostrarAlerta('info', 'Probando conectividad con servicio externo...');
+                
+                const response = await fetch('/api/external-sealer-config', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const resultado = await response.json();
+                mostrarResultadoPrueba(resultado);
+                
+            } catch (error) {
+                console.error('Error probando conectividad:', error);
+                mostrarAlerta('error', 'Error probando conectividad: ' + error.message);
+            }
+        }
+        
+        /**
+         * Mostrar estado actual del sistema
+         */
+        function mostrarEstadoActual(config) {
+            const container = document.getElementById('estadoActual');
+            const metodo = config.metodo_sellado_actual;
+            const icono = metodo === 'externo' ? 'fa-cloud' : 'fa-home';
+            const color = metodo === 'externo' ? 'warning' : 'primary';
+            
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas ${icono} text-${color}"></i> Método Actual: ${metodo.toUpperCase()}</h5>
+                        <p class="mb-0">
+                            ${metodo === 'externo' ? 
+                                'El sistema está configurado para usar el servicio externo de sellado.' :
+                                'El sistema está configurado para usar sellado local con NodeCFDI.'
+                            }
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Última actualización:</strong><br>
+                            ${new Date(config.timestamp).toLocaleString()}
+                        </small>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Mostrar configuración del servicio externo
+         */
+        function mostrarConfiguracionServicio(config) {
+            const container = document.getElementById('configuracionServicio');
+            const servicioConfig = config.configuracion_servicio_externo;
+            const variables = config.variables_entorno;
+            
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Configuración Actual</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>URL:</strong> ${servicioConfig.url}</li>
+                            <li><strong>Timeout:</strong> ${servicioConfig.timeout}ms</li>
+                            <li><strong>Reintentos:</strong> ${servicioConfig.retries}</li>
+                            <li><strong>API Key:</strong> ${servicioConfig.api_key_configurada ? '✅ Configurada' : '❌ No configurada'}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Variables de Entorno</h6>
+                        <ul class="list-unstyled">
+                            <li>EXTERNAL_SEALER_URL: ${variables.EXTERNAL_SEALER_URL ? '✅' : '❌'}</li>
+                            <li>EXTERNAL_SEALER_API_KEY: ${variables.EXTERNAL_SEALER_API_KEY ? '✅' : '❌'}</li>
+                            <li>USE_EXTERNAL_SEALER: ${variables.USE_EXTERNAL_SEALER}</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Mostrar resultado de prueba de conectividad
+         */
+        function mostrarResultadoPrueba(resultado) {
+            const container = document.getElementById('resultadoPrueba');
+            const conectividad = resultado.conectividad;
+            const success = conectividad.success;
+            
+            let html = `
+                <div class="alert alert-${success ? 'success' : 'danger'} alert-custom">
+                    <h6><i class="fas fa-${success ? 'check-circle' : 'exclamation-triangle'}"></i> 
+                        Resultado de la Prueba</h6>
+                    <p><strong>Estado:</strong> ${success ? 'Conectividad exitosa' : 'Error de conectividad'}</p>
+            `;
+            
+            if (conectividad.url) {
+                html += `<p><strong>URL probada:</strong> ${conectividad.url}</p>`;
+            }
+            
+            if (conectividad.status) {
+                html += `<p><strong>Código de respuesta:</strong> ${conectividad.status}</p>`;
+            }
+            
+            if (conectividad.error) {
+                html += `<p><strong>Error:</strong> ${conectividad.error}</p>`;
+            }
+            
+            if (resultado.recomendaciones && resultado.recomendaciones.length > 0) {
+                html += `
+                    <hr>
+                    <h6>Recomendaciones:</h6>
+                    <ul>
+                `;
+                resultado.recomendaciones.forEach(rec => {
+                    html += `<li>${rec}</li>`;
+                });
+                html += `</ul>`;
+            }
+            
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+        
+        /**
+         * Mostrar spinner de carga
+         */
+        function mostrarCargando(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2">Cargando...</p>
+                </div>
+            `;
+        }
+        
+        /**
+         * Mostrar alerta
+         */
+        function mostrarAlerta(tipo, mensaje) {
+            const container = document.getElementById('alertContainer');
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            };
+            
+            const iconClass = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-triangle',
+                'warning': 'fa-exclamation-circle',
+                'info': 'fa-info-circle'
+            };
+            
+            container.innerHTML = `
+                <div class="alert ${alertClass[tipo]} alert-custom alert-dismissible fade show" role="alert">
+                    <i class="fas ${iconClass[tipo]}"></i> ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -1164,6 +1164,70 @@
             return eliminarXMLReal(xmlId);
         }
         
+        // 🔄 Función para cancelar XMLs sellados
+        async function cancelarXML(xmlId) {
+            console.log('🔄 Cancelar XML sellado:', xmlId);
+            
+            // Confirmar acción
+            const motivo = prompt('¿Por qué deseas cancelar este XML sellado?\n\nEsto quitará el sello y restaurará el XML a su estado original.', 'Cancelación solicitada por usuario');
+            
+            if (!motivo) {
+                console.log('❌ Cancelación abortada por el usuario');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                if (!token) {
+                    alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                console.log('🔄 Enviando solicitud de cancelación...');
+                
+                const response = await fetch('/.netlify/functions/cancelar-xml', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        xmlId: xmlId,
+                        motivo: motivo
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    console.log('✅ XML cancelado exitosamente:', result);
+                    
+                    // Mostrar mensaje de éxito
+                    alert(`✅ XML cancelado exitosamente\n\n` +
+                          `• Estado: ${result.xml.estado_actual}\n` +
+                          `• Atributos removidos: ${result.restauracion.atributos_removidos}\n` +
+                          `• Motivo: ${result.xml.motivo}`);
+                    
+                    // Recargar lista de XMLs
+                    if (typeof cargarXMLs === 'function') {
+                        await cargarXMLs();
+                    } else {
+                        console.log('🔄 Recargando página para actualizar lista...');
+                        window.location.reload();
+                    }
+                    
+                } else {
+                    console.error('❌ Error cancelando XML:', result);
+                    alert(`❌ Error cancelando XML:\n\n${result.error || result.mensaje || 'Error desconocido'}`);
+                }
+                
+            } catch (error) {
+                console.error('💥 Error fatal cancelando XML:', error);
+                alert(`💥 Error fatal cancelando XML:\n\n${error.message}`);
+            }
+        }
+        
         // ===== FUNCIONES ADICIONALES GLOBALES (REQUERIDAS POR ONCLICK) =====
         
         function openImportXMLModal() {
@@ -1634,9 +1698,9 @@
                                         <i class="fas fa-stamp"></i>
                                     </button>
                                 ` : `
-                                    <span class="btn btn-sm btn-secondary disabled" title="Ya sellado">
-                                        <i class="fas fa-check-circle"></i>
-                                    </span>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="cancelarXML('${xml.id}')" title="Cancelar Sello">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
                                 `}
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteXML('${xml.id}')" title="Eliminar XML">
                                     <i class="fas fa-trash"></i>

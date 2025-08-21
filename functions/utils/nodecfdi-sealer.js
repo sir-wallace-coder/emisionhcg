@@ -9,12 +9,12 @@
  */
 
 const { Credential } = require('@nodecfdi/credentials');
-const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
+const { DOMParser } = require('@xmldom/xmldom');
+const { XMLSerializer } = require('@xmldom/xmldom');
 const crypto = require('crypto');
-
-// Importar funciones necesarias
-const { limpiarCadenaOriginalChatGPT, removerAtributoSelloCompletamente } = require('./cfdi-sealer');
 const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-serverless');
+const { limpiarCadenaOriginalChatGPT, removerAtributoSelloCompletamente } = require('./cfdi-sealer');
+const { sellarConServicioExterno } = require('./external-sealer-client');
 
 /**
  * 🚀 SELLADO CFDI CON NODECFDI - IMPLEMENTACIÓN OFICIAL SAT
@@ -27,8 +27,18 @@ const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-server
  * @param {string} numeroSerie - Número de serie del certificado (20 dígitos)
  * @returns {Object} Resultado del sellado
  */
-async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version, numeroSerie) {
-    console.log('🎯 NODECFDI SEALER: Iniciando sellado con @nodecfdi/credentials...');
+async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version, numeroSerie, opciones = {}) {
+    console.log('🎯 NODECFDI SEALER: Iniciando sellado...');
+    
+    // Verificar si se debe usar servicio externo
+    const usarServicioExterno = opciones.usarServicioExterno || process.env.USE_EXTERNAL_SEALER === 'true';
+    
+    if (usarServicioExterno) {
+        console.log('🌐 NODECFDI SEALER: Usando servicio externo de sellado');
+        return await sellarConServicioExternoWrapper(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version, numeroSerie);
+    }
+    
+    console.log('🏠 NODECFDI SEALER: Usando sellado local con @nodecfdi/credentials');
     
     try {
         // 1. Parsear XML inicial
@@ -309,6 +319,100 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
     }
 }
 
+/**
+ * 🌐 Wrapper para sellado con servicio externo
+ * 
+ * Prepara los datos y llama al servicio externo de sellado
+ * 
+ * @param {string} xmlContent - XML CFDI a sellar
+ * @param {string} certificadoCer - Contenido del archivo .cer en base64
+ * @param {string} llavePrivadaKey - Contenido del archivo .key en base64
+ * @param {string} passwordLlave - Contraseña de la llave privada
+ * @param {string} version - Versión CFDI (3.3 o 4.0)
+ * @param {string} numeroSerie - Número de serie del certificado
+ * @returns {Object} Resultado del sellado externo
+ */
+async function sellarConServicioExternoWrapper(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version, numeroSerie) {
+    console.log('🌐 EXTERNAL SEALER: Iniciando sellado con servicio externo');
+    
+    try {
+        // Extraer RFC del XML para enviarlo al servicio
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        const comprobante = xmlDoc.documentElement;
+        const rfc = comprobante.getAttribute('Rfc') || 'RFC_NO_ENCONTRADO';
+        
+        console.log('📋 EXTERNAL SEALER: RFC extraído:', rfc);
+        console.log('📋 EXTERNAL SEALER: Versión CFDI:', version);
+        console.log('📋 EXTERNAL SEALER: Número de certificado:', numeroSerie);
+        
+        // Llamar al servicio externo
+        const resultadoExterno = await sellarConServicioExterno({
+            xmlSinSellar: xmlContent,
+            certificadoBase64: certificadoCer,
+            llavePrivadaBase64: llavePrivadaKey,
+            passwordLlave: passwordLlave,
+            rfc: rfc,
+            versionCfdi: version
+        });
+        
+        console.log('✅ EXTERNAL SEALER: Sellado externo completado exitosamente');
+        
+        // Adaptar respuesta al formato esperado por el sistema
+        return {
+            exito: true,
+            xmlSellado: resultadoExterno.xmlSellado,
+            sello: resultadoExterno.sello,
+            numeroCertificado: resultadoExterno.numeroCertificado || numeroSerie,
+            fechaSellado: resultadoExterno.fechaSellado,
+            metodo: 'servicio_externo',
+            proveedor: resultadoExterno.servicioExterno?.proveedor || 'Servicio Externo',
+            logs: [
+                '🌐 Sellado realizado con servicio externo',
+                `📋 RFC: ${rfc}`,
+                `📋 Versión CFDI: ${version}`,
+                `📋 Proveedor: ${resultadoExterno.servicioExterno?.proveedor || 'Servicio Externo'}`,
+                `⏱️ Tiempo de procesamiento: ${resultadoExterno.servicioExterno?.tiempo_procesamiento || 'N/A'}`,
+                '✅ Sellado completado exitosamente'
+            ]
+        };
+        
+    } catch (error) {
+        console.error('❌ EXTERNAL SEALER: Error en sellado externo:', error.message);
+        
+        return {
+            exito: false,
+            error: `Error en servicio externo: ${error.message}`,
+            metodo: 'servicio_externo',
+            logs: [
+                '🌐 Intento de sellado con servicio externo',
+                `❌ Error: ${error.message}`,
+                '💡 Verificar configuración del servicio externo'
+            ]
+        };
+    }
+}
+
+/**
+ * 🔧 Función para cambiar entre sellado local y externo
+ * 
+ * @param {boolean} usarExterno - Si usar servicio externo
+ * @returns {string} Método de sellado configurado
+ */
+function configurarMetodoSellado(usarExterno = false) {
+    if (usarExterno) {
+        process.env.USE_EXTERNAL_SEALER = 'true';
+        console.log('🌐 SEALER CONFIG: Configurado para usar servicio externo');
+        return 'externo';
+    } else {
+        process.env.USE_EXTERNAL_SEALER = 'false';
+        console.log('🏠 SEALER CONFIG: Configurado para usar sellado local');
+        return 'local';
+    }
+}
+
 module.exports = {
-    sellarCFDIConNodeCfdi
+    sellarCFDIConNodeCfdi,
+    sellarConServicioExternoWrapper,
+    configurarMetodoSellado
 };

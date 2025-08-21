@@ -7,10 +7,12 @@ Sistema completo para la generación, gestión y almacenamiento de CFDIs con bac
 - ✅ **Generación de CFDI 3.3 y 4.0** con catálogos SAT actualizados
 - ✅ **Sistema de autenticación** con JWT y bcrypt
 - ✅ **Gestión de emisores** con almacenamiento seguro de CSDs
+- ✅ **Sellado dual: Local + Servicio Externo** para máxima confiabilidad
 - ✅ **Almacenamiento de XMLs** con filtros avanzados y búsqueda
 - ✅ **Dashboard completo** con estadísticas y gestión
 - ✅ **Exportación a CSV** de XMLs filtrados
 - ✅ **Interfaz moderna** y responsive
+- ✅ **Configuración dinámica** del método de sellado
 
 ## 🛠️ Tecnologías
 
@@ -46,6 +48,13 @@ SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_ANON_KEY=tu_anon_key
 JWT_SECRET=tu_jwt_secret_muy_seguro_de_al_menos_32_caracteres
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
+
+# Configuración Servicio Externo de Sellado (Opcional)
+EXTERNAL_SEALER_LOGIN_URL=https://tu-servicio-sellado.com/api/v1/login
+EXTERNAL_SEALER_URL=https://tu-servicio-sellado.com/api/v1/sellar
+EXTERNAL_SEALER_USERNAME=tu_usuario_api
+EXTERNAL_SEALER_PASSWORD=tu_password_api
+USE_EXTERNAL_SEALER=false
 ```
 
 ### 3. Deployment en Netlify
