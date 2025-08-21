@@ -153,40 +153,68 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         // 🔐 PROCESAR LLAVE PRIVADA ENCRIPTADA SAT (siempre encriptada con contraseña)
         console.log('🔐 PYTHON-BASED: Procesando llave privada encriptada SAT...');
         
-        // Las llaves SAT siempre están encriptadas, usar objeto con key y passphrase
-        console.log('🔑 PYTHON-BASED: Preparando objeto de llave con contraseña...');
-        console.log('  - Contraseña proporcionada:', passwordLlave ? 'SÍ (longitud: ' + passwordLlave.length + ')' : 'NO');
+        // 🔑 PYTHON-BASED: Preparando múltiples formatos de llave...
+        console.log('🔑 PYTHON-BASED: Preparando múltiples formatos de llave...');
+        console.log('    - Contraseña proporcionada:', passwordLlave ? 'SÍ' : 'NO', `(longitud: ${passwordLlave ? passwordLlave.length : 0})`);
         
-        const llavePrivadaParaFirmar = {
-            key: llavePrivadaPem,
-            passphrase: passwordLlave || ''
-        };
+        // 🧪 PYTHON-BASED: Probando múltiples formatos de llave privada...
+        console.log('🧪 PYTHON-BASED: Probando múltiples formatos de llave privada...');
         
-        // Validar que la llave es válida con la contraseña
-        try {
-            console.log('🧪 PYTHON-BASED: Probando validación de llave privada...');
-            const testSign = crypto.createSign('RSA-SHA256');
-            testSign.update('test', 'utf8');
-            testSign.sign(llavePrivadaParaFirmar); // Esto lanzará error si la llave/contraseña es inválida
-            
-            console.log('✅ PYTHON-BASED: Llave privada SAT validada exitosamente con contraseña');
-            
-        } catch (errorLlave) {
-            console.error('❌ PYTHON-BASED: Error validando llave privada SAT:', errorLlave.message);
-            console.error('❌ PYTHON-BASED: Código de error:', errorLlave.code);
-            console.error('❌ PYTHON-BASED: Stack trace:', errorLlave.stack);
-            console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
-            
-            // Intentar diagnóstico adicional
-            if (errorLlave.message.includes('unsupported')) {
-                console.error('🔍 PYTHON-BASED: Error de formato no soportado - posible problema con encoding o formato de llave');
+        const formatosLlave = [
+            // Formato 1: ENCRYPTED PRIVATE KEY (actual)
+            {
+                nombre: 'ENCRYPTED PRIVATE KEY',
+                pem: llavePrivadaPem,
+                objeto: { key: llavePrivadaPem, passphrase: passwordLlave }
+            },
+            // Formato 2: RSA PRIVATE KEY
+            {
+                nombre: 'RSA PRIVATE KEY', 
+                pem: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'RSA PRIVATE KEY'),
+                objeto: { key: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'RSA PRIVATE KEY'), passphrase: passwordLlave }
+            },
+            // Formato 3: PRIVATE KEY
+            {
+                nombre: 'PRIVATE KEY',
+                pem: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'PRIVATE KEY'),
+                objeto: { key: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'PRIVATE KEY'), passphrase: passwordLlave }
             }
-            if (errorLlave.message.includes('bad decrypt')) {
-                console.error('🔍 PYTHON-BASED: Error de desencriptación - contraseña incorrecta');
+        ];
+        
+        let llaveValidada = null;
+        let formatoExitoso = null;
+        
+        for (const formato of formatosLlave) {
+            try {
+                console.log(`🔍 PYTHON-BASED: Probando formato ${formato.nombre}...`);
+                
+                // Crear un objeto Sign para probar la llave
+                const testSign = crypto.createSign('RSA-SHA256');
+                testSign.update('test');
+                testSign.sign(formato.objeto); // Esto debería fallar si la llave es inválida
+                
+                console.log(`✅ PYTHON-BASED: Formato ${formato.nombre} validado exitosamente`);
+                llaveValidada = formato.objeto;
+                formatoExitoso = formato.nombre;
+                break;
+                
+            } catch (error) {
+                console.log(`❌ PYTHON-BASED: Formato ${formato.nombre} falló:`, error.message);
+                continue;
             }
-            
-            return { exito: false, error: 'Error validando llave privada SAT (verifique contraseña): ' + errorLlave.message };
         }
+        
+        if (!llaveValidada) {
+            console.error('❌ PYTHON-BASED: TODOS LOS FORMATOS FALLARON');
+            console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
+            console.error('🔍 PYTHON-BASED: Error de formato no soportado - posible problema con encoding, formato de llave o contraseña');
+            throw new Error('No se pudo validar la llave privada con ningún formato. Verifique la contraseña.');
+        }
+        
+        console.log(`🎯 PYTHON-BASED: Usando formato exitoso: ${formatoExitoso}`);
+        const llaveObjeto = llaveValidada;
+        
+        console.log('✅ PYTHON-BASED: Llave privada SAT validada exitosamente con contraseña');
         
         // 4. 📝 AGREGAR SOLO NoCertificado AL XML (como Python: root.set("NoCertificado", no_certificado))
         console.log('📝 PYTHON-BASED: Agregando NoCertificado al XML...');
