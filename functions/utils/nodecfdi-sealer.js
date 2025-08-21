@@ -191,12 +191,51 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         console.log('  - Cadena (primeros 100):', cadenaOriginal.substring(0, 100));
         console.log('  - Cadena (últimos 100):', cadenaOriginal.substring(cadenaOriginal.length - 100));
         
-        // ⭐ ESTE ES EL PASO CRÍTICO: Usar NodeCfdi para firmar
-        const selloDigitalBinario = credential.sign(cadenaOriginal);
+        // ⭐ ESTE ES EL PASO CRÍTICO: Generar DigestInfo ASN.1 y firmar con NodeCfdi
+        console.log('🔧 CFDI40102 FIX: Generando DigestInfo ASN.1 para compatibilidad SAT...');
+        
+        // Calcular SHA256 de la cadena original
+        const hashSHA256 = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest();
+        console.log('🔧 CFDI40102 FIX: Hash SHA256 calculado:', hashSHA256.toString('hex'));
+        
+        // Crear DigestInfo ASN.1 para SHA-256 (formato que espera el SAT)
+        // Estructura: SEQUENCE { algorithmIdentifier, digest }
+        const sha256OID = Buffer.from([0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20]);
+        const digestInfo = Buffer.concat([sha256OID, hashSHA256]);
+        
+        console.log('🔧 CFDI40102 FIX: DigestInfo ASN.1 generado:', digestInfo.toString('hex'));
+        console.log('🔧 CFDI40102 FIX: Longitud DigestInfo:', digestInfo.length);
+        
+        // Firmar el DigestInfo ASN.1 (no la cadena original directamente)
+        let selloDigitalBinario;
+        try {
+            // Usar crypto.privateEncrypt para firmar el DigestInfo
+            const llavePrivadaPem = `-----BEGIN PRIVATE KEY-----\n${llavePrivada}\n-----END PRIVATE KEY-----`;
+            
+            selloDigitalBinario = crypto.privateEncrypt({
+                key: llavePrivadaPem,
+                padding: crypto.constants.RSA_PKCS1_PADDING
+            }, digestInfo);
+            
+            console.log('🎉 CFDI40102 FIX: DigestInfo firmado exitosamente con crypto.privateEncrypt');
+            
+        } catch (errorCrypto) {
+            console.error('❌ CFDI40102 FIX: Error firmando DigestInfo con crypto:', errorCrypto.message);
+            console.log('🔄 CFDI40102 FIX: Intentando fallback con NodeCfdi...');
+            
+            // Fallback: usar NodeCfdi pero con el DigestInfo
+            try {
+                selloDigitalBinario = credential.sign(digestInfo);
+                console.log('🎉 CFDI40102 FIX: DigestInfo firmado exitosamente con NodeCfdi fallback');
+            } catch (errorNodeCfdi) {
+                console.error('❌ CFDI40102 FIX: Error firmando DigestInfo con NodeCfdi:', errorNodeCfdi.message);
+                return { exito: false, error: 'Error generando sello digital con DigestInfo ASN.1' };
+            }
+        }
         
         if (!selloDigitalBinario) {
-            console.error('❌ NODECFDI: Error generando sello digital');
-            return { exito: false, error: 'Error generando sello digital con NodeCfdi' };
+            console.error('❌ CFDI40102 FIX: Error generando sello digital');
+            return { exito: false, error: 'Error generando sello digital con DigestInfo' };
         }
         
         // 🔧 CRÍTICO: Forzar conversión correcta a base64
