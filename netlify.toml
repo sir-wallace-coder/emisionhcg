@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  REDOC_API_URL = "https://api.redoc.mx/pdf"
+  REDOC_API_URL = "https://redoc.mx/api/pdf"
 
 [functions]
   directory = "functions"
