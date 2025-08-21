@@ -355,27 +355,43 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             console.log('🔬 FORENSE CFDI40102: Longitud hash desencriptado:', hashDesencriptado.length);
             console.log('🔬 FORENSE CFDI40102: Hash desencriptado (hex):', hashDesencriptado.toString('hex'));
             
-            // Calcular SHA256 de nuestra cadena original
-            const nuestroHash = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest();
-            console.log('🔬 FORENSE CFDI40102: Nuestro hash SHA256:', nuestroHash.toString('hex'));
+            // CRUCIAL: Calcular SHA256 de la cadena original que el SAT extrae del XML final
+            const cadenaOriginalXMLFinal = cadenaFinalLimpia || cadenaOriginal;
+            const hashXMLFinal = crypto.createHash('sha256').update(cadenaOriginalXMLFinal, 'utf8').digest();
+            console.log('🔬 FORENSE CFDI40102: Hash cadena original firmada:', crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest().toString('hex'));
+            console.log('🔬 FORENSE CFDI40102: Hash cadena XML final (SAT):', hashXMLFinal.toString('hex'));
             
-            // Comparar byte a byte
-            const hashesCoinciden = Buffer.compare(hashDesencriptado, nuestroHash) === 0;
-            console.log('🔬 FORENSE CFDI40102: Hashes coinciden:', hashesCoinciden ? '✅ SÍ' : '❌ NO');
+            // Extraer solo el hash SHA256 del DigestInfo desencriptado (bytes 19-50)
+            let hashDelSello;
+            if (hashDesencriptado.length === 51 && hashDesencriptado[0] === 0x30) {
+                // Es DigestInfo ASN.1, extraer solo el hash (últimos 32 bytes)
+                hashDelSello = hashDesencriptado.slice(19, 51);
+                console.log('🔬 FORENSE CFDI40102: Hash extraído del sello (sin ASN.1):', hashDelSello.toString('hex'));
+            } else {
+                // Es hash directo
+                hashDelSello = hashDesencriptado;
+                console.log('🔬 FORENSE CFDI40102: Hash directo del sello:', hashDelSello.toString('hex'));
+            }
+            
+            // Comparar el hash del sello vs el hash del XML final (lo que el SAT verifica)
+            const hashesCoinciden = Buffer.compare(hashDelSello, hashXMLFinal) === 0;
+            console.log('🔬 FORENSE CFDI40102: Hash sello vs XML final:', hashesCoinciden ? '✅ COINCIDEN' : '❌ DIFERENTES');
             
             if (!hashesCoinciden) {
-                console.error('❌ FORENSE CFDI40102: ¡CAUSA RAÍZ ENCONTRADA!');
-                console.error('  - Hash desencriptado del sello:', hashDesencriptado.toString('hex'));
-                console.error('  - Hash SHA256 de cadena original:', nuestroHash.toString('hex'));
-                console.error('  - Diferencia en bytes:', hashDesencriptado.length, 'vs', nuestroHash.length);
+                console.error('❌ FORENSE CFDI40102: ¡DISCREPANCIA ENCONTRADA!');
+                console.error('  - Hash del sello (lo que firmamos):', hashDelSello.toString('hex'));
+                console.error('  - Hash XML final (lo que SAT verifica):', hashXMLFinal.toString('hex'));
+                console.error('  - Cadena firmada vs XML final son diferentes');
                 
-                // Comparación byte a byte para encontrar diferencias
-                for (let i = 0; i < Math.max(hashDesencriptado.length, nuestroHash.length); i++) {
-                    const byteDesenc = i < hashDesencriptado.length ? hashDesencriptado[i] : 'N/A';
-                    const byteNuestro = i < nuestroHash.length ? nuestroHash[i] : 'N/A';
-                    if (byteDesenc !== byteNuestro) {
-                        console.error(`  - Byte ${i}: desencriptado=${byteDesenc}, nuestro=${byteNuestro}`);
-                    }
+                // Comparar también con la cadena original inicial
+                const hashCadenaInicial = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest();
+                const coincidenInicial = Buffer.compare(hashDelSello, hashCadenaInicial) === 0;
+                console.error('  - Hash sello vs cadena inicial:', coincidenInicial ? '✅ COINCIDEN' : '❌ DIFERENTES');
+                
+                if (coincidenInicial) {
+                    console.error('  - PROBLEMA: XML se modificó después del sellado');
+                } else {
+                    console.error('  - PROBLEMA: Sello no corresponde a ninguna cadena');
                 }
             } else {
                 console.log('✅ FORENSE CFDI40102: Digestión y desencriptación coinciden perfectamente');
