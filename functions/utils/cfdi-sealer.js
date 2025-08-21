@@ -236,6 +236,43 @@ function construirCadenaOriginal40(comprobante) {
         }
     }
     
+    // CRÍTICO CFDI40102: Procesar Impuestos Totales (van al final de la cadena)
+    const impuestosTotales = comprobante.getElementsByTagName('cfdi:Impuestos')[0];
+    if (impuestosTotales) {
+        // Traslados Totales - CRÍTICO: NO incluir Base según XSLT SAT
+        const trasladosTotales = impuestosTotales.getElementsByTagName('cfdi:Traslado');
+        for (let i = 0; i < trasladosTotales.length; i++) {
+            const traslado = trasladosTotales[i];
+            // SOLO: Impuesto|TipoFactor|TasaOCuota|Importe (SIN Base)
+            cadena += normalizeSpace(traslado.getAttribute('Impuesto') || '') + '|';
+            cadena += normalizeSpace(traslado.getAttribute('TipoFactor') || '') + '|';
+            
+            // TasaOCuota es OPCIONAL
+            const tasaOCuota = normalizeSpace(traslado.getAttribute('TasaOCuota') || '');
+            if (tasaOCuota) cadena += tasaOCuota + '|';
+            
+            // Importe es OPCIONAL cuando TipoFactor = "Exento"
+            const importe = normalizeSpace(traslado.getAttribute('Importe') || '');
+            if (importe) cadena += importe + '|';
+        }
+        
+        // Retenciones Totales
+        const retencionesTotales = impuestosTotales.getElementsByTagName('cfdi:Retencion');
+        for (let i = 0; i < retencionesTotales.length; i++) {
+            const retencion = retencionesTotales[i];
+            cadena += normalizeSpace(retencion.getAttribute('Impuesto') || '') + '|';
+            cadena += normalizeSpace(retencion.getAttribute('Importe') || '') + '|';
+        }
+        
+        // TotalImpuestosTrasladados (OPCIONAL)
+        const totalTrasladados = normalizeSpace(impuestosTotales.getAttribute('TotalImpuestosTrasladados') || '');
+        if (totalTrasladados) cadena += totalTrasladados + '|';
+        
+        // TotalImpuestosRetenidos (OPCIONAL)
+        const totalRetenidos = normalizeSpace(impuestosTotales.getAttribute('TotalImpuestosRetenidos') || '');
+        if (totalRetenidos) cadena += totalRetenidos + '|';
+    }
+    
     cadena += '|';
     return cadena;
 }
