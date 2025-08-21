@@ -206,7 +206,8 @@ exports.handler = async (event, context) => {
         emisor.certificado_cer,
         emisor.certificado_key,
         emisor.password_certificado,
-        version
+        version,
+        emisor.numero_certificado  // CRÍTICO: Pasar número de certificado correcto
       );
       
       if (!resultadoNodeCfdi || !resultadoNodeCfdi.xmlSellado) {

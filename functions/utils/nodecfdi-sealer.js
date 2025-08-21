@@ -24,9 +24,10 @@ const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-server
  * @param {string} llavePrivadaKey - Contenido del archivo .key en base64  
  * @param {string} passwordLlave - Contraseña de la llave privada
  * @param {string} version - Versión CFDI (3.3 o 4.0)
+ * @param {string} numeroSerie - Número de serie del certificado (20 dígitos)
  * @returns {Object} Resultado del sellado
  */
-async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version) {
+async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version, numeroSerie) {
     console.log('🎯 NODECFDI SEALER: Iniciando sellado con @nodecfdi/credentials...');
     
     try {
@@ -96,20 +97,17 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         // 4. Extraer información del certificado
         const certificado = credential.certificate();
         
-        // CRÍTICO: Obtener número de certificado como string de 20 dígitos
-        let numeroCertificado;
-        try {
-            const serialBytes = certificado.serialNumber().bytes();
-            // Convertir bytes a string hexadecimal y luego a decimal
-            const serialHex = Buffer.from(serialBytes).toString('hex');
-            numeroCertificado = BigInt('0x' + serialHex).toString().padStart(20, '0');
-            console.log('🔍 NODECFDI: Serial bytes:', serialBytes);
-            console.log('🔍 NODECFDI: Serial hex:', serialHex);
-            console.log('🔍 NODECFDI: Serial decimal:', numeroCertificado);
-        } catch (serialError) {
-            console.error('❌ NODECFDI: Error extrayendo número de certificado:', serialError.message);
-            // Fallback: intentar obtener directamente como string
-            numeroCertificado = certificado.serialNumber().toString().padStart(20, '0');
+        // CRÍTICO: Usar número de certificado almacenado en base de datos (no extraer del certificado)
+        // El número correcto ya está validado y almacenado en el emisor
+        const numeroCertificado = numeroSerie; // Viene del parámetro de la función
+        
+        console.log('🔍 NODECFDI: Usando número de certificado almacenado:', numeroCertificado);
+        console.log('🔍 NODECFDI: Longitud número certificado:', numeroCertificado.length);
+        
+        // Validar que tenga exactamente 20 dígitos
+        if (!/^\d{20}$/.test(numeroCertificado)) {
+            console.error('❌ NODECFDI: Número de certificado inválido:', numeroCertificado);
+            throw new Error(`Número de certificado debe tener exactamente 20 dígitos, recibido: ${numeroCertificado}`);
         }
         
         const certificadoPem = certificado.pem();
