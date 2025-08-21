@@ -190,9 +190,11 @@ exports.handler = async (event, context) => {
       console.log('🔐 SELLADO ENDPOINT: - Longitud llave PEM:', llavePrivadaPem.length);
       console.log('🔐 SELLADO ENDPOINT: - Longitud cert PEM:', certificadoPem.length);
 
-      // Realizar el sellado con NodeCfdi como sellador principal
-      console.log('🎯 Iniciando sellado con @nodecfdi/credentials (método oficial)...');
-      let resultadoSellado = await sellarCFDIConNodeCfdi(
+      // 🎯 SELLADO ÚNICAMENTE CON NODECFDI (OFICIAL SAT)
+      console.log('🎯 SELLADO: Sellando ÚNICAMENTE con NodeCfdi oficial...');
+      console.log('📋 SELLADO: Sin fallback - debe funcionar con librería oficial');
+      
+      const resultadoNodeCfdi = await sellarCFDIConNodeCfdi(
         xmlContent,
         emisor.certificado_cer,
         emisor.certificado_key,
@@ -200,66 +202,30 @@ exports.handler = async (event, context) => {
         version
       );
       
-      // Fallback al método anterior si NodeCfdi falla
-      if (!resultadoSellado.exito) {
-        console.log('⚠️ NodeCfdi falló, intentando con método anterior...');
-        console.log('❌ Error NodeCfdi:', resultadoSellado.error);
-        
-        console.log('🔐 Iniciando proceso de sellado con método anterior...');
-        resultadoSellado = await sellarCFDI(
-          xmlContent,
-          llavePrivadaPem,
-          certificadoPem,
-          numeroCertificado,
-          version
-        );
-        
-        if (resultadoSellado.exito) {
-          console.log('✅ Sellado exitoso con método anterior (fallback)');
-          resultadoSellado.metodo = 'cfdi-sealer (fallback)';
-        }
-      } else {
-        console.log('🎉 Sellado exitoso con @nodecfdi/credentials!');
+      if (!resultadoNodeCfdi || !resultadoNodeCfdi.xmlSellado) {
+        throw new Error('Error en sellado NodeCfdi: No se pudo generar el XML sellado con la librería oficial');
       }
 
-      console.log('📋 SELLADO ENDPOINT: Resultado del sellado recibido');
-      console.log('📋 SELLADO ENDPOINT: Éxito:', resultadoSellado.exito);
-
-      if (!resultadoSellado.exito) {
-        console.error('❌ SELLADO ENDPOINT: Error en el proceso de sellado:', resultadoSellado.error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ 
-            error: 'Error en el proceso de sellado: ' + resultadoSellado.error,
-            version: version,
-            emisor_rfc: emisor.rfc
-          })
-        };
-      }
-
-      console.log('✅ SELLADO ENDPOINT: Sellado completado exitosamente');
-      console.log('✅ SELLADO ENDPOINT: Sello válido:', resultadoSellado.selloValido);
-      console.log('🔍 SELLADO ENDPOINT: Longitud XML sellado:', resultadoSellado.xmlSellado.length);
-      console.log('🔍 SELLADO ENDPOINT: Longitud sello digital:', resultadoSellado.selloDigital.length);
-      console.log('🔍 SELLADO ENDPOINT: Longitud cadena original:', resultadoSellado.cadenaOriginal.length);
-
+      console.log('✅ SELLADO: NodeCfdi completado exitosamente');
+      console.log('📊 SELLADO: Sello generado:', resultadoNodeCfdi.selloDigital ? 'SÍ' : 'NO');
+      console.log('📊 SELLADO: Certificado:', resultadoNodeCfdi.numeroCertificado ? 'SÍ' : 'NO');
+      
       // 5. Responder con el XML sellado y metadata adicional
       const respuesta = {
         message: 'CFDI sellado exitosamente',
         exito: true,
-        xmlSellado: resultadoSellado.xmlSellado,
-        selloDigital: resultadoSellado.selloDigital,
-        cadenaOriginal: resultadoSellado.cadenaOriginal,
-        selloValido: resultadoSellado.selloValido,
-        numeroCertificado: resultadoSellado.noCertificado,
+        xmlSellado: resultadoNodeCfdi.xmlSellado,
+        selloDigital: resultadoNodeCfdi.selloDigital,
+        cadenaOriginal: resultadoNodeCfdi.cadenaOriginal,
+        selloValido: resultadoNodeCfdi.selloValido,
+        numeroCertificado: resultadoNodeCfdi.numeroCertificado,
         metadata: {
           version: version,
           fechaSellado: new Date().toISOString(),
           longitudXmlOriginal: xmlContent.length,
-          longitudXmlSellado: resultadoSellado.xmlSellado.length,
-          longitudSello: resultadoSellado.selloDigital.length,
-          longitudCadenaOriginal: resultadoSellado.cadenaOriginal.length
+          longitudXmlSellado: resultadoNodeCfdi.xmlSellado.length,
+          longitudSello: resultadoNodeCfdi.selloDigital.length,
+          longitudCadenaOriginal: resultadoNodeCfdi.cadenaOriginal.length
         },
         emisor: {
           rfc: emisor.rfc,
@@ -269,6 +235,7 @@ exports.handler = async (event, context) => {
         }
       };
 
+      console.log(' SELLADO ENDPOINT: Enviando respuesta exitosa');
       console.log('📤 SELLADO ENDPOINT: Enviando respuesta exitosa');
 
       return {

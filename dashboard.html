@@ -1097,14 +1097,71 @@
         
         // ❌ FUNCIÓN DUPLICADA ELIMINADA - usar alias window.downloadXML = descargarXML
         
-        function deleteXML(xmlId) {
-            console.log('🗑️ Eliminar XML:', xmlId);
-            if (typeof eliminarXML === 'function') {
-                return eliminarXML(xmlId);
-            } else {
-                console.error('❌ Función eliminarXML no disponible');
-                alert('Error: Sistema de eliminación no disponible');
+        // 🗑️ FUNCIÓN REAL DE ELIMINACIÓN DE XMLs
+        async function eliminarXMLReal(xmlId) {
+            console.log('🗑️ Iniciando eliminación de XML:', xmlId);
+            
+            if (!xmlId) {
+                console.error('❌ Error: ID de XML no proporcionado');
+                alert('Error: ID de XML no válido');
+                return;
             }
+            
+            // Confirmar eliminación
+            const confirmar = confirm('⚠️ ¿Estás seguro de que deseas eliminar este XML permanentemente?\n\nEsta acción no se puede deshacer.');
+            if (!confirmar) {
+                console.log('🚫 Eliminación cancelada por el usuario');
+                return;
+            }
+            
+            try {
+                console.log('🔄 Enviando petición de eliminación al backend...');
+                
+                const token = StorageUtils.getToken();
+                if (!token) {
+                    throw new Error('No hay sesión activa. Inicia sesión para eliminar XMLs.');
+                }
+                
+                const response = await fetch('/.netlify/functions/xmls', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ xmlId: xmlId })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ XML eliminado exitosamente:', result);
+                
+                // Mostrar mensaje de éxito
+                alert('✅ XML eliminado exitosamente');
+                
+                // Recargar la lista de XMLs
+                console.log('🔄 Recargando lista de XMLs...');
+                if (typeof cargarXMLsDesdeBackend === 'function') {
+                    await cargarXMLsDesdeBackend();
+                } else if (typeof mostrarXMLs === 'function') {
+                    await mostrarXMLs();
+                } else {
+                    console.warn('⚠️ No se encontró función para recargar XMLs, recargando página...');
+                    window.location.reload();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error eliminando XML:', error);
+                alert('❌ Error eliminando XML: ' + error.message);
+            }
+        }
+        
+        function deleteXML(xmlId) {
+            console.log('🗑️ Eliminar XML (función legacy):', xmlId);
+            return eliminarXMLReal(xmlId);
         }
         
         // ===== FUNCIONES ADICIONALES GLOBALES (REQUERIDAS POR ONCLICK) =====
@@ -2523,8 +2580,8 @@
         
         // Función Delete/Eliminar (por si hay referencias incorrectas)
         window.deleteXML = function(xmlId) {
-            console.warn('⚠️ deleteXML llamado - redirigiendo a editarXML');
-            return editarXML(xmlId);
+            console.log('🗑️ Eliminar XML:', xmlId);
+            return eliminarXMLReal(xmlId);
         };
         
         console.log('✅ Todos los alias de funciones XML configurados:', {
