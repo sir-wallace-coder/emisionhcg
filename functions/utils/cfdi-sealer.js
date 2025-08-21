@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const forge = require('node-forge');
 const { DOMParser, XMLSerializer } = require('xmldom');
-const { generarCadenaOriginalXSLT } = require('../xslt-processor');
 
 /**
  * Normaliza espacios en blanco según XSLT SAT (normalize-space)
@@ -572,32 +571,8 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
         console.log('🔍 FORENSE CADENA: Longitud XML entrada:', xmlContent.length);
         console.log('🔍 FORENSE CADENA: Primeros 200 chars XML:', xmlContent.substring(0, 200));
         
-        // Intentar usar XSLT oficial SAT primero
-        console.log('🔍 FORENSE XSLT: Intentando usar XSLT oficial SAT...');
-        try {
-            const cadenaXSLT = generarCadenaOriginalXSLT(xmlContent, version);
-            if (cadenaXSLT) {
-                console.log('✅ FORENSE XSLT: Generada exitosamente con XSLT oficial SAT');
-                console.log('🔍 FORENSE XSLT: Longitud cadena XSLT:', cadenaXSLT.length);
-                console.log('🔍 FORENSE XSLT: Primeros 100 chars:', cadenaXSLT.substring(0, 100));
-                console.log('🔍 FORENSE XSLT: Últimos 100 chars:', cadenaXSLT.substring(cadenaXSLT.length - 100));
-                
-                // Hash para trazabilidad
-                const hashXSLT = crypto.createHash('sha256').update(cadenaXSLT, 'utf8').digest('hex');
-                console.log('🔍 FORENSE XSLT HASH: SHA256:', hashXSLT);
-                
-                return cadenaXSLT;
-            } else {
-                console.log('⚠️ FORENSE XSLT: XSLT oficial retornó null/undefined');
-            }
-        } catch (error) {
-            console.log('⚠️ FORENSE XSLT: Error con XSLT oficial, usando fallback manual');
-            console.log('⚠️ FORENSE XSLT ERROR:', error.message);
-            console.log('⚠️ FORENSE XSLT STACK:', error.stack);
-        }
-        
-        // Fallback a implementación manual
-        console.log('🔍 FORENSE FALLBACK: Usando implementación manual como fallback');
+        // Usar implementación manual de reglas XSLT SAT (sin fallback)
+        console.log('🔍 FORENSE MANUAL: Usando implementación manual de reglas XSLT SAT...');
         
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');

@@ -12,9 +12,9 @@ const { Credential } = require('@nodecfdi/credentials');
 const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
 const crypto = require('crypto');
 
-// Importar funciones existentes que ya funcionan correctamente
-const { generarCadenaOriginalXSLT } = require('../xslt-processor');
+// Importar funciones necesarias
 const { limpiarCadenaOriginalChatGPT, removerAtributoSelloCompletamente } = require('./cfdi-sealer');
+const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-serverless');
 
 /**
  * 🚀 SELLADO CFDI CON NODECFDI - IMPLEMENTACIÓN OFICIAL SAT
@@ -144,10 +144,15 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         console.log('  - NoCertificado:', numeroCertificado);
         console.log('  - Certificado (longitud):', certificadoLimpio.length);
         
-        // 6. Generar cadena original del XML con certificados
-        console.log('🔗 NODECFDI: Generando cadena original...');
+        // 6. Generar cadena original con implementación manual SAT (sin fallback)
+        console.log('🔗 NODECFDI: Generando cadena original con reglas SAT...');
         const xmlConCertificados = xmlSerializer.serializeToString(xmlDoc);
-        const cadenaOriginalRaw = generarCadenaOriginalXSLT(xmlConCertificados, version);
+        
+        // Generar cadena original usando XSLT oficial SAT (serverless)
+        const cadenaOriginalRaw = generarCadenaOriginalXSLTServerless(xmlConCertificados, version);
+        
+        console.log('✅ NODECFDI: Cadena original generada con reglas SAT');
+        console.log('📏 NODECFDI: Longitud:', cadenaOriginalRaw.length);
         
         if (!cadenaOriginalRaw) {
             console.error('❌ NODECFDI: Error generando cadena original');
