@@ -141,29 +141,12 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             console.log('ℹ️ NODECFDI: No se pudieron obtener fechas de vigencia:', dateError.message);
         }
         
-        // 5. Agregar NoCertificado y Certificado al XML
-        console.log('📝 NODECFDI: Agregando atributos de certificado al XML...');
-        comprobante.setAttribute('NoCertificado', numeroCertificado);
-        
-        // Limpiar certificado PEM (solo el contenido base64, sin headers)
-        const certificadoLimpio = certificadoPem
-            .replace(/-----BEGIN CERTIFICATE-----/g, '')
-            .replace(/-----END CERTIFICATE-----/g, '')
-            .replace(/\r?\n/g, '')
-            .trim();
-        
-        comprobante.setAttribute('Certificado', certificadoLimpio);
-        
-        console.log('✅ NODECFDI: Atributos de certificado agregados');
-        console.log('  - NoCertificado:', numeroCertificado);
-        console.log('  - Certificado (longitud):', certificadoLimpio.length);
-        
-        // 6. Generar cadena original con implementación manual SAT (sin fallback)
-        console.log('🔗 NODECFDI: Generando cadena original con reglas SAT...');
-        const xmlConCertificados = xmlSerializer.serializeToString(xmlDoc);
+        // 5. 🎯 FLUJO CORRECTO SAT: Generar cadena original del XML BASE (sin certificados)
+        console.log('🔗 NODECFDI: Generando cadena original del XML BASE (sin certificados)...');
+        const xmlBase = xmlSerializer.serializeToString(xmlDoc);
         
         // Generar cadena original usando XSLT oficial SAT (serverless)
-        const cadenaOriginalRaw = generarCadenaOriginalXSLTServerless(xmlConCertificados, version);
+        const cadenaOriginalRaw = generarCadenaOriginalXSLTServerless(xmlBase, version);
         
         console.log('✅ NODECFDI: Cadena original generada con reglas SAT');
         console.log('📏 NODECFDI: Longitud:', cadenaOriginalRaw.length);
@@ -176,79 +159,25 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         console.log('✅ NODECFDI: Cadena original generada');
         console.log('📏 NODECFDI: Longitud cadena original:', cadenaOriginalRaw.length);
         
-        // 7. Limpiar cadena original (eliminar caracteres invisibles)
+        // 6. Limpiar cadena original (eliminar caracteres invisibles)
         console.log('🧹 NODECFDI: Limpiando cadena original...');
         const cadenaOriginal = limpiarCadenaOriginalChatGPT(cadenaOriginalRaw);
         
-        // Debug: comparar antes/después de limpieza
-        if (cadenaOriginalRaw !== cadenaOriginal) {
-            console.log('🔍 NODECFDI: Cadena modificada por limpieza:');
-            console.log('  - Longitud ANTES:', cadenaOriginalRaw.length);
-            console.log('  - Longitud DESPUÉS:', cadenaOriginal.length);
-            console.log('  - Diferencia:', cadenaOriginalRaw.length - cadenaOriginal.length);
-        } else {
-            console.log('✅ NODECFDI: Cadena NO modificada por limpieza');
-        }
+        console.log('✅ NODECFDI: Cadena original lista para firmado');
+        console.log('📏 NODECFDI: Longitud cadena original:', cadenaOriginal.length);
+        console.log('🔍 NODECFDI: SHA256 cadena original:', crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex'));
         
-        // Hash de la cadena limpia para debugging
-        const hashCadenaLimpia = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
-        console.log('🔍 NODECFDI: SHA256 cadena original limpia:', hashCadenaLimpia);
-        
-        // DEBUG: Mostrar cadena original completa
-        console.log('🔍 NODECFDI: CADENA ORIGINAL COMPLETA:');
-        console.log('"' + cadenaOriginal + '"');
-        
-        // 8. 🚀 FIRMAR CON NODECFDI - EL MOMENTO CRÍTICO
+        // 7. 🚀 FIRMAR CON NODECFDI - FLUJO CORRECTO SAT
         console.log('🔐 NODECFDI: Firmando cadena original con @nodecfdi/credentials...');
-        console.log('📋 NODECFDI: Datos para firmado:');
-        console.log('  - Cadena (longitud):', cadenaOriginal.length);
-        console.log('  - Cadena (primeros 100):', cadenaOriginal.substring(0, 100));
-        console.log('  - Cadena (últimos 100):', cadenaOriginal.substring(cadenaOriginal.length - 100));
         
-        // ⭐ ESTE ES EL PASO CRÍTICO: Generar DigestInfo ASN.1 y firmar con NodeCfdi
-        console.log('🔧 CFDI40102 FIX: Generando DigestInfo ASN.1 para compatibilidad SAT...');
-        
-        // Calcular SHA256 de la cadena original
-        const hashSHA256 = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest();
-        console.log('🔧 CFDI40102 FIX: Hash SHA256 calculado:', hashSHA256.toString('hex'));
-        
-        // Crear DigestInfo ASN.1 para SHA-256 (formato que espera el SAT)
-        // Estructura: SEQUENCE { algorithmIdentifier, digest }
-        const sha256OID = Buffer.from([0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20]);
-        const digestInfo = Buffer.concat([sha256OID, hashSHA256]);
-        
-        console.log('🔧 CFDI40102 FIX: DigestInfo ASN.1 generado:', digestInfo.toString('hex'));
-        console.log('🔧 CFDI40102 FIX: Longitud DigestInfo:', digestInfo.length);
-        
-        // Firmar el DigestInfo ASN.1 (no la cadena original directamente)
+        // CRÍTICO: NodeCfdi firma la cadena original directamente (como Python)
         let selloDigitalBinario;
         try {
-            // Usar crypto.privateEncrypt para firmar el DigestInfo
-            // Convertir de base64 a Buffer y luego a PEM
-            const keyBuffer = Buffer.from(llavePrivadaKey, 'base64');
-            const llavePrivadaPem = keyBuffer.toString('utf8');
-            
-            selloDigitalBinario = crypto.privateEncrypt({
-                key: llavePrivadaPem,
-                padding: crypto.constants.RSA_PKCS1_PADDING
-            }, digestInfo);
-            
-            console.log('🎉 CFDI40102 FIX: DigestInfo firmado exitosamente con crypto.privateEncrypt');
-            
-        } catch (errorCrypto) {
-            console.error('❌ CFDI40102 FIX: Error firmando DigestInfo con crypto:', errorCrypto.message);
-            console.log('🔄 CFDI40102 FIX: Intentando fallback con NodeCfdi...');
-            
-            // Fallback: usar NodeCfdi con la cadena original directamente
-            try {
-                // CRÍTICO: NodeCfdi debe firmar la cadena original, no el DigestInfo
-                selloDigitalBinario = credential.sign(cadenaOriginal);
-                console.log('🎉 CFDI40102 FIX: Cadena original firmada exitosamente con NodeCfdi fallback');
-                console.log('🔍 CFDI40102 FIX: Cadena firmada (hash):', crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex'));
-            } catch (errorNodeCfdi) {
-                console.error('❌ CFDI40102 FIX: Error firmando DigestInfo con NodeCfdi:', errorNodeCfdi.message);
-                return { exito: false, error: 'Error generando sello digital con DigestInfo ASN.1' };
-            }
+            selloDigitalBinario = credential.sign(cadenaOriginal);
+            console.log('🎉 NODECFDI: Cadena original firmada exitosamente');
+        } catch (errorNodeCfdi) {
+            console.error('❌ NODECFDI: Error firmando cadena original:', errorNodeCfdi.message);
+            return { exito: false, error: 'Error generando sello digital: ' + errorNodeCfdi.message };
         }
         
         if (!selloDigitalBinario) {
@@ -306,24 +235,35 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         const hashSello = crypto.createHash('sha256').update(selloDigital, 'utf8').digest('hex');
         console.log('🔍 NODECFDI: SHA256 del sello:', hashSello);
         
-        // 9. Agregar sello al XML
-        console.log('📝 NODECFDI: Agregando sello al XML...');
+        // 8. 🎯 FLUJO CORRECTO SAT: Agregar TODOS los atributos de una sola vez
+        console.log('📝 NODECFDI: Agregando certificado y sello al XML...');
+        
+        // Limpiar certificado PEM (solo el contenido base64, sin headers)
+        const certificadoLimpio = certificadoPem
+            .replace(/-----BEGIN CERTIFICATE-----/g, '')
+            .replace(/-----END CERTIFICATE-----/g, '')
+            .replace(/\r?\n/g, '')
+            .trim();
+        
+        // Agregar TODOS los atributos de sellado de una sola vez
+        comprobante.setAttribute('NoCertificado', numeroCertificado);
+        comprobante.setAttribute('Certificado', certificadoLimpio);
         comprobante.setAttribute('Sello', selloDigital);
         
-        // CRÍTICO: Usar serialización que preserve el base64 sin escape
+        console.log('✅ NODECFDI: Todos los atributos de sellado agregados:');
+        console.log('  - NoCertificado:', numeroCertificado);
+        console.log('  - Certificado (longitud):', certificadoLimpio.length);
+        console.log('  - Sello (longitud):', selloDigital.length);
+        
+        // 🎯 SERIALIZACIÓN ÚNICA: Una sola serialización del XML final
+        console.log('📝 NODECFDI: Serialización única del XML final...');
         let xmlSellado = xmlSerializer.serializeToString(xmlDoc);
         
         console.log('✅ NODECFDI: XML sellado generado');
         console.log('📏 NODECFDI: Longitud XML sellado:', xmlSellado.length);
         
-        // 10. 🔍 VERIFICACIÓN DE INTEGRIDAD (OMITIDA TEMPORALMENTE)
-        console.log('🔍 NODECFDI: Verificación omitida - sello generado exitosamente');
-        
-        // NOTA: La verificación automática de NodeCfdi causa error "Encrypted message length is invalid"
-        // El sello se genera correctamente en base64, por lo que omitimos la verificación automática
-        // La verificación real se hará cuando el XML se valide contra el SAT
-        
-        console.log('✅ NODECFDI: Sello generado y listo para uso');
+        // 9. ✅ VALIDACIÓN FINAL Y RETORNO
+        console.log('🎉 NODECFDI: ¡SELLADO COMPLETADO EXITOSAMENTE!');
         
         // Verificación básica: el sello debe ser base64 válido y tener longitud apropiada
         const base64Test = /^[A-Za-z0-9+/]*={0,2}$/;
@@ -332,145 +272,22 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             return { exito: false, error: 'Formato de sello inválido' };
         }
         
-        console.log('✅ NODECFDI: Validación básica de formato exitosa');
-        
-        // CORRECCIÓN AGRESIVA: Siempre forzar el sello base64 correcto ANTES de auditoría
-        console.log('🔧 NODECFDI: Aplicando corrección agresiva de sello base64...');
-        console.log('🔍 NODECFDI: Sello base64 original:', selloDigital.substring(0, 50) + '...');
-        
-        // Buscar y reemplazar CUALQUIER contenido del atributo Sello
-        const selloActualEnXML = xmlSellado.match(/Sello="([^"]*)"/)?.[1];
-        if (selloActualEnXML) {
-            console.log('🔍 NODECFDI: Sello actual en XML:', selloActualEnXML.substring(0, 50) + '...');
-            
-            if (selloActualEnXML !== selloDigital) {
-                console.log('🚨 NODECFDI: Sello corrupto detectado - aplicando corrección...');
-                
-                // Reemplazar FORZADAMENTE el sello corrupto con el base64 correcto
-                xmlSellado = xmlSellado.replace(
-                    /Sello="[^"]*"/, 
-                    `Sello="${selloDigital}"`
-                );
-                
-                console.log('✅ NODECFDI: Sello base64 forzado correctamente');
-                console.log('🔍 NODECFDI: Sello corregido (primeros 50):', selloDigital.substring(0, 50));
-                console.log('📏 NODECFDI: Nueva longitud XML:', xmlSellado.length);
-            } else {
-                console.log('✅ NODECFDI: Sello ya estaba correcto en XML');
-            }
-        } else {
-            console.error('❌ NODECFDI: No se encontró atributo Sello en XML');
-        }
-        
-        // 11. AUDITORÍA FORENSE CFDI40102: Verificar digestión vs desencriptación
-        console.log('🔬 FORENSE CFDI40102: Iniciando auditoría de digestión vs desencriptación...');
-        
-        try {
-            // Paso 1: Verificar integridad de cadena original (como antes)
-            const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
-            const cadenaOriginalFinal = generarCadenaOriginalXSLTServerless(xmlParaVerificacion, version);
-            let cadenaFinalLimpia = cadenaOriginal; // Default fallback
-            
-            if (cadenaOriginalFinal) {
-                cadenaFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
-                const coincideCadena = cadenaOriginal === cadenaFinalLimpia;
-                
-                console.log('🔍 NODECFDI: Integridad de cadena original:', coincideCadena ? '✅ ÍNTEGRA' : '❌ ALTERADA');
-                
-                if (!coincideCadena) {
-                    console.error('❌ NODECFDI: ¡INTEGRIDAD ROTA! La cadena original cambió');
-                    console.error('  - Hash cadena firmada:', hashCadenaLimpia);
-                    console.error('  - Hash cadena final:', crypto.createHash('sha256').update(cadenaFinalLimpia, 'utf8').digest('hex'));
-                }
-            }
-            
-            // Paso 2: AUDITORÍA FORENSE - Desencriptar sello y comparar con digestión
-            console.log('🔬 FORENSE CFDI40102: Desencriptando sello digital...');
-            
-            // Desencriptar el sello usando la llave pública del certificado
-            const certificadoPem = `-----BEGIN CERTIFICATE-----\n${certificadoLimpio}\n-----END CERTIFICATE-----`;
-            const cert = crypto.createPublicKey(certificadoPem);
-            
-            // Convertir sello base64 a buffer
-            const selloBuffer = Buffer.from(selloDigital, 'base64');
-            
-            // Desencriptar el sello (esto debería dar el hash SHA256 de la cadena original)
-            const hashDesencriptado = crypto.publicDecrypt({
-                key: cert,
-                padding: crypto.constants.RSA_PKCS1_PADDING
-            }, selloBuffer);
-            
-            console.log('🔬 FORENSE CFDI40102: Sello desencriptado exitosamente');
-            console.log('🔬 FORENSE CFDI40102: Longitud hash desencriptado:', hashDesencriptado.length);
-            console.log('🔬 FORENSE CFDI40102: Hash desencriptado (hex):', hashDesencriptado.toString('hex'));
-            
-            // CRUCIAL: Calcular SHA256 de la cadena original que el SAT extrae del XML final
-            const cadenaOriginalXMLFinal = cadenaFinalLimpia || cadenaOriginal;
-            const hashXMLFinal = crypto.createHash('sha256').update(cadenaOriginalXMLFinal, 'utf8').digest();
-            console.log('🔬 FORENSE CFDI40102: Hash cadena original firmada:', crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest().toString('hex'));
-            console.log('🔬 FORENSE CFDI40102: Hash cadena XML final (SAT):', hashXMLFinal.toString('hex'));
-            
-            // Extraer solo el hash SHA256 del DigestInfo desencriptado (bytes 19-50)
-            let hashDelSello;
-            if (hashDesencriptado.length === 51 && hashDesencriptado[0] === 0x30) {
-                // Es DigestInfo ASN.1, extraer solo el hash (últimos 32 bytes)
-                hashDelSello = hashDesencriptado.slice(19, 51);
-                console.log('🔬 FORENSE CFDI40102: Hash extraído del sello (sin ASN.1):', hashDelSello.toString('hex'));
-            } else {
-                // Es hash directo
-                hashDelSello = hashDesencriptado;
-                console.log('🔬 FORENSE CFDI40102: Hash directo del sello:', hashDelSello.toString('hex'));
-            }
-            
-            // Comparar el hash del sello vs el hash del XML final (lo que el SAT verifica)
-            const hashesCoinciden = Buffer.compare(hashDelSello, hashXMLFinal) === 0;
-            console.log('🔬 FORENSE CFDI40102: Hash sello vs XML final:', hashesCoinciden ? '✅ COINCIDEN' : '❌ DIFERENTES');
-            
-            if (!hashesCoinciden) {
-                console.error('❌ FORENSE CFDI40102: ¡DISCREPANCIA ENCONTRADA!');
-                console.error('  - Hash del sello (lo que firmamos):', hashDelSello.toString('hex'));
-                console.error('  - Hash XML final (lo que SAT verifica):', hashXMLFinal.toString('hex'));
-                console.error('  - Cadena firmada vs XML final son diferentes');
-                
-                // Comparar también con la cadena original inicial
-                const hashCadenaInicial = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest();
-                const coincidenInicial = Buffer.compare(hashDelSello, hashCadenaInicial) === 0;
-                console.error('  - Hash sello vs cadena inicial:', coincidenInicial ? '✅ COINCIDEN' : '❌ DIFERENTES');
-                
-                if (coincidenInicial) {
-                    console.error('  - PROBLEMA: XML se modificó después del sellado');
-                } else {
-                    console.error('  - PROBLEMA: Sello no corresponde a ninguna cadena');
-                }
-            } else {
-                console.log('✅ FORENSE CFDI40102: Digestión y desencriptación coinciden perfectamente');
-            }
-            
-        } catch (errorForense) {
-            console.error('❌ FORENSE CFDI40102: Error en auditoría:', errorForense.message);
-            console.error('❌ FORENSE CFDI40102: Stack trace:', errorForense.stack);
-        }
-        
-        // 12. Resultado final
-        console.log('🎉 NODECFDI: ¡SELLADO COMPLETADO EXITOSAMENTE!');
         console.log('📋 NODECFDI: Resumen final:');
         console.log('  - Sello válido: true (formato base64 verificado)');
         console.log('  - XML sellado (longitud):', xmlSellado.length);
         console.log('  - NoCertificado:', numeroCertificado);
         console.log('  - Método usado: @nodecfdi/credentials oficial');
-        console.log('  - Respuesta exitosa enviada');
+        
+        // 10. 🎯 RETORNO EXITOSO - FLUJO PYTHON REPLICADO
+        console.log('✅ SELLADO: NodeCFDI completado exitosamente');
         
         return {
             exito: true,
             xmlSellado: xmlSellado,
-            selloDigital: selloDigital,
-            numeroCertificado: numeroCertificado,
-            certificado: certificadoLimpio,
+            sello: selloDigital,
             cadenaOriginal: cadenaOriginal,
-            hashCadenaOriginal: hashCadenaLimpia,
-            hashSello: hashSello,
-            verificacionSello: true, // Formato base64 verificado
-            metodo: '@nodecfdi/credentials'
+            numeroCertificado: numeroCertificado,
+            certificado: certificadoLimpio
         };
         
     } catch (error) {
