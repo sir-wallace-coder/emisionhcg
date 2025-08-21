@@ -296,7 +296,25 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         console.log('📝 NODECFDI: Agregando sello al XML...');
         comprobante.setAttribute('Sello', selloDigital);
         
-        const xmlSellado = xmlSerializer.serializeToString(xmlDoc);
+        // CRÍTICO: Usar serialización que preserve el base64 sin escape
+        let xmlSellado = xmlSerializer.serializeToString(xmlDoc);
+        
+        // CORRECCIÓN: Reemplazar entidades HTML escapadas en el sello
+        // El XMLSerializer escapa caracteres del base64, debemos revertirlo
+        const selloEscapado = xmlSellado.match(/Sello="([^"]*)"/)?.[1];
+        if (selloEscapado && selloEscapado !== selloDigital) {
+            console.log('🔧 NODECFDI: Corrigiendo escape de caracteres en sello...');
+            console.log('🔍 NODECFDI: Sello escapado detectado:', selloEscapado.substring(0, 50) + '...');
+            
+            // Reemplazar el sello escapado con el sello original base64
+            xmlSellado = xmlSellado.replace(
+                /Sello="[^"]*"/, 
+                `Sello="${selloDigital}"`
+            );
+            
+            console.log('✅ NODECFDI: Sello corregido en XML');
+            console.log('🔍 NODECFDI: Sello final (primeros 50):', selloDigital.substring(0, 50));
+        }
         console.log('✅ NODECFDI: XML sellado generado');
         console.log('📏 NODECFDI: Longitud XML sellado:', xmlSellado.length);
         
