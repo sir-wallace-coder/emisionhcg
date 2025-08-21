@@ -82,16 +82,35 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
             llavePrivadaPem = llavePrivadaString;
         } else {
             console.log('🔧 PYTHON-BASED: Convirtiendo llave de formato binario/DER a PEM...');
-            // Convertir buffer binario a base64 y agregar headers PEM
-            const llaveBase64 = llavePrivadaBuffer.toString('base64');
+            
+            // 🧩 LIMPIAR COMPLETAMENTE LA LLAVE DE CUALQUIER HEADER EXISTENTE
+            let llaveBase64Limpia;
+            
+            // Si la llave tiene contenido mixto, extraer solo el base64 puro
+            if (llavePrivadaString.includes('BEGIN') || llavePrivadaString.includes('END')) {
+                console.log('🧩 PYTHON-BASED: Limpiando headers existentes de la llave...');
+                // Extraer solo el contenido base64, removiendo todos los headers y saltos de línea
+                llaveBase64Limpia = llavePrivadaString
+                    .replace(/-----BEGIN[^-]*-----/g, '')
+                    .replace(/-----END[^-]*-----/g, '')
+                    .replace(/\+{5}[^\+]*\+{5}/g, '') // Remover patrones como +++++BEGINRSAPRIVATEKEY+++++
+                    .replace(/[\r\n\s]/g, '') // Remover todos los espacios y saltos de línea
+                    .trim();
+            } else {
+                // Convertir buffer binario directamente a base64
+                llaveBase64Limpia = llavePrivadaBuffer.toString('base64');
+            }
+            
+            console.log('🔍 PYTHON-BASED: Base64 limpio (longitud):', llaveBase64Limpia.length);
+            console.log('🔍 PYTHON-BASED: Primeros 50 chars base64:', llaveBase64Limpia.substring(0, 50));
             
             // Formatear como PEM con headers estándar para llave privada encriptada
-            const lineas = llaveBase64.match(/.{1,64}/g) || [];
+            const lineas = llaveBase64Limpia.match(/.{1,64}/g) || [];
             llavePrivadaPem = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
                              lineas.join('\n') + 
                              '\n-----END ENCRYPTED PRIVATE KEY-----';
             
-            console.log('✅ PYTHON-BASED: Llave convertida a formato PEM con headers');
+            console.log('✅ PYTHON-BASED: Llave convertida a formato PEM con headers limpios');
         }
         
         console.log('📋 PYTHON-BASED: Certificado y llave convertidos a PEM');
