@@ -2962,14 +2962,14 @@
             document.getElementById('btnValidar').disabled = false;
         }
         
-        // Validar XMLs
+        // Validar XMLs con librería oficial NodeCFDI
         async function validarXMLs() {
             const files = document.getElementById('xmlFiles').files;
             if (files.length === 0) return;
             
             try {
                 const btnValidar = document.getElementById('btnValidar');
-                btnValidar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando...';
+                btnValidar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando con NodeCFDI...';
                 btnValidar.disabled = true;
                 
                 let validationHTML = '';
@@ -2979,27 +2979,48 @@
                     const file = files[i];
                     const xmlContent = await fileToText(file);
                     
-                    // Validación básica
-                    const isValid = xmlContent.includes('cfdi:Comprobante') || xmlContent.includes('Comprobante');
-                    const version = xmlContent.includes('Version="4.0"') ? '4.0' : '3.3';
+                    console.log(`🔍 Validando ${file.name} con librería oficial NodeCFDI...`);
                     
-                    if (isValid) {
+                    // Enviar al backend para validación con NodeCFDI
+                    const validationResult = await validarXMLConNodeCFDI(xmlContent, file.name);
+                    
+                    if (validationResult.isValid) {
                         validCount++;
+                        const warningsHTML = validationResult.warnings.length > 0 ? 
+                            `<small class="d-block text-warning"><i class="fas fa-exclamation-triangle"></i> ${validationResult.warnings.join(', ')}</small>` : '';
+                        
                         validationHTML += `
                             <div class="alert alert-success py-2">
                                 <i class="fas fa-check-circle"></i>
-                                <strong>${file.name}</strong> - CFDI ${version}
-                                <small class="d-block">XML válido y listo para importar</small>
+                                <strong>${file.name}</strong> - CFDI ${validationResult.version}
+                                <small class="d-block">✅ Validación NodeCFDI exitosa</small>
+                                ${warningsHTML}
                             </div>
                         `;
                     } else {
-                        validationHTML += `
-                            <div class="alert alert-danger py-2">
-                                <i class="fas fa-times-circle"></i>
-                                <strong>${file.name}</strong> - Error
-                                <small class="d-block">No es un XML CFDI válido</small>
-                            </div>
-                        `;
+                        // Solo permitir si el único error es vencimiento de certificado
+                        const onlyExpirationError = validationResult.errors.length === 1 && 
+                            validationResult.errors[0].toLowerCase().includes('vencido');
+                        
+                        if (onlyExpirationError) {
+                            validCount++;
+                            validationHTML += `
+                                <div class="alert alert-warning py-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>${file.name}</strong> - CFDI ${validationResult.version}
+                                    <small class="d-block">⚠️ Certificado vencido (permitido)</small>
+                                    <small class="d-block text-muted">${validationResult.errors[0]}</small>
+                                </div>
+                            `;
+                        } else {
+                            validationHTML += `
+                                <div class="alert alert-danger py-2">
+                                    <i class="fas fa-times-circle"></i>
+                                    <strong>${file.name}</strong> - Error de validación
+                                    <small class="d-block">${validationResult.errors.join(', ')}</small>
+                                </div>
+                            `;
+                        }
                     }
                 }
                 
@@ -3009,13 +3030,59 @@
                 // Habilitar importación si hay archivos válidos
                 document.getElementById('btnImportar').disabled = validCount === 0;
                 
+                if (validCount > 0) {
+                    console.log(`✅ ${validCount} XML(s) validado(s) exitosamente con NodeCFDI`);
+                } else {
+                    console.log('❌ No hay XMLs válidos para importar');
+                }
+                
             } catch (error) {
-                console.error('Error validando XMLs:', error);
+                console.error('❌ Error validando XMLs:', error);
                 alert('❌ Error validando XMLs: ' + error.message);
             } finally {
                 const btnValidar = document.getElementById('btnValidar');
                 btnValidar.innerHTML = '<i class="fas fa-check-circle"></i> Validar XMLs';
                 btnValidar.disabled = false;
+            }
+        }
+        
+        // Función para validar XML con NodeCFDI en el backend
+        async function validarXMLConNodeCFDI(xmlContent, fileName) {
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                if (!token) {
+                    throw new Error('No hay sesión activa');
+                }
+                
+                const response = await fetch('/.netlify/functions/validar-xml', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        xmlContent: xmlContent,
+                        fileName: fileName
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log(`🔍 Resultado validación NodeCFDI para ${fileName}:`, result);
+                
+                return result;
+                
+            } catch (error) {
+                console.error(`❌ Error validando ${fileName} con NodeCFDI:`, error);
+                return {
+                    isValid: false,
+                    version: 'desconocida',
+                    errors: [`Error de validación: ${error.message}`],
+                    warnings: []
+                };
             }
         }
         

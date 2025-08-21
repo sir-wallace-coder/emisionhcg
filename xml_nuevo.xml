@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Fecha="2023-06-21T08:42:34" FormaPago="099" SubTotal="1295299.20" Moneda="MXN" Total="1502547.07" TipoDeComprobante="I" Exportacion="01" MetodoPago="PPD" LugarExpedicion="44150" Serie="A" Folio="001" NoCertificado="00001000000506969930" Certificado="MIIF3zCCA8egAwIBAgIUMDAwMDEwMDAwMDA1MDY5Njk5MzAwDQYJKoZIhvcNAQELBQAwggGEMSAwHgYDVQQDDBdBVVRPUklEQUQgQ0VSVElGSUNBRE9SQTEuMCwGA1UECgwlU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEaMBgGA1UECwwRU0FULUlFUyBBdXRob3JpdHkxKjAoBgkqhkiG9w0BCQEWG2NvbnRhY3RvLnRlY25pY29Ac2F0LmdvYi5teDEmMCQGA1UECQwdQVYuIEhJREFMR08gNzcsIENPTC4gR1VFUlJFUk8xDjAMBgNVBBEMBTA2MzAwMQswCQYDVQQGEwJNWDEZMBcGA1UECAwQQ0lVREFEIERFIE1FWElDTzETMBEGA1UEBwwKQ1VBVUhURU1PQzEVMBMGA1UELRMMU0FUOTcwNzAxTk4zMVwwWgYJKoZIhvcNAQkCE01yZXNwb25zYWJsZTogQURNSU5JU1RSQUNJT04gQ0VOVFJBTCBERSBTRVJWSUNJT1MgVFJJQlVUQVJJT1MgQUwgQ09OVFJJQlVZRU5URTAeFw0yMTA0MDIxNzQ4NDhaFw0yNTA0MDIxNzQ4NDhaMIGtMRwwGgYDVQQDExNCQVNBIEdSRUVOIFNBIERFIENWMRwwGgYDVQQpExNCQVNBIEdSRUVOIFNBIERFIENWMRwwGgYDVQQKExNCQVNBIEdSRUVOIFNBIERFIENWMSUwIwYDVQQtExxCR1IxOTA5MDI4MTUgLyBCQVNBOTYwMzE0SlQxMR4wHAYDVQQFExUgLyBCQVNBOTYwMzE0TU5UUkxMMDExCjAIBgNVBAsTAUEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCIaSimxlmjgYXoaEJG1XcKVs9XAceYjtVztZqxwi2XM6eY3JXvtRZAwD24vgnLegkhVsYhn8emXkfsPx8vlI20xAF9Stu09yorCn8sFknLZelk/PkSZziTVLZWP5pxXi9U5ktrARRP9SJvQNaV0ILygb/n5b1vk2VG45pV9f9D4IdnF/KYtSq93p0IDl3KsHNgsiBNrjgayjsdeA5SacQcoq23CidX2UmaUHRZvY8OG261A20jWD2BXe9+w5MTMUA8ZGFrMyJvHSlQM3PZLkprf0En5dRnFk5GTx+lx6hBAKp9Z9Cxz1d4qW773kImdxjG/v8zQwlA4lNEZ6Npy9izAgMBAAGjHTAbMAwGA1UdEwEB/wQCMAAwCwYDVR0PBAQDAgbAMA0GCSqGSIb3DQEBCwUAA4ICAQBM4n8O96Owo443L01uwCypm+BAK6y8NnWR0GY3gY1Nkr79+selwkyUEI89nj73ya+fiTvYPBNtKUPK+K5WF3XM8syz1RjHtewo10a1aCN0eTzcMvlDtHgN3D3wVgy9jKo8HEGdQtaszhlZ0l6d8SOQoxZtxtcDpOt0YCdg/mY9pWqlpICOsIiy4HWzZNMsrHmWqodMiZP+1pXdj8WcaZ28ig5IqakdiNyb80Aitz4JPu6vzHT//QqSjLdEEeNzM+F0SiSaAMhKK/hM9PKn0iN/27pb+1dIWFjyUGhW9zNHdCvVqtEc4tEZofr92oPM+QitBZQtRNyig80j9m69YuCckYKTbRqmviAeazVdYKyRiyvD+g8eFPeNCIULuLnEBzAFJWd6kNcWqhbEwOkNqHdkDKMCX2th9PCScp/IDYp2exCxEdrSJyJfiQ9ulAre7ick6Xs0EVJ8O3XdvJ3Kkm6FpHB0kGqcRGviLkEXD3Sr61WA08mgNwmCxufrso2imlnfPF/PX7/xJPpIMEQQJpyBd7yLmkIMZqFzS6W5tzJbJPZMFvEsCLX1tLqBYkI8Q8/8o2u+vkN6wontdkEKzYIMp4lfvcge7c8DaW1JMZlVV2HJPUt2LHjv+L1DXJ6OK1rIOr+w54eUiE5/Lwxz/AO3360DyQm+Q0tK/44PCReZNg==" Sello="OPLf/hg8KrKQQByXtAylQhBF+X0zb4nqmiKe4etWKKa4EaBoZWZQL7lxPqRDkF2sK/GZSGN6syuG5PO5En2X0QI5fQZZ6qwLy730Qbv5VscF3FQ6ISEcGG1t+83cmla/DU009TP4AHRToMkO8GE+tfFfJ6aj1qfQo9y96KRunlhy+nJKy9lFCrgyhb8cu76At95oMI5GX44BNdSPjtdy4sLWw6khrEoXAkLYICJCX366TV1GxHhyNn6Gngso1OG6vTKEftkczK5dTuNy61NzX9mYuxxaOtTLAEVK+L/6mRkgbrOe83NmBDccfU5+OW9UgCSTvEubtzQFCYFd0DEUow==">
+  <cfdi:Emisor Rfc="BGR190902815" Nombre="BASA GREEN" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="GFB1301306Z8" Nombre="GRUPO FRANCO BEST SERVICIOS" DomicilioFiscalReceptor="10200" RegimenFiscalReceptor="601" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="47131800" Cantidad="1" ClaveUnidad="E48" Descripcion="47131800" ValorUnitario="1295299.20" Importe="1295299.20" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="1295299.20" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="207247.87"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="207247.872000">
+    <cfdi:Traslados>
+      <cfdi:Traslado Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="207247.87"/>
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+</cfdi:Comprobante>

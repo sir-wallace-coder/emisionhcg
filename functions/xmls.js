@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
       case 'PUT':
         return await updateXML(userId, body, headers);
       case 'DELETE':
-        const xmlId = event.queryStringParameters?.id;
+        const xmlId = event.queryStringParameters?.id || body.xmlId;
         return await deleteXML(userId, xmlId, headers);
       default:
         return {
