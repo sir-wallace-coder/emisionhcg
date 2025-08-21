@@ -252,34 +252,44 @@ exports.handler = async (event, context) => {
           vigencia_hasta: emisor.vigencia_hasta,
           numero_certificado: emisor.numero_certificado
         }
-      };
+  };
 
-      console.log(' SELLADO ENDPOINT: Enviando respuesta exitosa');
-      console.log('📤 SELLADO ENDPOINT: Enviando respuesta exitosa');
+  console.log(' SELLADO ENDPOINT: Enviando respuesta exitosa');
+  console.log(' SELLADO ENDPOINT: Enviando respuesta exitosa');
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(respuesta)
-      };
+  return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(respuesta)
+  };
 
-    } catch (selladoError) {
-      console.error('❌ SELLADO ENDPOINT: Error durante el sellado:', selladoError);
-      console.error('❌ SELLADO ENDPOINT: Stack trace:', selladoError.stack);
-      
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
+} catch (selladoError) {
+  console.error(' SELLADO ENDPOINT: Error durante el sellado:', selladoError);
+  console.error(' SELLADO ENDPOINT: Stack trace:', selladoError.stack);
+  
+  return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
           error: 'Error durante el proceso de sellado: ' + selladoError.message,
           tipo_error: 'SellFail',
           version: version,
           emisor_rfc: emisor?.rfc || 'unknown'
-        })
-      };
-    }
+      })
+  };
+}
 
-  } catch (error) {
+} catch (error) {
+  console.error(' SELLADO ENDPOINT: Error general:', error);
+  console.error(' SELLADO ENDPOINT: Stack trace:', error.stack);
+  console.error(' SELLADO ENDPOINT: Error name:', error.name);
+  console.error(' SELLADO ENDPOINT: Error message:', error.message);
+  
+  // Determinar tipo de error para mejor debugging
+  let tipoError = 'GeneralError';
+  let detalleError = error.message || 'Error desconocido';
+  
+  if (error.name === 'JsonWebTokenError') {
     console.error('❌ SELLADO ENDPOINT: Error general:', error);
     console.error('❌ SELLADO ENDPOINT: Stack trace:', error.stack);
     console.error('❌ SELLADO ENDPOINT: Error name:', error.name);

@@ -220,18 +220,17 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         if (!llaveValidada) {
             console.error('❌ PYTHON-BASED: TODOS LOS MÉTODOS NODE.JS CRYPTO FALLARON');
             console.error('🔍 PYTHON-BASED: Incompatibilidad detectada entre Node.js crypto y cryptography de Python');
-            console.error('🔄 PYTHON-BASED: Intentando fallback con OpenSSL CLI (como en Python)...');
+            console.error('🔄 PYTHON-BASED: Intentando fallback con node-forge (JavaScript puro)...');
             
-            // 🎯 FALLBACK REAL: Usar OpenSSL CLI como en el código Python exitoso
-            const llaveValidadaOpenSSL = await intentarFallbackOpenSSL(llavePrivadaBuffer, passwordLlave);
-            if (llaveValidadaOpenSSL) {
-                console.log('✅ PYTHON-BASED: Fallback OpenSSL CLI exitoso');
-                llaveValidada = llaveValidadaOpenSSL;
-                metodoExitoso = 'OpenSSL CLI (fallback Python)';
+            // 🎯 FALLBACK REAL: Usar node-forge (JavaScript puro) como en el código Python exitoso
+            const llaveValidadaForge = await intentarFallbackNodeForge(llavePrivadaBuffer, passwordLlave);
+            if (llaveValidadaForge) {
+                console.log('✅ PYTHON-BASED: Fallback node-forge exitoso');
+                llaveValidada = llaveValidadaForge;
             } else {
-                console.error('❌ PYTHON-BASED: Fallback OpenSSL CLI también falló');
+                console.error('❌ PYTHON-BASED: Fallback node-forge también falló');
                 console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
-                throw new Error('No se pudo validar la llave privada con ningún método (Node.js crypto + OpenSSL CLI). Verifique la contraseña.');
+                throw new Error('No se pudo validar la llave privada con ningún método (Node.js crypto + node-forge). Verifique la contraseña.');
             }
         }
         
@@ -415,88 +414,39 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
     }
 }
 
-// 🎯 FUNCIÓN DE FALLBACK OPENSSL CLI (replicando código Python exitoso)
-async function intentarFallbackOpenSSL(llavePrivadaBuffer, passwordLlave) {
-    console.log('🔄 FALLBACK: Iniciando conversión con OpenSSL CLI (método Python)...');
-    
-    const { spawn } = require('child_process');
-    const fs = require('fs').promises;
-    const path = require('path');
-    const os = require('os');
+// 🎯 FUNCIÓN DE FALLBACK NODE-FORGE (JavaScript puro, compatible serverless)
+async function intentarFallbackNodeForge(llavePrivadaBuffer, passwordLlave) {
+    console.log('🔄 FALLBACK: Iniciando conversión con node-forge (JavaScript puro)...');
     
     try {
-        // Crear archivos temporales
-        const tempDir = os.tmpdir();
-        const tempDerPath = path.join(tempDir, `temp_key_${Date.now()}.der`);
-        const tempPemPath = path.join(tempDir, `temp_key_${Date.now()}.pem`);
+        const forge = require('node-forge');
         
-        // Escribir la llave DER al archivo temporal
-        await fs.writeFile(tempDerPath, llavePrivadaBuffer);
-        console.log('📁 FALLBACK: Archivo DER temporal creado');
+        // Convertir buffer DER a ASN.1
+        console.log('🔧 FALLBACK: Convirtiendo DER a ASN.1...');
+        const asn1 = forge.asn1.fromDer(llavePrivadaBuffer.toString('binary'));
         
-        // Ejecutar conversión DER->PEM con OpenSSL (exacto como Python)
-        const opensslArgs = [
-            'rsa',
-            '-in', tempDerPath,
-            '-inform', 'DER',
-            '-out', tempPemPath,
-            '-outform', 'PEM',
-            '-passin', `pass:${passwordLlave}`
-        ];
+        // Desencriptar la llave privada usando la contraseña
+        console.log('🔐 FALLBACK: Desencriptando llave privada con contraseña...');
+        const privateKey = forge.pki.decryptRsaPrivateKey(asn1, passwordLlave);
         
-        console.log('🔧 FALLBACK: Ejecutando conversión OpenSSL...');
-        const conversionExitosa = await new Promise((resolve) => {
-            const proceso = spawn('openssl', opensslArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
-            
-            let stderr = '';
-            proceso.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-            
-            proceso.on('close', (code) => {
-                if (code === 0) {
-                    console.log('✅ FALLBACK: Conversión DER->PEM exitosa');
-                    resolve(true);
-                } else {
-                    console.error('❌ FALLBACK: Error en conversión OpenSSL:', stderr);
-                    resolve(false);
-                }
-            });
-            
-            proceso.on('error', (error) => {
-                console.error('❌ FALLBACK: OpenSSL no disponible:', error.message);
-                resolve(false);
-            });
-        });
-        
-        if (!conversionExitosa) {
-            // Limpiar archivos temporales
-            try {
-                await fs.unlink(tempDerPath);
-                await fs.unlink(tempPemPath);
-            } catch {}
+        if (!privateKey) {
+            console.error('❌ FALLBACK: No se pudo desencriptar la llave con node-forge');
             return null;
         }
         
-        // Leer la llave PEM convertida
-        const llaveConvertidaPem = await fs.readFile(tempPemPath, 'utf8');
-        console.log('📖 FALLBACK: Llave PEM convertida leída');
-        
-        // Limpiar archivos temporales
-        try {
-            await fs.unlink(tempDerPath);
-            await fs.unlink(tempPemPath);
-        } catch {}
+        // Convertir a PEM
+        console.log('📝 FALLBACK: Convirtiendo a formato PEM...');
+        const pemPrivateKey = forge.pki.privateKeyToPem(privateKey);
         
         // Probar la llave convertida con Node.js crypto
         try {
             const crypto = require('crypto');
             const testSign = crypto.createSign('RSA-SHA256');
             testSign.update('test');
-            testSign.sign({ key: llaveConvertidaPem }); // Sin contraseña, ya desencriptada
+            testSign.sign({ key: pemPrivateKey }); // Sin contraseña, ya desencriptada
             
             console.log('✅ FALLBACK: Llave convertida validada con Node.js crypto');
-            return { key: llaveConvertidaPem }; // Sin contraseña, ya desencriptada por OpenSSL
+            return { key: pemPrivateKey }; // Sin contraseña, ya desencriptada por node-forge
             
         } catch (error) {
             console.error('❌ FALLBACK: Llave convertida aún no funciona:', error.message);
@@ -504,8 +454,37 @@ async function intentarFallbackOpenSSL(llavePrivadaBuffer, passwordLlave) {
         }
         
     } catch (error) {
-        console.error('❌ FALLBACK: Error general en fallback OpenSSL:', error.message);
-        return null;
+        console.error('❌ FALLBACK: Error en fallback node-forge:', error.message);
+        
+        // Intentar método alternativo: PKCS#8
+        try {
+            console.log('🔄 FALLBACK: Intentando método PKCS#8...');
+            const forge = require('node-forge');
+            
+            const asn1 = forge.asn1.fromDer(llavePrivadaBuffer.toString('binary'));
+            const privateKeyInfo = forge.pki.decryptPrivateKeyInfo(asn1, passwordLlave);
+            const privateKey = forge.pki.privateKeyFromAsn1(privateKeyInfo.privateKey);
+            
+            if (!privateKey) {
+                console.error('❌ FALLBACK: Método PKCS#8 también falló');
+                return null;
+            }
+            
+            const pemPrivateKey = forge.pki.privateKeyToPem(privateKey);
+            
+            // Validar con Node.js crypto
+            const crypto = require('crypto');
+            const testSign = crypto.createSign('RSA-SHA256');
+            testSign.update('test');
+            testSign.sign({ key: pemPrivateKey });
+            
+            console.log('✅ FALLBACK: Método PKCS#8 exitoso');
+            return { key: pemPrivateKey };
+            
+        } catch (pkcs8Error) {
+            console.error('❌ FALLBACK: Método PKCS#8 también falló:', pkcs8Error.message);
+            return null;
+        }
     }
 }
 
