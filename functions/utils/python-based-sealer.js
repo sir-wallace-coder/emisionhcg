@@ -66,10 +66,22 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         console.log('  - Certificado PEM (longitud):', certificadoPem.length);
         console.log('  - Llave privada PEM (longitud):', llavePrivadaPem.length);
         
+        // 🔍 DEBUG FORENSE: Analizar formato de llave privada
+        console.log('🔍 PYTHON-BASED: Analizando formato de llave privada...');
+        console.log('  - Primeros 100 chars:', llavePrivadaPem.substring(0, 100));
+        console.log('  - Últimos 100 chars:', llavePrivadaPem.substring(llavePrivadaPem.length - 100));
+        console.log('  - Contiene BEGIN PRIVATE KEY:', llavePrivadaPem.includes('BEGIN PRIVATE KEY'));
+        console.log('  - Contiene BEGIN RSA PRIVATE KEY:', llavePrivadaPem.includes('BEGIN RSA PRIVATE KEY'));
+        console.log('  - Contiene ENCRYPTED:', llavePrivadaPem.includes('ENCRYPTED'));
+        console.log('  - Encoding detectado:', Buffer.isBuffer(llavePrivadaBuffer) ? 'Buffer válido' : 'Buffer inválido');
+        
         // 🔐 PROCESAR LLAVE PRIVADA ENCRIPTADA SAT (siempre encriptada con contraseña)
         console.log('🔐 PYTHON-BASED: Procesando llave privada encriptada SAT...');
         
         // Las llaves SAT siempre están encriptadas, usar objeto con key y passphrase
+        console.log('🔑 PYTHON-BASED: Preparando objeto de llave con contraseña...');
+        console.log('  - Contraseña proporcionada:', passwordLlave ? 'SÍ (longitud: ' + passwordLlave.length + ')' : 'NO');
+        
         const llavePrivadaParaFirmar = {
             key: llavePrivadaPem,
             passphrase: passwordLlave || ''
@@ -77,6 +89,7 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         
         // Validar que la llave es válida con la contraseña
         try {
+            console.log('🧪 PYTHON-BASED: Probando validación de llave privada...');
             const testSign = crypto.createSign('RSA-SHA256');
             testSign.update('test', 'utf8');
             testSign.sign(llavePrivadaParaFirmar); // Esto lanzará error si la llave/contraseña es inválida
@@ -85,7 +98,18 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
             
         } catch (errorLlave) {
             console.error('❌ PYTHON-BASED: Error validando llave privada SAT:', errorLlave.message);
+            console.error('❌ PYTHON-BASED: Código de error:', errorLlave.code);
+            console.error('❌ PYTHON-BASED: Stack trace:', errorLlave.stack);
             console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
+            
+            // Intentar diagnóstico adicional
+            if (errorLlave.message.includes('unsupported')) {
+                console.error('🔍 PYTHON-BASED: Error de formato no soportado - posible problema con encoding o formato de llave');
+            }
+            if (errorLlave.message.includes('bad decrypt')) {
+                console.error('🔍 PYTHON-BASED: Error de desencriptación - contraseña incorrecta');
+            }
+            
             return { exito: false, error: 'Error validando llave privada SAT (verifique contraseña): ' + errorLlave.message };
         }
         
