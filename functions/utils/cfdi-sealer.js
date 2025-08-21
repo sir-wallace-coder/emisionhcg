@@ -100,6 +100,13 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
 function construirCadenaOriginal40(comprobante) {
     let cadena = '||';
     
+    // DIAGNÓSTICO CFDI40102: Logging de atributos críticos
+    console.log('🔍 DIAGNÓSTICO CFDI40102 - Atributos del XML importado:');
+    console.log('   SubTotal:', comprobante.getAttribute('SubTotal'));
+    console.log('   Total:', comprobante.getAttribute('Total'));
+    console.log('   Version:', comprobante.getAttribute('Version'));
+    console.log('   Fecha:', comprobante.getAttribute('Fecha'));
+    
     // ORDEN EXACTO según XSLT SAT oficial para CFDI 4.0
     // Cada atributo se procesa según su presencia y requerimientos SAT
     
