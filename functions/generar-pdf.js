@@ -96,7 +96,8 @@ exports.handler = async (event, context) => {
 
         // Verificar configuración de API
         const redocApiKey = process.env.REDOC_API_KEY;
-        const redocApiUrl = process.env.REDOC_API_URL || 'https://redoc.mx/api/pdf';
+        // URL base correcta de la API de redoc.mx según documentación oficial
+        const redocApiUrl = process.env.REDOC_API_URL || 'https://api.redoc.mx/v1/pdf';
 
         if (!redocApiKey) {
             console.error('❌ GENERAR PDF: API Key de redoc.mx no configurada');
