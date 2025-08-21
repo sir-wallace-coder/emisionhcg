@@ -53,20 +53,17 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         // 3. Crear credencial NodeCfdi desde archivos base64
         console.log('🔐 NODECFDI: Creando credencial desde archivos CSD...');
         
-        // Convertir base64 a Buffer (formato correcto para NodeCfdi)
-        const certBuffer = Buffer.from(certificadoCer, 'base64');
-        const keyBuffer = Buffer.from(llavePrivadaKey, 'base64');
+        // NodeCfdi espera strings base64 directos, no Buffers
+        console.log('📋 NODECFDI: Usando archivos CSD en formato base64 string');
+        console.log('  - Certificado (longitud base64):', certificadoCer.length);
+        console.log('  - Llave privada (longitud base64):', llavePrivadaKey.length);
         
-        console.log('📋 NODECFDI: Archivos CSD convertidos a Buffer');
-        console.log('  - Certificado (longitud):', certBuffer.length);
-        console.log('  - Llave privada (longitud):', keyBuffer.length);
-        
-        // Verificar que los buffers no estén vacíos
-        if (certBuffer.length === 0) {
-            throw new Error('Certificado vacío después de conversión base64');
+        // Verificar que los strings base64 no estén vacíos
+        if (!certificadoCer || certificadoCer.length === 0) {
+            throw new Error('Certificado base64 vacío o no proporcionado');
         }
-        if (keyBuffer.length === 0) {
-            throw new Error('Llave privada vacía después de conversión base64');
+        if (!llavePrivadaKey || llavePrivadaKey.length === 0) {
+            throw new Error('Llave privada base64 vacía o no proporcionada');
         }
         
         // 🚨 CRÍTICO: Crear credencial NodeCfdi (PERMITE CERTIFICADOS VENCIDOS)
@@ -74,7 +71,7 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         let credential;
         
         try {
-            credential = Credential.create(certBuffer, keyBuffer, passwordLlave);
+            credential = Credential.create(certificadoCer, llavePrivadaKey, passwordLlave);
             console.log('✅ NODECFDI: Credencial creada exitosamente');
         } catch (error) {
             console.error('❌ NODECFDI: Error creando credencial:', error.message);
