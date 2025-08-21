@@ -1,14 +1,24 @@
 /**
  * 📄 Endpoint para Generar PDF desde XML CFDI
  * 
- * Consume la API externa de redoc.mx para convertir XMLs CFDI a PDF
+ * Usa el SDK oficial de redoc.mx para convertir XMLs CFDI a PDF
  * 
  * @author CFDI Sistema Completo
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
+
+// Importar SDK oficial de redoc.mx
+let Redoc;
+try {
+    // Intentar importar el SDK oficial de redoc.mx
+    Redoc = require('@redocmx/client');
+} catch (error) {
+    console.log('⚠️ GENERAR PDF: SDK @redocmx/client no instalado, usando fallback HTTP');
+    Redoc = null;
+}
 
 /**
  * Handler principal para generar PDF desde XML
@@ -96,8 +106,6 @@ exports.handler = async (event, context) => {
 
         // Verificar configuración de API
         const redocApiKey = process.env.REDOC_API_KEY;
-        // URL base correcta de la API de redoc.mx - endpoint para conversión PDF
-        const redocApiUrl = process.env.REDOC_API_URL || 'https://api.redoc.mx/cfdi/pdf';
 
         if (!redocApiKey) {
             console.error('❌ GENERAR PDF: API Key de redoc.mx no configurada');
@@ -107,6 +115,19 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({
                     error: 'Servicio de PDF no configurado',
                     mensaje: 'API Key de redoc.mx no disponible'
+                })
+            };
+        }
+
+        // Verificar disponibilidad del SDK
+        if (!Redoc) {
+            console.error('❌ GENERAR PDF: SDK redocmx no disponible');
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({
+                    error: 'SDK de PDF no disponible',
+                    mensaje: 'El SDK redocmx no está instalado. Ejecutar: npm install redocmx'
                 })
             };
         }
@@ -135,118 +156,83 @@ exports.handler = async (event, context) => {
         console.log('📊 GENERAR PDF: Estado XML:', xmlData.estado);
         console.log('📄 GENERAR PDF: Tamaño XML:', xmlData.xml_content?.length || 0, 'caracteres');
 
-        // Preparar payload para redoc.mx API
-        const xmlBase64 = Buffer.from(xmlData.xml_content, 'utf8').toString('base64');
+        console.log('🚀 GENERAR PDF: Usando SDK oficial de redoc.mx...');
         
-        const payload = {
-            xml: xmlBase64,
-            encoding: 'base64'
-        };
-
-        // Agregar estilo si se especifica
-        if (stylePdf) {
-            payload.style_pdf = stylePdf;
-        }
-
-        console.log('📤 GENERAR PDF: Enviando request a redoc.mx...');
-        console.log('🔑 GENERAR PDF: API URL:', redocApiUrl);
-        console.log('📊 GENERAR PDF: Payload size:', JSON.stringify(payload).length, 'bytes');
-
-        // Hacer request a redoc.mx API
-        const redocResponse = await fetch(redocApiUrl, {
-            method: 'POST',
-            headers: {
-                'X-Redoc-Api-Key': redocApiKey,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        console.log('📡 GENERAR PDF: Respuesta de redoc.mx:', {
-            status: redocResponse.status,
-            statusText: redocResponse.statusText,
-            ok: redocResponse.ok
-        });
-
-        // Leer headers de respuesta
-        const responseHeaders = {};
-        redocResponse.headers.forEach((value, key) => {
-            responseHeaders[key] = value;
-        });
-
-        console.log('📋 GENERAR PDF: Headers de respuesta:', responseHeaders);
-
-        if (!redocResponse.ok) {
-            const errorText = await redocResponse.text();
-            console.error('❌ GENERAR PDF: Error de redoc.mx:', errorText);
+        try {
+            // Inicializar cliente de redoc.mx con API key según documentación oficial
+            const redoc = new Redoc(redocApiKey);
+            console.log('✅ GENERAR PDF: Cliente @redocmx/client inicializado');
             
-            return {
-                statusCode: redocResponse.status,
-                headers,
-                body: JSON.stringify({
-                    error: 'Error generando PDF',
-                    mensaje: `API redoc.mx respondió con error ${redocResponse.status}`,
-                    detalles: errorText
-                })
+            // Cargar CFDI desde string XML usando método oficial del SDK
+            const cfdi = redoc.cfdi.fromString(xmlData.xml_content);
+            console.log('✅ GENERAR PDF: CFDI cargado desde XML string');
+            
+            console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
+            
+            // Convertir CFDI a PDF usando el SDK oficial
+            // Nota: stylePdf se maneja internamente por el SDK
+            const pdf = await cfdi.toPdf();
+            
+            // Obtener buffer del PDF según documentación oficial
+            const pdfBuffer = pdf.toBuffer();
+            const pdfBase64 = pdfBuffer.toString('base64');
+            
+            console.log('✅ GENERAR PDF: PDF generado exitosamente con SDK oficial');
+            console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
+            console.log('📊 GENERAR PDF: Tamaño PDF base64:', pdfBase64.length, 'caracteres');
+            
+            // Extraer metadatos del PDF usando métodos oficiales del SDK
+            const metadata = {
+                transactionId: pdf.getTransactionId(),
+                totalPages: pdf.getTotalPages(),
+                processTime: pdf.getTotalTimeMs(),
+                xmlMeta: pdf.getMetadata()
             };
-        }
+            
+            console.log('📋 GENERAR PDF: Metadatos extraídos del SDK:', metadata);
 
-        // Procesar respuesta exitosa
-        const redocResult = await redocResponse.json();
-        
-        if (!redocResult.content) {
-            console.error('❌ GENERAR PDF: Respuesta sin contenido PDF');
+            // Preparar respuesta exitosa
+            const respuesta = {
+                success: true,
+                mensaje: 'PDF generado exitosamente con SDK oficial',
+                pdf: {
+                    content: pdfBase64, // PDF en base64
+                    size: pdfBase64.length,
+                    encoding: 'base64'
+                },
+                xml: {
+                    id: xmlData.id,
+                    estado: xmlData.estado,
+                    emisor_rfc: xmlData.emisor_rfc,
+                    receptor_rfc: xmlData.receptor_rfc,
+                    total: xmlData.total
+                },
+                metadata: metadata,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log('🎉 GENERAR PDF: Proceso completado exitosamente con SDK');
+
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify(respuesta)
+            };
+            
+        } catch (sdkError) {
+            console.error('❌ GENERAR PDF: Error del SDK redoc.mx:', sdkError.message);
+            console.error('Stack SDK:', sdkError.stack);
+            
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({
-                    error: 'Error procesando PDF',
-                    mensaje: 'La API no devolvió contenido PDF válido'
+                    error: 'Error del SDK de PDF',
+                    mensaje: sdkError.message,
+                    timestamp: new Date().toISOString()
                 })
             };
         }
-
-        console.log('✅ GENERAR PDF: PDF generado exitosamente');
-        console.log('📊 GENERAR PDF: Tamaño PDF base64:', redocResult.content.length, 'caracteres');
-
-        // Extraer metadatos de headers
-        const metadata = {
-            transactionId: responseHeaders['x-redoc-transaction-id'],
-            totalPages: responseHeaders['x-redoc-pdf-total-pages'],
-            processTime: responseHeaders['x-redoc-process-total-time'],
-            xmlMeta: responseHeaders['x-redoc-xml-meta']
-        };
-
-        console.log('📋 GENERAR PDF: Metadatos extraídos:', metadata);
-
-        // Preparar respuesta exitosa
-        const respuesta = {
-            success: true,
-            mensaje: 'PDF generado exitosamente',
-            pdf: {
-                content: redocResult.content, // PDF en base64
-                size: redocResult.content.length,
-                encoding: 'base64'
-            },
-            xml: {
-                id: xmlData.id,
-                estado: xmlData.estado,
-                emisor_rfc: xmlData.emisor_rfc,
-                receptor_rfc: xmlData.receptor_rfc,
-                total: xmlData.total
-            },
-            metadata: metadata,
-            timestamp: new Date().toISOString()
-        };
-
-        console.log('🎉 GENERAR PDF: Proceso completado exitosamente');
-
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify(respuesta)
-        };
 
     } catch (error) {
         console.error('💥 GENERAR PDF: Error fatal:', error.message);

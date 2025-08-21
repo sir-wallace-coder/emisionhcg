@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@nodecfdi/credentials": "^2.0.3",
+    "@redocmx/client": "^0.0.4",
     "@supabase/supabase-js": "^2.55.0",
     "@xmldom/xmldom": "^0.8.11",
     "bcryptjs": "^2.4.3",
