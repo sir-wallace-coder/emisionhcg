@@ -497,12 +497,13 @@ async function updateXML(userId, data, headers) {
       xml_content_length: updateData.xml_content ? updateData.xml_content.length : 0
     });
 
-    // Actualizar XML en la base de datos
+    // 🌐 ACCESO GLOBAL: Actualizar XML sin restricción por usuario
+    console.log('🌐 UPDATE XML: Acceso global habilitado - sin filtro por usuario');
     const { data: result, error } = await supabase
       .from('xmls_generados')
       .update(updateData)
       .eq('id', id)
-      .eq('usuario_id', userId)
+      // .eq('usuario_id', userId) // ❌ REMOVIDO: Sin filtro por usuario
       .select();
 
     if (error) {
