@@ -218,10 +218,21 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         }
         
         if (!llaveValidada) {
-            console.error('❌ PYTHON-BASED: TODOS LOS MÉTODOS FALLARON (igual que en Python)');
-            console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
-            console.error('🔍 PYTHON-BASED: Error de formato no soportado - posible problema con encoding, formato de llave o contraseña');
-            throw new Error('No se pudo validar la llave privada con ningún método. Verifique la contraseña.');
+            console.error('❌ PYTHON-BASED: TODOS LOS MÉTODOS NODE.JS CRYPTO FALLARON');
+            console.error('🔍 PYTHON-BASED: Incompatibilidad detectada entre Node.js crypto y cryptography de Python');
+            console.error('🔄 PYTHON-BASED: Intentando fallback con OpenSSL CLI (como en Python)...');
+            
+            // 🎯 FALLBACK REAL: Usar OpenSSL CLI como en el código Python exitoso
+            const llaveValidadaOpenSSL = await intentarFallbackOpenSSL(llavePrivadaBuffer, passwordLlave);
+            if (llaveValidadaOpenSSL) {
+                console.log('✅ PYTHON-BASED: Fallback OpenSSL CLI exitoso');
+                llaveValidada = llaveValidadaOpenSSL;
+                metodoExitoso = 'OpenSSL CLI (fallback Python)';
+            } else {
+                console.error('❌ PYTHON-BASED: Fallback OpenSSL CLI también falló');
+                console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
+                throw new Error('No se pudo validar la llave privada con ningún método (Node.js crypto + OpenSSL CLI). Verifique la contraseña.');
+            }
         }
         
         console.log(`🎯 PYTHON-BASED: Usando método exitoso: "${metodoExitoso}" (replicando Python)`);
@@ -401,6 +412,100 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
             exito: false,
             error: 'Error en sellado basado en Python: ' + error.message
         };
+    }
+}
+
+// 🎯 FUNCIÓN DE FALLBACK OPENSSL CLI (replicando código Python exitoso)
+async function intentarFallbackOpenSSL(llavePrivadaBuffer, passwordLlave) {
+    console.log('🔄 FALLBACK: Iniciando conversión con OpenSSL CLI (método Python)...');
+    
+    const { spawn } = require('child_process');
+    const fs = require('fs').promises;
+    const path = require('path');
+    const os = require('os');
+    
+    try {
+        // Crear archivos temporales
+        const tempDir = os.tmpdir();
+        const tempDerPath = path.join(tempDir, `temp_key_${Date.now()}.der`);
+        const tempPemPath = path.join(tempDir, `temp_key_${Date.now()}.pem`);
+        
+        // Escribir la llave DER al archivo temporal
+        await fs.writeFile(tempDerPath, llavePrivadaBuffer);
+        console.log('📁 FALLBACK: Archivo DER temporal creado');
+        
+        // Ejecutar conversión DER->PEM con OpenSSL (exacto como Python)
+        const opensslArgs = [
+            'rsa',
+            '-in', tempDerPath,
+            '-inform', 'DER',
+            '-out', tempPemPath,
+            '-outform', 'PEM',
+            '-passin', `pass:${passwordLlave}`
+        ];
+        
+        console.log('🔧 FALLBACK: Ejecutando conversión OpenSSL...');
+        const conversionExitosa = await new Promise((resolve) => {
+            const proceso = spawn('openssl', opensslArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
+            
+            let stderr = '';
+            proceso.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+            
+            proceso.on('close', (code) => {
+                if (code === 0) {
+                    console.log('✅ FALLBACK: Conversión DER->PEM exitosa');
+                    resolve(true);
+                } else {
+                    console.error('❌ FALLBACK: Error en conversión OpenSSL:', stderr);
+                    resolve(false);
+                }
+            });
+            
+            proceso.on('error', (error) => {
+                console.error('❌ FALLBACK: OpenSSL no disponible:', error.message);
+                resolve(false);
+            });
+        });
+        
+        if (!conversionExitosa) {
+            // Limpiar archivos temporales
+            try {
+                await fs.unlink(tempDerPath);
+                await fs.unlink(tempPemPath);
+            } catch {}
+            return null;
+        }
+        
+        // Leer la llave PEM convertida
+        const llaveConvertidaPem = await fs.readFile(tempPemPath, 'utf8');
+        console.log('📖 FALLBACK: Llave PEM convertida leída');
+        
+        // Limpiar archivos temporales
+        try {
+            await fs.unlink(tempDerPath);
+            await fs.unlink(tempPemPath);
+        } catch {}
+        
+        // Probar la llave convertida con Node.js crypto
+        try {
+            const crypto = require('crypto');
+            const testSign = crypto.createSign('RSA-SHA256');
+            testSign.update('test');
+            testSign.sign({ key: llaveConvertidaPem }); // Sin contraseña, ya desencriptada
+            
+            console.log('✅ FALLBACK: Llave convertida validada con Node.js crypto');
+            return { key: llaveConvertidaPem }; // Sin contraseña, ya desencriptada por OpenSSL
+            
+        } catch (error) {
+            console.error('❌ FALLBACK: Llave convertida aún no funciona:', error.message);
+            return null;
+        }
+        
+    } catch (error) {
+        console.error('❌ FALLBACK: Error general en fallback OpenSSL:', error.message);
+        return null;
     }
 }
 
