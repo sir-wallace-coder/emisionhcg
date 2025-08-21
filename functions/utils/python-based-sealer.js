@@ -153,65 +153,73 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         // 🔐 PROCESAR LLAVE PRIVADA ENCRIPTADA SAT (siempre encriptada con contraseña)
         console.log('🔐 PYTHON-BASED: Procesando llave privada encriptada SAT...');
         
-        // 🔑 PYTHON-BASED: Preparando múltiples formatos de llave...
-        console.log('🔑 PYTHON-BASED: Preparando múltiples formatos de llave...');
+        // 🔑 PYTHON-BASED: Replicando lógica exacta del código Python exitoso...
+        console.log('🔑 PYTHON-BASED: Replicando lógica exacta del código Python exitoso...');
         console.log('    - Contraseña proporcionada:', passwordLlave ? 'SÍ' : 'NO', `(longitud: ${passwordLlave ? passwordLlave.length : 0})`);
         
-        // 🧪 PYTHON-BASED: Probando múltiples formatos de llave privada...
-        console.log('🧪 PYTHON-BASED: Probando múltiples formatos de llave privada...');
+        // 🧪 PYTHON-BASED: Probando métodos de carga como en Python (orden exacto)...
+        console.log('🧪 PYTHON-BASED: Probando métodos de carga como en Python (orden exacto)...');
         
-        const formatosLlave = [
-            // Formato 1: ENCRYPTED PRIVATE KEY (actual)
+        // Métodos basados en el código Python exitoso (mismo orden de prioridad)
+        const metodosLlave = [
+            // Método 1: DER con contraseña (método principal en Python)
             {
-                nombre: 'ENCRYPTED PRIVATE KEY',
-                pem: llavePrivadaPem,
+                nombre: 'DER con contraseña',
+                objeto: { key: llavePrivadaBuffer, passphrase: passwordLlave, format: 'der' }
+            },
+            // Método 2: PEM con contraseña
+            {
+                nombre: 'PEM con contraseña', 
                 objeto: { key: llavePrivadaPem, passphrase: passwordLlave }
             },
-            // Formato 2: RSA PRIVATE KEY
+            // Método 3: DER sin contraseña (fallback)
             {
-                nombre: 'RSA PRIVATE KEY', 
-                pem: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'RSA PRIVATE KEY'),
-                objeto: { key: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'RSA PRIVATE KEY'), passphrase: passwordLlave }
+                nombre: 'DER sin contraseña',
+                objeto: { key: llavePrivadaBuffer, format: 'der' }
             },
-            // Formato 3: PRIVATE KEY
+            // Método 4: PEM sin contraseña (fallback)
             {
-                nombre: 'PRIVATE KEY',
-                pem: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'PRIVATE KEY'),
-                objeto: { key: llavePrivadaPem.replace('ENCRYPTED PRIVATE KEY', 'PRIVATE KEY'), passphrase: passwordLlave }
+                nombre: 'PEM sin contraseña',
+                objeto: { key: llavePrivadaPem }
+            },
+            // Método 5: Formato string directo (como último recurso)
+            {
+                nombre: 'String directo con contraseña',
+                objeto: { key: llavePrivadaPem.toString(), passphrase: passwordLlave }
             }
         ];
         
         let llaveValidada = null;
-        let formatoExitoso = null;
+        let metodoExitoso = null;
         
-        for (const formato of formatosLlave) {
+        for (const metodo of metodosLlave) {
             try {
-                console.log(`🔍 PYTHON-BASED: Probando formato ${formato.nombre}...`);
+                console.log(`🔍 PYTHON-BASED: Probando método "${metodo.nombre}"...`);
                 
-                // Crear un objeto Sign para probar la llave
+                // Crear un objeto Sign para probar la llave (igual que Python)
                 const testSign = crypto.createSign('RSA-SHA256');
                 testSign.update('test');
-                testSign.sign(formato.objeto); // Esto debería fallar si la llave es inválida
+                testSign.sign(metodo.objeto); // Esto debería fallar si la llave es inválida
                 
-                console.log(`✅ PYTHON-BASED: Formato ${formato.nombre} validado exitosamente`);
-                llaveValidada = formato.objeto;
-                formatoExitoso = formato.nombre;
+                console.log(`✅ PYTHON-BASED: Método "${metodo.nombre}" validado exitosamente`);
+                llaveValidada = metodo.objeto;
+                metodoExitoso = metodo.nombre;
                 break;
                 
             } catch (error) {
-                console.log(`❌ PYTHON-BASED: Formato ${formato.nombre} falló:`, error.message);
+                console.log(`❌ PYTHON-BASED: Método "${metodo.nombre}" falló: ${error.message.substring(0, 60)}...`);
                 continue;
             }
         }
         
         if (!llaveValidada) {
-            console.error('❌ PYTHON-BASED: TODOS LOS FORMATOS FALLARON');
+            console.error('❌ PYTHON-BASED: TODOS LOS MÉTODOS FALLARON (igual que en Python)');
             console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
             console.error('🔍 PYTHON-BASED: Error de formato no soportado - posible problema con encoding, formato de llave o contraseña');
-            throw new Error('No se pudo validar la llave privada con ningún formato. Verifique la contraseña.');
+            throw new Error('No se pudo validar la llave privada con ningún método. Verifique la contraseña.');
         }
         
-        console.log(`🎯 PYTHON-BASED: Usando formato exitoso: ${formatoExitoso}`);
+        console.log(`🎯 PYTHON-BASED: Usando método exitoso: "${metodoExitoso}" (replicando Python)`);
         const llaveObjeto = llaveValidada;
         
         console.log('✅ PYTHON-BASED: Llave privada SAT validada exitosamente con contraseña');
