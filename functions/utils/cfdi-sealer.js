@@ -771,6 +771,8 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
 
 module.exports = {
     normalizeSpace,
+    limpiarCadenaOriginal,
+    sellarXMLUnificado,
     generarCadenaOriginal,
     generarCadenaOriginalConCertificados,
     generarSelloDigital,
