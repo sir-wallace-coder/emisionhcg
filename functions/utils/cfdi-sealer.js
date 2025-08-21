@@ -60,7 +60,11 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('🔧 SELLADO UNIFICADO: NoCertificado agregado:', noCertificado);
         
         // 4. PASO 3 PYTHON: Generar cadena original del XML que YA tiene NoCertificado
-        const cadenaOriginalRaw = generarCadenaOriginal(xmlDoc.documentElement.outerHTML, version);
+        // Serializar el XML actualizado para pasarlo a generarCadenaOriginal
+        const xmlSerializer = new XMLSerializer();
+        const xmlActualizado = xmlSerializer.serializeToString(xmlDoc);
+        
+        const cadenaOriginalRaw = generarCadenaOriginal(xmlActualizado, version);
         if (!cadenaOriginalRaw) {
             return { exito: false, error: 'Error generando cadena original' };
         }
@@ -96,8 +100,8 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('🔧 SELLADO UNIFICADO: Sello y Certificado agregados al XML');
         
         // 8. PASO 7 PYTHON: UNA SOLA serialización final
-        const serializer = new XMLSerializer();
-        const xmlSellado = serializer.serializeToString(xmlDoc);
+        const finalSerializer = new XMLSerializer();
+        const xmlSellado = finalSerializer.serializeToString(xmlDoc);
         
         console.log('🔧 SELLADO UNIFICADO: XML serializado una sola vez');
         
