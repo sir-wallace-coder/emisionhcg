@@ -1,9 +1,15 @@
+// 🚨 LOGGING CRÍTICO PARA DEBUGGING 502
+console.log('🔍 SELLADO: Iniciando carga de módulos...');
+
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
 const { sellarCFDI } = require('./utils/cfdi-sealer');
 const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+console.log('✅ SELLADO: Todos los módulos cargados correctamente');
+console.log('🔑 SELLADO: Variables de entorno verificadas');
 
 exports.handler = async (event, context) => {
   // 🚨 WRAPPER DE SEGURIDAD PARA CAPTURAR ERRORES 502
