@@ -3,15 +3,63 @@ const forge = require('node-forge');
 const { DOMParser, XMLSerializer } = require('xmldom');
 
 /**
+ * Normaliza espacios en blanco según XSLT SAT (normalize-space)
+ * Implementación basada en las mejores prácticas de PHPCFDI
+ * @param {string} str - Cadena a normalizar
+ * @returns {string} Cadena normalizada
+ */
+function normalizeSpace(str) {
+    if (!str) return '';
+    // Implementa normalize-space() de XSLT:
+    // 1. Reemplaza secuencias de espacios en blanco por un solo espacio
+    // 2. Elimina espacios al inicio y final
+    return str.replace(/\s+/g, ' ').trim();
+}
+
+/**
  * Utilidades para sellado digital de CFDIs
  * Implementa el proceso completo de sellado según especificaciones SAT
  */
 
 /**
- * Genera la cadena original de un XML CFDI
+ * Genera cadena original con certificados virtuales (PHPCFDI-compliant)
+ * @param {string} xmlContent - Contenido del XML CFDI base
+ * @param {string} noCertificado - Número de certificado a incluir virtualmente
+ * @param {string} version - Versión del CFDI (3.3 o 4.0)
+ * @returns {string} Cadena original
+ */
+function generarCadenaOriginalConCertificados(xmlContent, noCertificado, version = '4.0') {
+    try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        
+        // Obtener el elemento comprobante
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+        if (!comprobante) {
+            throw new Error('No se encontró el elemento cfdi:Comprobante');
+        }
+        
+        // CRÍTICO PHPCFDI: Agregar NoCertificado virtualmente para cadena original
+        comprobante.setAttribute('NoCertificado', noCertificado);
+        
+        // Generar cadena original con el certificado incluido
+        if (version === '4.0') {
+            return construirCadenaOriginal40(comprobante);
+        } else {
+            return construirCadenaOriginal33(comprobante);
+        }
+        
+    } catch (error) {
+        console.error('Error generando cadena original con certificados:', error);
+        throw new Error('Error al generar cadena original: ' + error.message);
+    }
+}
+
+/**
+ * Genera la cadena original de un XML CFDI (FUNCIÓN LEGACY)
  * @param {string} xmlContent - Contenido del XML CFDI
  * @param {string} version - Versión del CFDI (3.3 o 4.0)
- * @returns {string} Cadena original para sellado
+ * @returns {string} Cadena original
  */
 function generarCadenaOriginal(xmlContent, version = '4.0') {
     try {
@@ -76,7 +124,7 @@ function construirCadenaOriginal40(comprobante) {
     
     // Agregar atributos del comprobante según lógica SAT
     for (let attr of ordenSAT) {
-        const valor = comprobante.getAttribute(attr) || '';
+        const valor = normalizeSpace(comprobante.getAttribute(attr) || ''); // CRÍTICO: normalize-space según XSLT SAT
         
         if (requeridos.includes(attr)) {
             // REQUERIDO: Siempre agregar |valor
@@ -173,7 +221,7 @@ function construirCadenaOriginal33(comprobante) {
     
     // Agregar atributos del comprobante según lógica SAT
     for (let attr of ordenSAT) {
-        const valor = comprobante.getAttribute(attr) || '';
+        const valor = normalizeSpace(comprobante.getAttribute(attr) || ''); // CRÍTICO: normalize-space según XSLT SAT
         
         if (requeridos.includes(attr)) {
             // REQUERIDO: Siempre agregar |valor
@@ -412,7 +460,7 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
         // 5. Agregar SOLO el sello al XML con certificados
         const xmlSellado = agregarSoloSelloAlXML(xmlConCertificados, selloDigital);
         
-        // 6. Validar el sello generado
+        // 5. Validar el sello generado
         const selloValido = validarSelloDigital(cadenaOriginal, selloDigital, certificadoPem);
         
         return {
@@ -434,7 +482,9 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
 }
 
 module.exports = {
+    normalizeSpace,
     generarCadenaOriginal,
+    generarCadenaOriginalConCertificados,
     generarSelloDigital,
     validarSelloDigital,
     agregarCertificadosAlXML,
