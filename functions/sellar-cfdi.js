@@ -6,12 +6,16 @@ const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
+  // 🚨 WRAPPER DE SEGURIDAD PARA CAPTURAR ERRORES 502
+  try {
+    console.log('🚀 SELLADO ENDPOINT: Handler iniciado exitosamente');
+    
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Content-Type': 'application/json'
+    };
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
@@ -25,7 +29,12 @@ exports.handler = async (event, context) => {
     };
   }
 
+  // 🚨 MANEJO DE ERRORES ROBUSTO PARA DEBUGGING 502
   try {
+    console.log('🚀 SELLADO ENDPOINT: Iniciando handler...');
+    console.log('📋 SELLADO ENDPOINT: HTTP Method:', event.httpMethod);
+    console.log('📋 SELLADO ENDPOINT: Headers recibidos:', JSON.stringify(event.headers, null, 2));
+    console.log('📋 SELLADO ENDPOINT: Body length:', event.body ? event.body.length : 0);
     // Verificar autenticación
     const authHeader = event.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -281,24 +290,71 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('❌ SELLADO ENDPOINT: Error general:', error);
     console.error('❌ SELLADO ENDPOINT: Stack trace:', error.stack);
+    console.error('❌ SELLADO ENDPOINT: Error name:', error.name);
+    console.error('❌ SELLADO ENDPOINT: Error message:', error.message);
     
     // Determinar tipo de error para mejor debugging
     let tipoError = 'GeneralError';
+    let detalleError = error.message || 'Error desconocido';
+    
     if (error.name === 'JsonWebTokenError') {
       tipoError = 'AuthError';
-    } else if (error.message.includes('supabase')) {
+    } else if (error.message && error.message.includes('supabase')) {
       tipoError = 'DatabaseError';
-    } else if (error.message.includes('JSON')) {
+    } else if (error.message && error.message.includes('JSON')) {
       tipoError = 'ParseError';
+    } else if (error.message && error.message.includes('require')) {
+      tipoError = 'ModuleError';
+    } else if (error.message && error.message.includes('nodecfdi')) {
+      tipoError = 'NodeCfdiError';
     }
+
+    // 🚨 MANEJO ESPECIAL PARA ERRORES 502
+    console.error('🚨 SELLADO ENDPOINT: DEBUGGING ERROR 502:');
+    console.error('  - Error type:', typeof error);
+    console.error('  - Error constructor:', error.constructor.name);
+    console.error('  - Error keys:', Object.keys(error));
+    console.error('  - Error string:', String(error));
 
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        error: 'Error interno del servidor: ' + error.message,
+        error: 'Error interno del servidor: ' + detalleError,
         tipo_error: tipoError,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        debug_info: {
+          error_name: error.name,
+          error_constructor: error.constructor.name,
+          stack_preview: error.stack ? error.stack.substring(0, 500) : 'No stack available'
+        }
+      })
+    };
+  }
+  
+  // 🚨 CATCH DEL WRAPPER DE SEGURIDAD PARA ERRORES 502
+  } catch (wrapperError) {
+    console.error('🚨 SELLADO ENDPOINT: ERROR CRÍTICO EN WRAPPER:', wrapperError);
+    console.error('🚨 SELLADO ENDPOINT: Stack wrapper:', wrapperError.stack);
+    
+    // Respuesta de emergencia para errores 502
+    return {
+      statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        error: 'Error crítico en función: ' + (wrapperError.message || 'Error desconocido'),
+        tipo_error: 'WrapperError',
+        timestamp: new Date().toISOString(),
+        debug_wrapper: {
+          error_name: wrapperError.name,
+          error_message: wrapperError.message,
+          stack_preview: wrapperError.stack ? wrapperError.stack.substring(0, 300) : 'No stack'
+        }
       })
     };
   }
