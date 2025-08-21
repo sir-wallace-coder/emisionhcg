@@ -18,8 +18,8 @@ function normalizeSpace(str) {
 }
 
 /**
- * Sella XML CFDI siguiendo el flujo unificado del código Python exitoso
- * CRÍTICO: UNA SOLA serialización para evitar alteración de integridad
+ * Sella XML CFDI siguiendo el flujo corregido para evitar CFDI40102
+ * CRÍTICO: UNA SOLA serialización y eliminación completa del atributo Sello para cadena original
  * @param {string} xmlContent - XML original sin sellar
  * @param {string} noCertificado - Número de certificado
  * @param {string} certificadoBase64 - Certificado en base64
@@ -29,7 +29,7 @@ function normalizeSpace(str) {
  */
 function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llavePrivadaPem, version) {
     try {
-        console.log('🔧 SELLADO UNIFICADO: Iniciando proceso siguiendo patrón Python exitoso...');
+        console.log('🔧 SELLADO UNIFICADO: Iniciando proceso corregido CFDI40102...');
         console.log('🔍 FORENSE INICIAL: Versión CFDI:', version);
         console.log('🔍 FORENSE INICIAL: NoCertificado:', noCertificado);
         console.log('🔍 FORENSE INICIAL: Longitud XML original:', xmlContent.length);
@@ -53,7 +53,7 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('✅ FORENSE: XML parseado correctamente');
         console.log('🔍 FORENSE: Atributos actuales del comprobante:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
         
-        // 2. PASO 1 PYTHON: Limpiar atributos de sellado previos
+        // 2. PASO 1: Limpiar atributos de sellado previos
         const atributosLimpieza = ['NoCertificado', 'Certificado', 'Sello'];
         let atributosEliminados = [];
         atributosLimpieza.forEach(attr => {
@@ -61,7 +61,7 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
                 const valorAnterior = comprobante.getAttribute(attr);
                 comprobante.removeAttribute(attr);
                 atributosEliminados.push(`${attr}="${valorAnterior}"`);
-                console.log(`🧹 FORENSE LIMPIEZA: Eliminado ${attr}="${valorAnterior}"`);
+                console.log(`🧹 FORENSE LIMPIEZA: Eliminado ${attr}`);
             }
         });
         
@@ -69,75 +69,42 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
             console.log('🔍 FORENSE LIMPIEZA: No había atributos de sellado previos');
         }
         
-        // 3. PASO 2 PYTHON: Agregar SOLO NoCertificado
+        // 3. CORRECCIÓN CRÍTICA: Agregar SOLO NoCertificado y Certificado (SIN Sello)
+        console.log('🔧 CFDI40102 FIX: Agregando NoCertificado y Certificado...');
         comprobante.setAttribute('NoCertificado', noCertificado);
-        console.log('✅ FORENSE: NoCertificado agregado:', noCertificado);
-        console.log('🔍 FORENSE: Atributos después de agregar NoCertificado:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
-        
-        // 4. PASO 3 PYTHON: Generar cadena original del XML que YA tiene NoCertificado
-        // Serializar el XML actualizado para pasarlo a generarCadenaOriginal
-        const xmlSerializer = new XMLSerializer();
-        const xmlActualizado = xmlSerializer.serializeToString(xmlDoc);
-        
-        console.log('🔍 FORENSE SERIALIZACIÓN: Longitud XML actualizado:', xmlActualizado.length);
-        console.log('🔍 FORENSE SERIALIZACIÓN: Primeros 200 chars:', xmlActualizado.substring(0, 200));
-        
-        // SOLUCIÓN CFDI40102: Implementar sellado sin doble serialización usando placeholder
-        console.log('🔧 CFDI40102 FIX: Implementando sellado sin doble serialización...');
-        
-        // Importar crypto al inicio
-        const crypto = require('crypto');
-        
-        // 1. Agregar TODOS los atributos de sellado ANTES de cualquier serialización
-        console.log('🔍 PLACEHOLDER: Agregando NoCertificado, Certificado y Sello placeholder...');
         comprobante.setAttribute('Certificado', certificadoBase64);
         
-        // 2. Crear placeholder único para el sello
-        const selloPlaceholder = 'SELLO_PLACEHOLDER_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        comprobante.setAttribute('Sello', selloPlaceholder);
+        console.log('✅ CFDI40102 FIX: Atributos agregados (SIN Sello)');
+        console.log('🔍 FORENSE: Atributos después de agregar:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value.substring(0, 30)}${attr.value.length > 30 ? '...' : ''}"`).join(', '));
         
-        console.log('✅ PLACEHOLDER: Atributos de sellado agregados al DOM');
-        console.log('🔍 PLACEHOLDER: Sello placeholder:', selloPlaceholder);
-        console.log('🔍 PLACEHOLDER: Atributos finales:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value.substring(0, 30)}${attr.value.length > 30 ? '...' : ''}"`).join(', '));
+        // 4. Serializar XML SIN atributo Sello
+        const xmlSerializer = new XMLSerializer();
+        const xmlSinSello = xmlSerializer.serializeToString(xmlDoc);
         
-        // 3. Serializar UNA SOLA VEZ el XML con estructura final
-        console.log('🔍 SERIALIZACIÓN ÚNICA: Serializando XML con estructura final...');
-        const serializer = new XMLSerializer();
-        const xmlConEstructuraFinal = serializer.serializeToString(xmlDoc);
+        console.log('✅ FORENSE SERIALIZACIÓN: XML serializado SIN Sello');
+        console.log('🔍 FORENSE SERIALIZACIÓN: Longitud XML sin Sello:', xmlSinSello.length);
+        console.log('🔍 FORENSE SERIALIZACIÓN: Primeros 200 chars:', xmlSinSello.substring(0, 200));
         
-        console.log('✅ SERIALIZACIÓN ÚNICA: XML serializado exitosamente');
-        console.log('🔍 SERIALIZACIÓN ÚNICA: Longitud XML estructurado:', xmlConEstructuraFinal.length);
-        console.log('🔍 SERIALIZACIÓN ÚNICA: Primeros 300 chars:', xmlConEstructuraFinal.substring(0, 300));
+        // 5. CORRECCIÓN CRÍTICA: Generar cadena original del XML que NO tiene Sello
+        console.log('🔗 CADENA ORIGINAL: Generando cadena del XML SIN Sello...');
+        const cadenaOriginalRaw = generarCadenaOriginal(xmlSinSello, version);
         
-        // 4. Reemplazar placeholder con string vacío para generar cadena original
-        console.log('🔍 CADENA ORIGINAL: Preparando XML para cadena original (Sello vacío)...');
-        const xmlParaCadenaOriginal = xmlConEstructuraFinal.replace(
-            `Sello="${selloPlaceholder}"`, 
-            'Sello=""'
-        );
-        
-        console.log('✅ CADENA ORIGINAL: XML preparado para cadena original');
-        console.log('🔍 CADENA ORIGINAL: Verificando reemplazo placeholder...');
-        
-        if (xmlParaCadenaOriginal === xmlConEstructuraFinal) {
-            console.error('❌ PLACEHOLDER ERROR: No se pudo reemplazar el placeholder');
-            return { exito: false, error: 'Error reemplazando placeholder del sello' };
-        }
-        
-        // 5. Generar cadena original del XML con estructura final
-        console.log('🔍 CADENA ORIGINAL: Generando cadena original del XML final...');
-        const cadenaOriginalRaw = generarCadenaOriginal(xmlParaCadenaOriginal, version);
         if (!cadenaOriginalRaw) {
             console.error('❌ CADENA ORIGINAL: Error generando cadena original');
-            return { exito: false, error: 'Error generando cadena original del XML final' };
+            return { exito: false, error: 'Error generando cadena original del XML sin Sello' };
         }
         
-        console.log('✅ CADENA ORIGINAL: Generada del XML final exitosamente');
+        console.log('✅ CADENA ORIGINAL: Generada exitosamente del XML sin Sello');
         console.log('🔍 CADENA ORIGINAL: Longitud:', cadenaOriginalRaw.length);
-        console.log('🔍 CADENA ORIGINAL: Hash SHA256:', crypto.createHash('sha256').update(cadenaOriginalRaw, 'utf8').digest('hex'));
+        console.log('🔍 CADENA ORIGINAL: Primeros 100 chars:', cadenaOriginalRaw.substring(0, 100));
+        console.log('🔍 CADENA ORIGINAL: Últimos 100 chars:', cadenaOriginalRaw.substring(cadenaOriginalRaw.length - 100));
+        
+        // Hash de la cadena RAW para trazabilidad
+        const hashCadenaRaw = crypto.createHash('sha256').update(cadenaOriginalRaw, 'utf8').digest('hex');
+        console.log('🔍 FORENSE HASH: SHA256 cadena RAW:', hashCadenaRaw);
         
         // 6. Limpiar cadena original antes del firmado
-        console.log('🔍 LIMPIEZA FINAL: Limpiando cadena original para firmado...');
+        console.log('🧹 LIMPIEZA FINAL: Limpiando cadena original para firmado...');
         const cadenaOriginal = limpiarCadenaOriginalChatGPT(cadenaOriginalRaw);
         
         // Hash de la cadena limpia
@@ -145,7 +112,7 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('🔍 LIMPIEZA FINAL: SHA256 cadena limpia:', hashCadenaLimpia);
         
         // 7. Validación PAR CERTIFICADO/LLAVE
-        console.log('🔍 VALIDACIÓN FINAL: Validando par certificado/llave...');
+        console.log('🔐 VALIDACIÓN FINAL: Validando par certificado/llave...');
         const certificadoPem = `-----BEGIN CERTIFICATE-----\n${certificadoBase64.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
         const parValido = validarParCertificadoLlave(certificadoPem, llavePrivadaPem);
         if (!parValido) {
@@ -155,7 +122,7 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('✅ VALIDACIÓN FINAL: Par certificado/llave válido');
         
         // 8. Generar sello digital
-        console.log('🔍 SELLO FINAL: Generando sello digital...');
+        console.log('🔐 SELLO FINAL: Generando sello digital...');
         const selloDigital = generarSelloDigitalCrypto(cadenaOriginal, llavePrivadaPem);
         if (!selloDigital) {
             console.error('❌ SELLO FINAL: Error generando sello digital');
@@ -164,28 +131,30 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         
         console.log('✅ SELLO FINAL: Sello digital generado exitosamente');
         console.log('🔍 SELLO FINAL: Longitud sello:', selloDigital.length);
+        console.log('🔍 SELLO FINAL: Primeros 50 chars:', selloDigital.substring(0, 50));
         
-        // 9. Reemplazar placeholder con sello real en el XML serializado
-        console.log('🔍 REEMPLAZO FINAL: Insertando sello real en XML...');
-        const xmlSellado = xmlConEstructuraFinal.replace(
-            `Sello="${selloPlaceholder}"`,
-            `Sello="${selloDigital}"`
-        );
+        // 9. CRÍTICO: Agregar Sello al DOM y serializar FINAL
+        console.log('🔧 REEMPLAZO FINAL: Agregando Sello al XML...');
+        comprobante.setAttribute('Sello', selloDigital);
         
-        console.log('✅ REEMPLAZO FINAL: Sello insertado en XML final');
+        const xmlSellado = xmlSerializer.serializeToString(xmlDoc);
+        
+        console.log('✅ REEMPLAZO FINAL: XML sellado generado');
         console.log('🔍 REEMPLAZO FINAL: Longitud XML sellado:', xmlSellado.length);
         
-        // 9. VERIFICACIÓN DE INTEGRIDAD CRÍTICA
+        // 10. VERIFICACIÓN DE INTEGRIDAD CRÍTICA (CORREGIDA)
         console.log('🔍 FORENSE INTEGRIDAD: Verificando integridad del sellado...');
-        console.log('🔍 FORENSE INTEGRIDAD: Regenerando cadena original del XML sellado...');
-        const cadenaOriginalFinal = generarCadenaOriginal(xmlSellado, version);
+        
+        // CORRECCIÓN CRÍTICA: Generar cadena del XML sellado pero SIN el atributo Sello
+        const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
+        const cadenaOriginalFinal = generarCadenaOriginal(xmlParaVerificacion, version);
         
         if (!cadenaOriginalFinal) {
             console.log('❌ FORENSE INTEGRIDAD: Error regenerando cadena original del XML sellado');
             return { exito: false, error: 'Error verificando integridad - no se pudo regenerar cadena original' };
         }
         
-        console.log('🔍 FORENSE INTEGRIDAD: Cadena original del XML sellado generada');
+        console.log('🔍 FORENSE INTEGRIDAD: Cadena original del XML verificación generada');
         console.log('🔍 FORENSE INTEGRIDAD: Longitud cadena final:', cadenaOriginalFinal.length);
         
         // Limpiar la cadena final para comparación justa
@@ -223,7 +192,7 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
                 console.error('🚨 FORENSE DIFERENCIAS: Contexto final:', cadenaOriginalFinalLimpia.substring(Math.max(0, primeraDiferencia - 20), primeraDiferencia + 20));
             }
             
-            return { exito: false, error: 'Integridad del sello comprometida - cadenas no coinciden' };
+            return { exito: false, error: 'CFDI40102: Integridad del sello comprometida - cadenas no coinciden' };
         } else {
             console.log('✅ FORENSE INTEGRIDAD: Integridad mantenida - cadenas originales coinciden perfectamente');
             console.log('✅ FORENSE INTEGRIDAD: Hash verification passed:', hashCadenaLimpia === hashCadenaFinal);
@@ -239,6 +208,52 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
     } catch (error) {
         console.error('🚨 SELLADO UNIFICADO: Error:', error);
         return { exito: false, error: error.message };
+    }
+}
+
+/**
+ * NUEVA FUNCIÓN: Remueve COMPLETAMENTE el atributo Sello de un XML
+ * CRÍTICO: NO poner Sello="", sino REMOVER el atributo completamente
+ */
+function removerAtributoSelloCompletamente(xmlString) {
+    try {
+        console.log('🔧 REMOVE SELLO: Removiendo atributo Sello completamente...');
+        
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+        
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+        if (!comprobante) {
+            throw new Error('No se encontró cfdi:Comprobante para remover Sello');
+        }
+        
+        // CRÍTICO: REMOVER completamente (no poner vacío)
+        if (comprobante.hasAttribute('Sello')) {
+            const selloValor = comprobante.getAttribute('Sello');
+            comprobante.removeAttribute('Sello');
+            console.log('✅ REMOVE SELLO: Atributo Sello removido completamente');
+            console.log('🔍 REMOVE SELLO: Valor removido tenía longitud:', selloValor.length);
+        } else {
+            console.log('🔍 REMOVE SELLO: No había atributo Sello que remover');
+        }
+        
+        const serializer = new XMLSerializer();
+        const xmlSinSello = serializer.serializeToString(xmlDoc);
+        
+        console.log('✅ REMOVE SELLO: XML regenerado sin atributo Sello');
+        console.log('🔍 REMOVE SELLO: Longitud XML sin Sello:', xmlSinSello.length);
+        
+        // Verificar que efectivamente no tenga Sello
+        if (xmlSinSello.includes('Sello=')) {
+            console.error('❌ REMOVE SELLO: ¡ERROR! El XML todavía contiene atributo Sello');
+            throw new Error('No se pudo remover completamente el atributo Sello');
+        }
+        
+        return xmlSinSello;
+        
+    } catch (error) {
+        console.error('❌ REMOVE SELLO ERROR:', error);
+        throw error;
     }
 }
 
@@ -297,7 +312,7 @@ function limpiarCadenaOriginalChatGPT(cadena) {
     // 5. Normalizar espacios múltiples a uno solo
     const espaciosMultiples = cadenaLimpia.match(/\s{2,}/g);
     if (espaciosMultiples) {
-        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADOS ESPACIOS MÚTIPLES!', espaciosMultiples.length, 'secuencias encontradas');
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADOS ESPACIOS MÚLTIPLES!', espaciosMultiples.length, 'secuencias encontradas');
         cadenaLimpia = cadenaLimpia.replace(/\s{2,}/g, ' ');
         modificaciones.push(`Espacios múltiples normalizados (${espaciosMultiples.length} secuencias)`);
     }
@@ -323,7 +338,6 @@ function limpiarCadenaOriginalChatGPT(cadena) {
         console.log('✅ FORENSE LIMPIEZA: Cadena modificada durante limpieza');
         
         // Generar hashes para comparación
-        const crypto = require('crypto');
         const hashOriginal = crypto.createHash('sha256').update(cadena, 'utf8').digest('hex');
         const hashLimpia = crypto.createHash('sha256').update(cadenaLimpia, 'utf8').digest('hex');
         
@@ -413,7 +427,6 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
                 console.log('🔍 FORENSE XSLT: Últimos 100 chars:', cadenaXSLT.substring(cadenaXSLT.length - 100));
                 
                 // Hash para trazabilidad
-                const crypto = require('crypto');
                 const hashXSLT = crypto.createHash('sha256').update(cadenaXSLT, 'utf8').digest('hex');
                 console.log('🔍 FORENSE XSLT HASH: SHA256:', hashXSLT);
                 
@@ -471,7 +484,6 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
             console.log('🔍 FORENSE FALLBACK: Últimos 100 chars:', cadenaOriginal.substring(cadenaOriginal.length - 100));
             
             // Hash para comparación con XSLT
-            const crypto = require('crypto');
             const hashManual = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
             console.log('🔍 FORENSE FALLBACK HASH: SHA256:', hashManual);
         } else {
@@ -782,9 +794,7 @@ function construirCadenaOriginal33(comprobante) {
  */
 function validarParCertificadoLlave(certificadoPem, llavePrivadaPem) {
     try {
-        console.log('🔍 VALIDACIÓN PAR: Verificando que certificado y llave correspondan...');
-        
-        const crypto = require('crypto');
+        console.log('🔐 VALIDACIÓN PAR: Verificando que certificado y llave correspondan...');
         
         // 1. Validar que el cert PEM parsea (recomendación ChatGPT)
         if (crypto.X509Certificate) {
@@ -1048,7 +1058,7 @@ function agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoB
  */
 function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, version = '4.0') {
     try {
-        console.log('🔐 SELLADO: Iniciando proceso de sellado CFDI...');
+        console.log('🔍 SELLADO: Iniciando proceso de sellado CFDI...');
         
         // 1. Convertir certificado a base64 (sin headers PEM)
         const certificadoBase64 = certificadoPem
@@ -1056,7 +1066,7 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
             .replace(/-----END CERTIFICATE-----/g, '')
             .replace(/\n/g, '');
         
-        console.log('🔐 SELLADO: Certificado convertido a base64');
+        console.log('🔍 SELLADO: Certificado convertido a base64');
         
         // 2. AUDITORÍA FORENSE: XML original antes de modificaciones
         console.log('🔍 FORENSE: XML original (primeros 300 chars):', xmlContent.substring(0, 300));
@@ -1073,13 +1083,13 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
         const cadenaOriginal = resultadoSellado.cadenaOriginal;
         const selloDigital = resultadoSellado.selloDigital;
         
-        console.log('🔐 SELLADO: Proceso unificado completado exitosamente');
+        console.log('🔍 SELLADO: Proceso unificado completado exitosamente');
         console.log('🔍 FORENSE: XML sellado (primeros 400 chars):', xmlSellado.substring(0, 400));
         console.log('🔍 FORENSE: Longitud XML sellado:', xmlSellado.length);
         
         // 6. Validar el sello generado
         const selloValido = validarSelloDigital(cadenaOriginal, selloDigital, certificadoPem);
-        console.log('🔐 SELLADO: Validación del sello:', selloValido ? 'VÁLIDO' : 'INVÁLIDO');
+        console.log('🔍 SELLADO: Validación del sello:', selloValido ? 'VÁLIDO' : 'INVÁLIDO');
         
         return {
             exito: true,
@@ -1091,7 +1101,7 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
         };
         
     } catch (error) {
-        console.error('🔐 SELLADO: Error en proceso de sellado:', error);
+        console.error('🔍 SELLADO: Error en proceso de sellado:', error);
         return {
             exito: false,
             error: error.message
@@ -1106,6 +1116,7 @@ module.exports = {
     validarParCertificadoLlave,
     generarSelloDigitalCrypto,
     sellarXMLUnificado,
+    removerAtributoSelloCompletamente,
     generarCadenaOriginalConCertificados,
     generarCadenaOriginal,
     construirCadenaOriginal40,
