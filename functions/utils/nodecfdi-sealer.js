@@ -210,7 +210,9 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         let selloDigitalBinario;
         try {
             // Usar crypto.privateEncrypt para firmar el DigestInfo
-            const llavePrivadaPem = `-----BEGIN PRIVATE KEY-----\n${llavePrivada}\n-----END PRIVATE KEY-----`;
+            // Convertir de base64 a Buffer y luego a PEM
+            const keyBuffer = Buffer.from(llavePrivadaKey, 'base64');
+            const llavePrivadaPem = keyBuffer.toString('utf8');
             
             selloDigitalBinario = crypto.privateEncrypt({
                 key: llavePrivadaPem,
@@ -321,9 +323,10 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             // Paso 1: Verificar integridad de cadena original (como antes)
             const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
             const cadenaOriginalFinal = generarCadenaOriginalXSLTServerless(xmlParaVerificacion, version);
+            let cadenaFinalLimpia = cadenaOriginal; // Default fallback
             
             if (cadenaOriginalFinal) {
-                const cadenaFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
+                cadenaFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
                 const coincideCadena = cadenaOriginal === cadenaFinalLimpia;
                 
                 console.log('🔍 NODECFDI: Integridad de cadena original:', coincideCadena ? '✅ ÍNTEGRA' : '❌ ALTERADA');
