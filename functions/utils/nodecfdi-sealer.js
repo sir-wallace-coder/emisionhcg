@@ -192,17 +192,40 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         console.log('  - Cadena (últimos 100):', cadenaOriginal.substring(cadenaOriginal.length - 100));
         
         // ⭐ ESTE ES EL PASO CRÍTICO: Usar NodeCfdi para firmar
-        const selloDigital = credential.sign(cadenaOriginal);
+        const selloDigitalBinario = credential.sign(cadenaOriginal);
         
-        if (!selloDigital) {
+        if (!selloDigitalBinario) {
             console.error('❌ NODECFDI: Error generando sello digital');
             return { exito: false, error: 'Error generando sello digital con NodeCfdi' };
         }
         
+        // 🔧 CRÍTICO: Convertir datos binarios a base64 para XML
+        let selloDigital;
+        if (Buffer.isBuffer(selloDigitalBinario)) {
+            // Si es Buffer, convertir a base64
+            selloDigital = selloDigitalBinario.toString('base64');
+            console.log('🔄 NODECFDI: Sello convertido de Buffer a base64');
+        } else if (typeof selloDigitalBinario === 'string') {
+            // Si ya es string, verificar si es base64 válido
+            try {
+                // Intentar decodificar para verificar si es base64 válido
+                Buffer.from(selloDigitalBinario, 'base64');
+                selloDigital = selloDigitalBinario;
+                console.log('🔄 NODECFDI: Sello ya está en formato base64');
+            } catch (error) {
+                // Si no es base64 válido, convertir desde string binario
+                selloDigital = Buffer.from(selloDigitalBinario, 'binary').toString('base64');
+                console.log('🔄 NODECFDI: Sello convertido de string binario a base64');
+            }
+        } else {
+            console.error('❌ NODECFDI: Tipo de sello no reconocido:', typeof selloDigitalBinario);
+            return { exito: false, error: 'Tipo de sello digital no válido' };
+        }
+        
         console.log('🎉 NODECFDI: ¡Sello digital generado exitosamente!');
-        console.log('📏 NODECFDI: Longitud sello:', selloDigital.length);
-        console.log('🔍 NODECFDI: Sello (primeros 50):', selloDigital.substring(0, 50));
-        console.log('🔍 NODECFDI: Sello (últimos 50):', selloDigital.substring(selloDigital.length - 50));
+        console.log('📏 NODECFDI: Longitud sello base64:', selloDigital.length);
+        console.log('🔍 NODECFDI: Sello base64 (primeros 50):', selloDigital.substring(0, 50));
+        console.log('🔍 NODECFDI: Sello base64 (últimos 50):', selloDigital.substring(selloDigital.length - 50));
         
         // Hash del sello para debugging
         const hashSello = crypto.createHash('sha256').update(selloDigital, 'utf8').digest('hex');
