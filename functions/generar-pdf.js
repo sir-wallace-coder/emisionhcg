@@ -20,50 +20,67 @@ const jwt = require('jsonwebtoken');
 async function generarPdfViaHttp(xmlContent, apiKey, stylePdf) {
     console.log('🔧 REDOC HTTP: Iniciando generación PDF via HTTP directo');
     
-    // Endpoint correcto según documentación oficial
-    const endpoint = 'https://api.redoc.mx/v1/cfdis/convert';
-    console.log(`🌐 REDOC HTTP: Usando endpoint oficial: ${endpoint}`);
+    // Lista de endpoints a probar basados en diferentes patrones comunes
+    const endpoints = [
+        'https://api.redoc.mx/v1/pdf',
+        'https://api.redoc.mx/pdf', 
+        'https://api.redoc.mx/v1/convert',
+        'https://api.redoc.mx/convert',
+        'https://api.redoc.mx/cfdi/pdf',
+        'https://api.redoc.mx/cfdi/convert'
+    ];
     
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'X-Redoc-Api-Key': apiKey,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                xml: xmlContent, // XML como string directo (no base64)
-                encoding: 'utf8', // Especificar encoding
-                style_pdf: stylePdf || undefined // Solo incluir si se proporciona
-            })
-        });
+    for (let i = 0; i < endpoints.length; i++) {
+        const endpoint = endpoints[i];
+        console.log(`🌐 REDOC HTTP: Probando endpoint ${i + 1}/${endpoints.length}: ${endpoint}`);
         
-        console.log(`📊 REDOC HTTP: Status: ${response.status}`);
-        console.log(`📊 REDOC HTTP: Headers:`, Object.fromEntries(response.headers.entries()));
-        
-        if (response.ok) {
-            const result = await response.json();
-            console.log('✅ REDOC HTTP: PDF generado exitosamente via HTTP oficial');
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'X-Redoc-Api-Key': apiKey,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    xml: xmlContent,
+                    encoding: 'utf8',
+                    style_pdf: stylePdf || undefined
+                })
+            });
             
-            return {
-                content: result.content,
-                metadata: {
-                    transactionId: response.headers.get('X-Redoc-Transaction-Id'),
-                    totalPages: response.headers.get('X-Redoc-Pdf-Total-Pages'),
-                    totalTime: response.headers.get('X-Redoc-Process-Total-Time'),
-                    endpoint: endpoint
-                }
-            };
-        } else {
-            const errorText = await response.text();
-            console.log(`❌ REDOC HTTP: Error ${response.status}: ${errorText}`);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            console.log(`📊 REDOC HTTP: Endpoint ${endpoint} - Status: ${response.status}`);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`✅ REDOC HTTP: PDF generado exitosamente con endpoint: ${endpoint}`);
+                
+                return {
+                    content: result.content,
+                    metadata: {
+                        transactionId: response.headers.get('X-Redoc-Transaction-Id'),
+                        totalPages: response.headers.get('X-Redoc-Pdf-Total-Pages'),
+                        totalTime: response.headers.get('X-Redoc-Process-Total-Time'),
+                        endpoint: endpoint
+                    }
+                };
+            } else if (response.status === 403) {
+                const errorText = await response.text();
+                console.log(`🔑 REDOC HTTP: Error 403 en ${endpoint} - Problema de autenticación: ${errorText}`);
+                // Continuar probando otros endpoints
+            } else if (response.status === 404) {
+                console.log(`❌ REDOC HTTP: Endpoint ${endpoint} no existe (404)`);
+                // Continuar probando otros endpoints
+            } else {
+                const errorText = await response.text();
+                console.log(`❌ REDOC HTTP: Error ${response.status} en ${endpoint}: ${errorText}`);
+            }
+        } catch (error) {
+            console.log(`❌ REDOC HTTP: Excepción en ${endpoint}:`, error.message);
         }
-    } catch (error) {
-        console.log(`❌ REDOC HTTP: Excepción:`, error.message);
-        throw error;
     }
+    
+    throw new Error('Todos los endpoints probados fallaron. Verificar cuenta redoc.mx y API key.');
 }
 
 /**
