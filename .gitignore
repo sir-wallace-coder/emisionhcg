@@ -13,3 +13,6 @@ coverage/
 .nyc_output/
 *.tgz
 *.tar.gz
+
+# Local Netlify folder
+.netlify
