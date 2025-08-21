@@ -141,12 +141,30 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             console.log('ℹ️ NODECFDI: No se pudieron obtener fechas de vigencia:', dateError.message);
         }
         
-        // 5. 🎯 FLUJO CORRECTO SAT: Generar cadena original del XML BASE (sin certificados)
-        console.log('🔗 NODECFDI: Generando cadena original del XML BASE (sin certificados)...');
-        const xmlBase = xmlSerializer.serializeToString(xmlDoc);
+        // 5. 🎯 FLUJO CORRECTO SAT: Agregar NoCertificado y Certificado ANTES de generar cadena
+        console.log('📝 NODECFDI: Agregando NoCertificado y Certificado al XML...');
+        
+        // Limpiar certificado PEM (solo el contenido base64, sin headers)
+        const certificadoLimpio = certificadoPem
+            .replace(/-----BEGIN CERTIFICATE-----/g, '')
+            .replace(/-----END CERTIFICATE-----/g, '')
+            .replace(/\r?\n/g, '')
+            .trim();
+        
+        // Agregar NoCertificado y Certificado (pero NO Sello todavía)
+        comprobante.setAttribute('NoCertificado', numeroCertificado);
+        comprobante.setAttribute('Certificado', certificadoLimpio);
+        
+        console.log('✅ NODECFDI: NoCertificado y Certificado agregados');
+        console.log('  - NoCertificado:', numeroCertificado);
+        console.log('  - Certificado (longitud):', certificadoLimpio.length);
+        
+        // 6. 🔗 GENERAR CADENA ORIGINAL del XML que YA tiene NoCertificado y Certificado
+        console.log('🔗 NODECFDI: Generando cadena original del XML CON certificados (sin Sello)...');
+        const xmlConCertificados = xmlSerializer.serializeToString(xmlDoc);
         
         // Generar cadena original usando XSLT oficial SAT (serverless)
-        const cadenaOriginalRaw = generarCadenaOriginalXSLTServerless(xmlBase, version);
+        const cadenaOriginalRaw = generarCadenaOriginalXSLTServerless(xmlConCertificados, version);
         
         console.log('✅ NODECFDI: Cadena original generada con reglas SAT');
         console.log('📏 NODECFDI: Longitud:', cadenaOriginalRaw.length);
@@ -235,24 +253,13 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         const hashSello = crypto.createHash('sha256').update(selloDigital, 'utf8').digest('hex');
         console.log('🔍 NODECFDI: SHA256 del sello:', hashSello);
         
-        // 8. 🎯 FLUJO CORRECTO SAT: Agregar TODOS los atributos de una sola vez
-        console.log('📝 NODECFDI: Agregando certificado y sello al XML...');
+        // 8. 🎯 FLUJO CORRECTO SAT: Agregar SOLO el Sello al final
+        console.log('📝 NODECFDI: Agregando Sello al XML (NoCertificado y Certificado ya están)...');
         
-        // Limpiar certificado PEM (solo el contenido base64, sin headers)
-        const certificadoLimpio = certificadoPem
-            .replace(/-----BEGIN CERTIFICATE-----/g, '')
-            .replace(/-----END CERTIFICATE-----/g, '')
-            .replace(/\r?\n/g, '')
-            .trim();
-        
-        // Agregar TODOS los atributos de sellado de una sola vez
-        comprobante.setAttribute('NoCertificado', numeroCertificado);
-        comprobante.setAttribute('Certificado', certificadoLimpio);
+        // Agregar SOLO el Sello (NoCertificado y Certificado ya fueron agregados)
         comprobante.setAttribute('Sello', selloDigital);
         
-        console.log('✅ NODECFDI: Todos los atributos de sellado agregados:');
-        console.log('  - NoCertificado:', numeroCertificado);
-        console.log('  - Certificado (longitud):', certificadoLimpio.length);
+        console.log('✅ NODECFDI: Sello agregado al XML final');
         console.log('  - Sello (longitud):', selloDigital.length);
         
         // 🎯 SERIALIZACIÓN ÚNICA: Una sola serialización del XML final
