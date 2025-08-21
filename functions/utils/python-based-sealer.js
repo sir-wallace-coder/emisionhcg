@@ -91,11 +91,13 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
                 console.log('🧩 PYTHON-BASED: Limpiando headers existentes de la llave...');
                 // Extraer solo el contenido base64, removiendo todos los headers y saltos de línea
                 llaveBase64Limpia = llavePrivadaString
-                    .replace(/-----BEGIN[^-]*-----/g, '')
-                    .replace(/-----END[^-]*-----/g, '')
-                    .replace(/\+{5}[^\+]*\+{5}/g, '') // Remover patrones como +++++BEGINRSAPRIVATEKEY+++++
-                    .replace(/[\r\n\s]/g, '') // Remover todos los espacios y saltos de línea
+                    .replace(/-----BEGIN[^-]*-----/g, '') // Remover headers BEGIN
+                    .replace(/-----END[^-]*-----/g, '')   // Remover headers END
+                    .replace(/\+{5}.*?\+{5}/g, '')        // Remover patrones +++++TEXTO+++++
+                    .replace(/[^A-Za-z0-9+/=]/g, '')     // Mantener solo caracteres válidos base64
                     .trim();
+                
+                console.log('🧩 PYTHON-BASED: Después de limpieza (primeros 50):', llaveBase64Limpia.substring(0, 50));
             } else {
                 // Convertir buffer binario directamente a base64
                 llaveBase64Limpia = llavePrivadaBuffer.toString('base64');
