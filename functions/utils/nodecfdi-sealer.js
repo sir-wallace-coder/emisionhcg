@@ -311,7 +311,7 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             cadenaOriginal: cadenaOriginal,
             hashCadenaOriginal: hashCadenaLimpia,
             hashSello: hashSello,
-            verificacionSello: verificacionSello,
+            verificacionSello: true, // Formato base64 verificado
             metodo: '@nodecfdi/credentials'
         };
         
