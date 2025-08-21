@@ -86,43 +86,43 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
             // 🧩 LIMPIAR COMPLETAMENTE LA LLAVE DE CUALQUIER HEADER EXISTENTE
             let llaveBase64Limpia;
             
-            // Si la llave tiene contenido mixto, extraer solo el base64 puro
-            if (llavePrivadaString.includes('BEGIN') || llavePrivadaString.includes('END') || llavePrivadaString.includes('+++++')) {
-                console.log('🧩 PYTHON-BASED: Limpiando headers problemáticos de la llave...');
+            // SIEMPRE convertir buffer a base64 primero
+            llaveBase64Limpia = llavePrivadaBuffer.toString('base64');
+            console.log('🔧 PYTHON-BASED: Conversión inicial de buffer binario - longitud:', llaveBase64Limpia.length);
+            
+            // 🔍 VERIFICACIÓN OBLIGATORIA: Detectar patrones problemáticos en el base64
+            if (llaveBase64Limpia.includes('+++++') || llaveBase64Limpia.includes('BEGIN') || llaveBase64Limpia.includes('END')) {
+                console.log('🚨 PYTHON-BASED: PATRONES PROBLEMÁTICOS DETECTADOS - Aplicando limpieza quirúrgica...');
+                console.log('🔍 PYTHON-BASED: Contenido problemático (primeros 100):', llaveBase64Limpia.substring(0, 100));
                 
-                // 🎯 EXTRACCIÓN QUIRÚRGICA: Preservar contenido base64 válido
-                let contenidoLimpio = llavePrivadaString;
+                // 🎯 LIMPIEZA QUIRÚRGICA FORZADA
+                let contenidoLimpio = llaveBase64Limpia;
                 
-                // Paso 1: Remover solo headers PEM estándar
+                // Paso 1: Remover headers PEM que pueden estar en el base64
                 contenidoLimpio = contenidoLimpio.replace(/-----BEGIN[^-]*-----/g, '');
                 contenidoLimpio = contenidoLimpio.replace(/-----END[^-]*-----/g, '');
                 
-                // Paso 2: Remover SOLO patrones problemáticos específicos (+++++TEXTO+++++)
+                // Paso 2: Remover patrones problemáticos específicos
                 contenidoLimpio = contenidoLimpio.replace(/\+{5}[^\+]*\+{5}/g, '');
+                contenidoLimpio = contenidoLimpio.replace(/\+{4}[^\+]*\+{4}/g, '');
+                contenidoLimpio = contenidoLimpio.replace(/\+{3}[^\+]*\+{3}/g, '');
                 
-                // Paso 3: Remover saltos de línea y espacios, pero preservar base64
-                contenidoLimpio = contenidoLimpio.replace(/[\r\n\s]/g, '');
+                // Paso 3: Remover caracteres no base64
+                contenidoLimpio = contenidoLimpio.replace(/[^A-Za-z0-9+/=]/g, '');
                 
-                // Paso 4: Verificar que tenemos contenido base64 válido
-                llaveBase64Limpia = contenidoLimpio;
-                
-                // Validación de longitud mínima para llave RSA
-                if (llaveBase64Limpia.length < 500) {
-                    console.log('⚠️ PYTHON-BASED: Llave demasiado corta, intentando extracción alternativa...');
-                    // Intentar extraer directamente del buffer original
-                    llaveBase64Limpia = llavePrivadaBuffer.toString('base64');
-                    console.log('🔄 PYTHON-BASED: Usando conversión directa de buffer - longitud:', llaveBase64Limpia.length);
+                // Paso 4: Verificar resultado
+                if (contenidoLimpio.length >= 500) {
+                    llaveBase64Limpia = contenidoLimpio;
+                    console.log('✅ PYTHON-BASED: Limpieza quirúrgica exitosa - longitud:', llaveBase64Limpia.length);
                 } else {
-                    console.log('✅ PYTHON-BASED: Extracción quirúrgica exitosa - longitud:', llaveBase64Limpia.length);
+                    console.log('⚠️ PYTHON-BASED: Limpieza resultó en llave muy corta, manteniendo original');
                 }
                 
-                console.log('🧩 PYTHON-BASED: Después de limpieza quirúrgica (primeros 50):', llaveBase64Limpia.substring(0, 50));
+                console.log('🧩 PYTHON-BASED: Después de limpieza (primeros 50):', llaveBase64Limpia.substring(0, 50));
                 console.log('🧩 PYTHON-BASED: Últimos 20 chars:', llaveBase64Limpia.substring(llaveBase64Limpia.length - 20));
                 
             } else {
-                // Convertir buffer binario directamente a base64
-                llaveBase64Limpia = llavePrivadaBuffer.toString('base64');
-                console.log('🔧 PYTHON-BASED: Conversión directa de buffer binario');
+                console.log('✅ PYTHON-BASED: Base64 limpio sin patrones problemáticos');
             }
             
             console.log('🔍 PYTHON-BASED: Base64 limpio (longitud):', llaveBase64Limpia.length);
