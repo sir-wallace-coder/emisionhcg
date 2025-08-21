@@ -170,9 +170,9 @@ exports.handler = async (event, context) => {
         version: version,
         fechaSellado: new Date().toISOString(),
         longitudXmlOriginal: xmlContent.length,
-        longitudXmlSellado: resultadoNodeCFDI.xmlSellado.length,
-        longitudSello: resultadoNodeCFDI.sello.length,
-        longitudCadenaOriginal: resultadoNodeCFDI.cadenaOriginal.length,
+        longitudXmlSellado: resultadoNodeCFDI.xmlSellado ? resultadoNodeCFDI.xmlSellado.length : 0,
+        longitudSello: resultadoNodeCFDI.sello ? resultadoNodeCFDI.sello.length : 0,
+        longitudCadenaOriginal: resultadoNodeCFDI.cadenaOriginal ? resultadoNodeCFDI.cadenaOriginal.length : 0,
         implementacion: 'NodeCFDI oficial (compatible llaves SAT)'
       },
       emisor: {
