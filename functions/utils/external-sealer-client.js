@@ -27,9 +27,9 @@ async function loadFetch() {
  * Configuración del servicio externo de sellado
  */
 const EXTERNAL_SEALER_CONFIG = {
-    // URLs del servicio externo
-    loginUrl: process.env.EXTERNAL_SEALER_LOGIN_URL || 'https://api-sellado-cfdi.ejemplo.com/v1/login',
-    sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://api-sellado-cfdi.ejemplo.com/v1/sellar',
+    // URLs del servicio externo - consulta.click
+    loginUrl: process.env.EXTERNAL_SEALER_LOGIN_URL || 'https://consulta.click/api/login',
+    sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://consulta.click/api/v1/sellado',
     
     // Credenciales para login - consulta.click usa email
     email: process.env.EXTERNAL_SEALER_EMAIL || '',
