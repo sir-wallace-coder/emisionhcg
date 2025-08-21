@@ -1164,6 +1164,129 @@
             return eliminarXMLReal(xmlId);
         }
         
+        // 📄 Función para generar PDF desde XML
+        async function generarPDF(xmlId) {
+            console.log('📄 Generar PDF desde XML:', xmlId);
+            
+            try {
+                const token = localStorage.getItem('cfdi_token');
+                if (!token) {
+                    alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                console.log('📄 Enviando solicitud de generación PDF...');
+                
+                // Mostrar indicador de carga
+                const loadingMessage = 'Generando PDF... Esto puede tomar unos segundos.';
+                const originalAlert = window.alert;
+                
+                // Crear modal de loading personalizado
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'pdf-loading';
+                loadingDiv.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                    color: white;
+                    font-size: 18px;
+                `;
+                loadingDiv.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="margin-bottom: 20px;">
+                            <i class="fas fa-file-pdf fa-3x fa-spin"></i>
+                        </div>
+                        <div>Generando PDF...</div>
+                        <div style="font-size: 14px; margin-top: 10px; opacity: 0.8;">Esto puede tomar unos segundos</div>
+                    </div>
+                `;
+                document.body.appendChild(loadingDiv);
+                
+                const response = await fetch('/.netlify/functions/generar-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        xmlId: xmlId,
+                        stylePdf: 'default' // Puedes personalizar esto
+                    })
+                });
+                
+                // Remover loading
+                document.body.removeChild(loadingDiv);
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    console.log('✅ PDF generado exitosamente:', result);
+                    
+                    // Convertir base64 a blob y descargar
+                    const pdfBase64 = result.pdf.content;
+                    const pdfBlob = base64ToBlob(pdfBase64, 'application/pdf');
+                    
+                    // Crear nombre de archivo
+                    const fileName = `CFDI_${result.xml.emisor_rfc}_${result.xml.receptor_rfc}_${Date.now()}.pdf`;
+                    
+                    // Descargar archivo
+                    downloadBlob(pdfBlob, fileName);
+                    
+                    // Mostrar mensaje de éxito
+                    alert(`✅ PDF generado y descargado exitosamente\n\n` +
+                          `• Archivo: ${fileName}\n` +
+                          `• Páginas: ${result.metadata.totalPages || 'N/A'}\n` +
+                          `• Tiempo de procesamiento: ${result.metadata.processTime || 'N/A'}ms`);
+                    
+                } else {
+                    console.error('❌ Error generando PDF:', result);
+                    alert(`❌ Error generando PDF:\n\n${result.error || result.mensaje || 'Error desconocido'}`);
+                }
+                
+            } catch (error) {
+                // Remover loading si existe
+                const loadingDiv = document.getElementById('pdf-loading');
+                if (loadingDiv) {
+                    document.body.removeChild(loadingDiv);
+                }
+                
+                console.error('💥 Error fatal generando PDF:', error);
+                alert(`💥 Error fatal generando PDF:\n\n${error.message}`);
+            }
+        }
+        
+        // Función auxiliar para convertir base64 a blob
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+        
+        // Función auxiliar para descargar blob
+        function downloadBlob(blob, fileName) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
         // 🔄 Función para cancelar XMLs sellados
         async function cancelarXML(xmlId) {
             console.log('🔄 Cancelar XML sellado:', xmlId);
@@ -1689,6 +1812,9 @@
                                 </button>
                                 <button class="btn btn-sm btn-outline-success" onclick="descargarXML('${xml.id}')" title="Descargar XML">
                                     <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="generarPDF('${xml.id}')" title="Generar PDF">
+                                    <i class="fas fa-file-pdf"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-warning" onclick="editarXML('${xml.id}')" title="Editar XML">
                                     <i class="fas fa-edit"></i>
