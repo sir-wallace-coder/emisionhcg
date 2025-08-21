@@ -71,11 +71,24 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         
         // 3. CORRECCIÓN CRÍTICA: Agregar SOLO NoCertificado y Certificado (SIN Sello)
         console.log('🔧 CFDI40102 FIX: Agregando NoCertificado y Certificado...');
+        
+        // DEBUG EXTREMO: Estado ANTES de agregar atributos
+        console.log('🔍 DEBUG EXTREMO: Atributos ANTES de agregar NoCertificado/Certificado:');
+        Array.from(comprobante.attributes).forEach((attr, index) => {
+            console.log(`  ${index + 1}. ${attr.name}="${attr.value}"`); 
+        });
+        
         comprobante.setAttribute('NoCertificado', noCertificado);
         comprobante.setAttribute('Certificado', certificadoBase64);
         
+        // DEBUG EXTREMO: Estado DESPUÉS de agregar atributos
+        console.log('🔍 DEBUG EXTREMO: Atributos DESPUÉS de agregar NoCertificado/Certificado:');
+        Array.from(comprobante.attributes).forEach((attr, index) => {
+            console.log(`  ${index + 1}. ${attr.name}="${attr.value.length > 50 ? attr.value.substring(0, 50) + '...' : attr.value}"`); 
+        });
+        
         console.log('✅ CFDI40102 FIX: Atributos agregados (SIN Sello)');
-        console.log('🔍 FORENSE: Atributos después de agregar:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value.substring(0, 30)}${attr.value.length > 30 ? '...' : ''}"`).join(', '));
+        console.log('🔍 FORENSE: Total atributos:', comprobante.attributes.length);
         
         // 4. Serializar XML SIN atributo Sello
         const xmlSerializer = new XMLSerializer();
@@ -84,6 +97,32 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('✅ FORENSE SERIALIZACIÓN: XML serializado SIN Sello');
         console.log('🔍 FORENSE SERIALIZACIÓN: Longitud XML sin Sello:', xmlSinSello.length);
         console.log('🔍 FORENSE SERIALIZACIÓN: Primeros 200 chars:', xmlSinSello.substring(0, 200));
+        
+        // DEBUG EXTREMO: Verificar que NO contiene Sello
+        if (xmlSinSello.includes('Sello="')) {
+            console.error('❌ DEBUG EXTREMO: ¡ERROR CRÍTICO! XML contiene atributo Sello cuando NO debería');
+            const selloMatch = xmlSinSello.match(/Sello="[^"]*"/);
+            if (selloMatch) {
+                console.error('❌ DEBUG EXTREMO: Sello encontrado:', selloMatch[0]);
+            }
+            throw new Error('XML contiene atributo Sello cuando debería estar ausente');
+        }
+        console.log('✅ DEBUG EXTREMO: Verificado - XML NO contiene atributo Sello');
+        
+        // DEBUG EXTREMO: Verificar que SÍ contiene NoCertificado y Certificado
+        if (!xmlSinSello.includes('NoCertificado="')) {
+            console.error('❌ DEBUG EXTREMO: ¡ERROR! XML NO contiene NoCertificado');
+            throw new Error('XML no contiene atributo NoCertificado');
+        }
+        if (!xmlSinSello.includes('Certificado="')) {
+            console.error('❌ DEBUG EXTREMO: ¡ERROR! XML NO contiene Certificado');
+            throw new Error('XML no contiene atributo Certificado');
+        }
+        console.log('✅ DEBUG EXTREMO: Verificado - XML contiene NoCertificado y Certificado');
+        
+        // DEBUG EXTREMO: Hash del XML sin Sello para trazabilidad
+        const hashXmlSinSello = crypto.createHash('sha256').update(xmlSinSello, 'utf8').digest('hex');
+        console.log('🔍 DEBUG EXTREMO: SHA256 XML sin Sello:', hashXmlSinSello);
         
         // 5. CORRECCIÓN CRÍTICA: Generar cadena original del XML que NO tiene Sello
         console.log('🔗 CADENA ORIGINAL: Generando cadena del XML SIN Sello...');
@@ -99,6 +138,26 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('🔍 CADENA ORIGINAL: Primeros 100 chars:', cadenaOriginalRaw.substring(0, 100));
         console.log('🔍 CADENA ORIGINAL: Últimos 100 chars:', cadenaOriginalRaw.substring(cadenaOriginalRaw.length - 100));
         
+        // DEBUG EXTREMO: Cadena original completa para análisis forense
+        console.log('🔍 DEBUG EXTREMO: CADENA ORIGINAL COMPLETA RAW:');
+        console.log('"' + cadenaOriginalRaw + '"');
+        
+        // DEBUG EXTREMO: Análisis byte por byte de la cadena
+        console.log('🔍 DEBUG EXTREMO: Análisis de caracteres especiales en cadena:');
+        let caracteresEspeciales = [];
+        for (let i = 0; i < cadenaOriginalRaw.length; i++) {
+            const char = cadenaOriginalRaw[i];
+            const code = char.charCodeAt(0);
+            if (code < 32 || code > 126) { // Caracteres no imprimibles o especiales
+                caracteresEspeciales.push({pos: i, char: char, code: code, hex: code.toString(16)});
+            }
+        }
+        if (caracteresEspeciales.length > 0) {
+            console.log('🔍 DEBUG EXTREMO: Caracteres especiales encontrados:', caracteresEspeciales);
+        } else {
+            console.log('✅ DEBUG EXTREMO: No se encontraron caracteres especiales en cadena RAW');
+        }
+        
         // Hash de la cadena RAW para trazabilidad
         const hashCadenaRaw = crypto.createHash('sha256').update(cadenaOriginalRaw, 'utf8').digest('hex');
         console.log('🔍 FORENSE HASH: SHA256 cadena RAW:', hashCadenaRaw);
@@ -106,6 +165,34 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         // 6. Limpiar cadena original antes del firmado
         console.log('🧹 LIMPIEZA FINAL: Limpiando cadena original para firmado...');
         const cadenaOriginal = limpiarCadenaOriginalChatGPT(cadenaOriginalRaw);
+        
+        // DEBUG EXTREMO: Comparar cadena antes y después de limpieza
+        console.log('🔍 DEBUG EXTREMO: Comparación limpieza:');
+        console.log('  - Longitud ANTES:', cadenaOriginalRaw.length);
+        console.log('  - Longitud DESPUÉS:', cadenaOriginal.length);
+        console.log('  - Diferencia:', cadenaOriginalRaw.length - cadenaOriginal.length);
+        
+        if (cadenaOriginalRaw !== cadenaOriginal) {
+            console.log('🔍 DEBUG EXTREMO: ¡CADENA MODIFICADA POR LIMPIEZA!');
+            console.log('  - ANTES (primeros 200):', JSON.stringify(cadenaOriginalRaw.substring(0, 200)));
+            console.log('  - DESPUÉS (primeros 200):', JSON.stringify(cadenaOriginal.substring(0, 200)));
+            
+            // Encontrar primera diferencia
+            for (let i = 0; i < Math.min(cadenaOriginalRaw.length, cadenaOriginal.length); i++) {
+                if (cadenaOriginalRaw[i] !== cadenaOriginal[i]) {
+                    console.log(`  - Primera diferencia en posición ${i}:`);
+                    console.log(`    ANTES: "${cadenaOriginalRaw[i]}" (code: ${cadenaOriginalRaw.charCodeAt(i)})`);
+                    console.log(`    DESPUÉS: "${cadenaOriginal[i]}" (code: ${cadenaOriginal.charCodeAt(i)})`);
+                    break;
+                }
+            }
+        } else {
+            console.log('✅ DEBUG EXTREMO: Cadena NO modificada por limpieza');
+        }
+        
+        // DEBUG EXTREMO: Cadena final limpia completa
+        console.log('🔍 DEBUG EXTREMO: CADENA ORIGINAL LIMPIA COMPLETA:');
+        console.log('"' + cadenaOriginal + '"');
         
         // Hash de la cadena limpia
         const hashCadenaLimpia = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
@@ -123,6 +210,18 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         
         // 8. Generar sello digital
         console.log('🔐 SELLO FINAL: Generando sello digital...');
+        
+        // DEBUG EXTREMO: Capturar exactamente qué se va a firmar
+        console.log('🔍 DEBUG EXTREMO: DATOS PARA FIRMADO:');
+        console.log('  - Cadena a firmar (longitud):', cadenaOriginal.length);
+        console.log('  - Cadena a firmar (completa):', JSON.stringify(cadenaOriginal));
+        console.log('  - Llave privada (longitud):', llavePrivadaPem.length);
+        console.log('  - Llave privada (header):', llavePrivadaPem.substring(0, 50));
+        
+        // DEBUG EXTREMO: Hash de la cadena que se va a firmar
+        const hashParaFirmar = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
+        console.log('  - SHA256 de cadena a firmar:', hashParaFirmar);
+        
         const selloDigital = generarSelloDigitalCrypto(cadenaOriginal, llavePrivadaPem);
         if (!selloDigital) {
             console.error('❌ SELLO FINAL: Error generando sello digital');
@@ -132,30 +231,87 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('✅ SELLO FINAL: Sello digital generado exitosamente');
         console.log('🔍 SELLO FINAL: Longitud sello:', selloDigital.length);
         console.log('🔍 SELLO FINAL: Primeros 50 chars:', selloDigital.substring(0, 50));
+        console.log('🔍 SELLO FINAL: Últimos 50 chars:', selloDigital.substring(selloDigital.length - 50));
+        
+        // DEBUG EXTREMO: Hash del sello generado
+        const hashSelloGenerado = crypto.createHash('sha256').update(selloDigital, 'utf8').digest('hex');
+        console.log('🔍 DEBUG EXTREMO: SHA256 del sello generado:', hashSelloGenerado);
         
         // 9. CRÍTICO: Agregar Sello al DOM y serializar FINAL
         console.log('🔧 REEMPLAZO FINAL: Agregando Sello al XML...');
+        
+        // DEBUG EXTREMO: Estado del DOM ANTES de agregar Sello
+        console.log('🔍 DEBUG EXTREMO: Atributos ANTES de agregar Sello:');
+        Array.from(comprobante.attributes).forEach((attr, index) => {
+            console.log(`  ${index + 1}. ${attr.name}="${attr.value.length > 50 ? attr.value.substring(0, 50) + '...' : attr.value}"`); 
+        });
+        
         comprobante.setAttribute('Sello', selloDigital);
+        
+        // DEBUG EXTREMO: Estado del DOM DESPUÉS de agregar Sello
+        console.log('🔍 DEBUG EXTREMO: Atributos DESPUÉS de agregar Sello:');
+        Array.from(comprobante.attributes).forEach((attr, index) => {
+            console.log(`  ${index + 1}. ${attr.name}="${attr.value.length > 50 ? attr.value.substring(0, 50) + '...' : attr.value}"`); 
+        });
         
         const xmlSellado = xmlSerializer.serializeToString(xmlDoc);
         
         console.log('✅ REEMPLAZO FINAL: XML sellado generado');
         console.log('🔍 REEMPLAZO FINAL: Longitud XML sellado:', xmlSellado.length);
         
+        // DEBUG EXTREMO: Verificar que el XML sellado contiene el sello correcto
+        const selloEnXml = xmlSellado.match(/Sello="([^"]+)"/)?.[1];
+        if (selloEnXml) {
+            console.log('🔍 DEBUG EXTREMO: Sello encontrado en XML (longitud):', selloEnXml.length);
+            console.log('🔍 DEBUG EXTREMO: Sello en XML coincide con generado:', selloEnXml === selloDigital);
+            if (selloEnXml !== selloDigital) {
+                console.error('❌ DEBUG EXTREMO: ¡SELLO EN XML NO COINCIDE CON SELLO GENERADO!');
+                console.error('  - Sello generado:', selloDigital.substring(0, 100) + '...');
+                console.error('  - Sello en XML:', selloEnXml.substring(0, 100) + '...');
+            }
+        } else {
+            console.error('❌ DEBUG EXTREMO: ¡NO SE ENCONTRÓ SELLO EN XML FINAL!');
+        }
+        
+        // DEBUG EXTREMO: Hash del XML sellado final
+        const hashXmlSellado = crypto.createHash('sha256').update(xmlSellado, 'utf8').digest('hex');
+        console.log('🔍 DEBUG EXTREMO: SHA256 XML sellado final:', hashXmlSellado);
+        
         // 10. VERIFICACIÓN DE INTEGRIDAD CRÍTICA (CORREGIDA)
         console.log('🔍 FORENSE INTEGRIDAD: Verificando integridad del sellado...');
         
+        // DEBUG EXTREMO: Antes de remover Sello para verificación
+        console.log('🔍 DEBUG EXTREMO: VERIFICACIÓN DE INTEGRIDAD:');
+        console.log('  - XML sellado (longitud):', xmlSellado.length);
+        console.log('  - XML sellado (primeros 300):', xmlSellado.substring(0, 300));
+        
         // CORRECCIÓN CRÍTICA: Generar cadena del XML sellado pero SIN el atributo Sello
         const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
+        
+        // DEBUG EXTREMO: Después de remover Sello
+        console.log('🔍 DEBUG EXTREMO: XML para verificación (longitud):', xmlParaVerificacion.length);
+        console.log('🔍 DEBUG EXTREMO: XML para verificación (primeros 300):', xmlParaVerificacion.substring(0, 300));
+        
+        // Verificar que efectivamente no tiene Sello
+        if (xmlParaVerificacion.includes('Sello="')) {
+            console.error('❌ DEBUG EXTREMO: ¡ERROR! XML para verificación todavía contiene Sello');
+            return { exito: false, error: 'Error: XML para verificación contiene atributo Sello' };
+        }
+        console.log('✅ DEBUG EXTREMO: XML para verificación NO contiene Sello');
+        
         const cadenaOriginalFinal = generarCadenaOriginal(xmlParaVerificacion, version);
         
         if (!cadenaOriginalFinal) {
             console.log('❌ FORENSE INTEGRIDAD: Error regenerando cadena original del XML sellado');
-            return { exito: false, error: 'Error verificando integridad - no se pudo regenerar cadena original' };
+            return { exito: false, error: 'Error regenerando cadena original para verificación' };
         }
         
         console.log('🔍 FORENSE INTEGRIDAD: Cadena original del XML verificación generada');
         console.log('🔍 FORENSE INTEGRIDAD: Longitud cadena final:', cadenaOriginalFinal.length);
+        
+        // DEBUG EXTREMO: Cadena original para verificación completa
+        console.log('🔍 DEBUG EXTREMO: CADENA ORIGINAL PARA VERIFICACIÓN COMPLETA:');
+        console.log('"' + cadenaOriginalFinal + '"');
         
         // Limpiar la cadena final para comparación justa
         const cadenaOriginalFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);

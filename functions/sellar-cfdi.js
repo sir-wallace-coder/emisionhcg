@@ -1,6 +1,7 @@
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
 const { sellarCFDI } = require('./utils/cfdi-sealer');
+const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -174,15 +175,37 @@ exports.handler = async (event, context) => {
       console.log('🔐 SELLADO ENDPOINT: - Longitud llave PEM:', llavePrivadaPem.length);
       console.log('🔐 SELLADO ENDPOINT: - Longitud cert PEM:', certificadoPem.length);
 
-      // Realizar el sellado con el módulo corregido
-      console.log('🚀 SELLADO ENDPOINT: Llamando a sellarCFDI...');
-      const resultadoSellado = sellarCFDI(
+      // Realizar el sellado con NodeCfdi como sellador principal
+      console.log('🎯 Iniciando sellado con @nodecfdi/credentials (método oficial)...');
+      let resultadoSellado = await sellarCFDIConNodeCfdi(
         xmlContent,
-        llavePrivadaPem,
-        certificadoPem,
-        numeroCertificado,
+        emisor.certificado_cer,
+        emisor.certificado_key,
+        emisor.password_certificado,
         version
       );
+      
+      // Fallback al método anterior si NodeCfdi falla
+      if (!resultadoSellado.exito) {
+        console.log('⚠️ NodeCfdi falló, intentando con método anterior...');
+        console.log('❌ Error NodeCfdi:', resultadoSellado.error);
+        
+        console.log('🔐 Iniciando proceso de sellado con método anterior...');
+        resultadoSellado = await sellarCFDI(
+          xmlContent,
+          llavePrivadaPem,
+          certificadoPem,
+          numeroCertificado,
+          version
+        );
+        
+        if (resultadoSellado.exito) {
+          console.log('✅ Sellado exitoso con método anterior (fallback)');
+          resultadoSellado.metodo = 'cfdi-sealer (fallback)';
+        }
+      } else {
+        console.log('🎉 Sellado exitoso con @nodecfdi/credentials!');
+      }
 
       console.log('📋 SELLADO ENDPOINT: Resultado del sellado recibido');
       console.log('📋 SELLADO ENDPOINT: Éxito:', resultadoSellado.exito);
