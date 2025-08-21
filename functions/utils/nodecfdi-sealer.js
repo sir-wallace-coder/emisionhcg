@@ -8,7 +8,7 @@
  * Compatible con: phpcfdi/cfdi-expresiones y estándares SAT
  */
 
-const { Credential } = require('@nodecfdi/credentials/node');
+const { Credential } = require('@nodecfdi/credentials');
 const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
 const crypto = require('crypto');
 
