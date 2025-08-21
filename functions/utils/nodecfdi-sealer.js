@@ -275,22 +275,76 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         
         console.log('✅ NODECFDI: Validación básica de formato exitosa');
         
-        // 11. Verificación adicional: regenerar cadena original del XML sellado
-        console.log('🔍 NODECFDI: Verificación adicional de integridad...');
-        const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
-        const cadenaOriginalFinal = generarCadenaOriginalXSLTServerless(xmlParaVerificacion, version);
+        // 11. AUDITORÍA FORENSE CFDI40102: Verificar digestión vs desencriptación
+        console.log('🔬 FORENSE CFDI40102: Iniciando auditoría de digestión vs desencriptación...');
         
-        if (cadenaOriginalFinal) {
-            const cadenaFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
-            const coincideCadena = cadenaOriginal === cadenaFinalLimpia;
+        try {
+            // Paso 1: Verificar integridad de cadena original (como antes)
+            const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
+            const cadenaOriginalFinal = generarCadenaOriginalXSLTServerless(xmlParaVerificacion, version);
             
-            console.log('🔍 NODECFDI: Integridad de cadena original:', coincideCadena ? '✅ ÍNTEGRA' : '❌ ALTERADA');
-            
-            if (!coincideCadena) {
-                console.error('❌ NODECFDI: ¡INTEGRIDAD ROTA! La cadena original cambió');
-                console.error('  - Hash cadena firmada:', hashCadenaLimpia);
-                console.error('  - Hash cadena final:', crypto.createHash('sha256').update(cadenaFinalLimpia, 'utf8').digest('hex'));
+            if (cadenaOriginalFinal) {
+                const cadenaFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
+                const coincideCadena = cadenaOriginal === cadenaFinalLimpia;
+                
+                console.log('🔍 NODECFDI: Integridad de cadena original:', coincideCadena ? '✅ ÍNTEGRA' : '❌ ALTERADA');
+                
+                if (!coincideCadena) {
+                    console.error('❌ NODECFDI: ¡INTEGRIDAD ROTA! La cadena original cambió');
+                    console.error('  - Hash cadena firmada:', hashCadenaLimpia);
+                    console.error('  - Hash cadena final:', crypto.createHash('sha256').update(cadenaFinalLimpia, 'utf8').digest('hex'));
+                }
             }
+            
+            // Paso 2: AUDITORÍA FORENSE - Desencriptar sello y comparar con digestión
+            console.log('🔬 FORENSE CFDI40102: Desencriptando sello digital...');
+            
+            // Desencriptar el sello usando la llave pública del certificado
+            const certificadoPem = `-----BEGIN CERTIFICATE-----\n${certificadoLimpio}\n-----END CERTIFICATE-----`;
+            const cert = crypto.createPublicKey(certificadoPem);
+            
+            // Convertir sello base64 a buffer
+            const selloBuffer = Buffer.from(selloDigital, 'base64');
+            
+            // Desencriptar el sello (esto debería dar el hash SHA256 de la cadena original)
+            const hashDesencriptado = crypto.publicDecrypt({
+                key: cert,
+                padding: crypto.constants.RSA_PKCS1_PADDING
+            }, selloBuffer);
+            
+            console.log('🔬 FORENSE CFDI40102: Sello desencriptado exitosamente');
+            console.log('🔬 FORENSE CFDI40102: Longitud hash desencriptado:', hashDesencriptado.length);
+            console.log('🔬 FORENSE CFDI40102: Hash desencriptado (hex):', hashDesencriptado.toString('hex'));
+            
+            // Calcular SHA256 de nuestra cadena original
+            const nuestroHash = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest();
+            console.log('🔬 FORENSE CFDI40102: Nuestro hash SHA256:', nuestroHash.toString('hex'));
+            
+            // Comparar byte a byte
+            const hashesCoinciden = Buffer.compare(hashDesencriptado, nuestroHash) === 0;
+            console.log('🔬 FORENSE CFDI40102: Hashes coinciden:', hashesCoinciden ? '✅ SÍ' : '❌ NO');
+            
+            if (!hashesCoinciden) {
+                console.error('❌ FORENSE CFDI40102: ¡CAUSA RAÍZ ENCONTRADA!');
+                console.error('  - Hash desencriptado del sello:', hashDesencriptado.toString('hex'));
+                console.error('  - Hash SHA256 de cadena original:', nuestroHash.toString('hex'));
+                console.error('  - Diferencia en bytes:', hashDesencriptado.length, 'vs', nuestroHash.length);
+                
+                // Comparación byte a byte para encontrar diferencias
+                for (let i = 0; i < Math.max(hashDesencriptado.length, nuestroHash.length); i++) {
+                    const byteDesenc = i < hashDesencriptado.length ? hashDesencriptado[i] : 'N/A';
+                    const byteNuestro = i < nuestroHash.length ? nuestroHash[i] : 'N/A';
+                    if (byteDesenc !== byteNuestro) {
+                        console.error(`  - Byte ${i}: desencriptado=${byteDesenc}, nuestro=${byteNuestro}`);
+                    }
+                }
+            } else {
+                console.log('✅ FORENSE CFDI40102: Digestión y desencriptación coinciden perfectamente');
+            }
+            
+        } catch (errorForense) {
+            console.error('❌ FORENSE CFDI40102: Error en auditoría:', errorForense.message);
+            console.error('❌ FORENSE CFDI40102: Stack trace:', errorForense.stack);
         }
         
         // 12. Resultado final
