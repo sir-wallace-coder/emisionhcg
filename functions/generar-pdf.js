@@ -160,6 +160,11 @@ exports.handler = async (event, context) => {
         console.log('🚀 GENERAR PDF: Usando SDK oficial de redoc.mx...');
         
         try {
+            // Logs de diagnóstico para API Key
+            console.log('🔑 GENERAR PDF: API Key presente:', !!redocApiKey);
+            console.log('🔑 GENERAR PDF: API Key longitud:', redocApiKey ? redocApiKey.length : 0);
+            console.log('🔑 GENERAR PDF: API Key prefijo:', redocApiKey ? redocApiKey.substring(0, 10) + '...' : 'N/A');
+            
             // Inicializar cliente de redoc.mx con API key según documentación oficial
             const redoc = new Redoc(redocApiKey);
             console.log('✅ GENERAR PDF: Cliente @redocmx/client inicializado');
@@ -169,6 +174,7 @@ exports.handler = async (event, context) => {
             console.log('✅ GENERAR PDF: CFDI cargado desde XML string');
             
             console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
+            console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
             
             // Convertir CFDI a PDF usando el SDK oficial
             // Nota: stylePdf se maneja internamente por el SDK
