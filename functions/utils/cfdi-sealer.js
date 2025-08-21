@@ -17,6 +17,62 @@ function normalizeSpace(str) {
 }
 
 /**
+ * Limpia caracteres invisibles de la cadena original antes del firmado
+ * CRÍTICO CFDI40102: Elimina BOM, saltos de línea, espacios invisibles, etc.
+ * @param {string} cadena - Cadena original a limpiar
+ * @returns {string} Cadena limpia para firmado
+ */
+function limpiarCadenaOriginal(cadena) {
+    if (!cadena) return '';
+    
+    console.log(' LIMPIEZA: Iniciando limpieza de caracteres invisibles...');
+    console.log(' LIMPIEZA: Longitud original:', cadena.length);
+    
+    // 1. Eliminar BOM UTF-8 (bytes EF BB BF)
+    let cadenaLimpia = cadena.replace(/^\uFEFF/, '');
+    
+    // 2. Eliminar saltos de línea \r\n (Windows) y \r
+    cadenaLimpia = cadenaLimpia.replace(/\r\n/g, '').replace(/\r/g, '').replace(/\n/g, '');
+    
+    // 3. Reemplazar espacios invisibles por espacios normales
+    cadenaLimpia = cadenaLimpia.replace(/\u00A0/g, ' '); // No-breaking space
+    cadenaLimpia = cadenaLimpia.replace(/\u200B/g, '');  // Zero-width space (eliminar)
+    cadenaLimpia = cadenaLimpia.replace(/\u2060/g, '');  // Word joiner (eliminar)
+    cadenaLimpia = cadenaLimpia.replace(/\u200C/g, '');  // Zero-width non-joiner (eliminar)
+    cadenaLimpia = cadenaLimpia.replace(/\u200D/g, '');  // Zero-width joiner (eliminar)
+    
+    // 4. Reemplazar tabs por espacios normales
+    cadenaLimpia = cadenaLimpia.replace(/\t/g, ' ');
+    
+    // 5. Normalizar espacios múltiples (pero cuidado con no afectar números)
+    // Solo aplicar si no estamos en medio de un número decimal
+    cadenaLimpia = cadenaLimpia.replace(/([^\d])\s+([^\d])/g, '$1 $2');
+    
+    // 6. Verificar que empiece y termine con || sin espacios pegados
+    if (!cadenaLimpia.startsWith('||')) {
+        console.warn(' LIMPIEZA: Cadena no empieza con ||');
+    }
+    if (!cadenaLimpia.endsWith('||')) {
+        console.warn(' LIMPIEZA: Cadena no termina con ||');
+    }
+    
+    // 7. Eliminar espacios antes y después de los || iniciales/finales
+    cadenaLimpia = cadenaLimpia.replace(/^\s*\|\|/, '||');
+    cadenaLimpia = cadenaLimpia.replace(/\|\|\s*$/, '||');
+    
+    console.log(' LIMPIEZA: Longitud después de limpieza:', cadenaLimpia.length);
+    console.log(' LIMPIEZA: Caracteres eliminados:', cadena.length - cadenaLimpia.length);
+    
+    // 8. Diagnóstico de caracteres especiales restantes
+    const caracteresEspeciales = cadenaLimpia.match(/[^\x20-\x7E\u00C0-\u017F]/g);
+    if (caracteresEspeciales) {
+        console.log(' LIMPIEZA: Caracteres especiales encontrados:', caracteresEspeciales.slice(0, 10));
+    }
+    
+    return cadenaLimpia;
+}
+
+/**
  * Utilidades para sellado digital de CFDIs
  * Implementa el proceso completo de sellado según especificaciones SAT
  */
@@ -566,11 +622,16 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
         console.log('🔐 SELLADO: Certificados agregados al XML');
         
         // 3. CRÍTICO: Generar cadena original del XML QUE YA INCLUYE NoCertificado
-        const cadenaOriginal = generarCadenaOriginal(xmlConCertificados, version);
+        const cadenaOriginalRaw = generarCadenaOriginal(xmlConCertificados, version);
         console.log('🔐 SELLADO: Cadena original generada del XML con certificados');
-        console.log('🔐 SELLADO: Cadena original:', cadenaOriginal.substring(0, 200) + '...');
+        console.log('🔐 SELLADO: Cadena original raw:', cadenaOriginalRaw.substring(0, 200) + '...');
         
-        // 4. Generar sello digital basado en la cadena original correcta
+        // 4. CRÍTICO CFDI40102: Limpiar caracteres invisibles antes del firmado
+        const cadenaOriginal = limpiarCadenaOriginal(cadenaOriginalRaw);
+        console.log('🔐 SELLADO: Cadena original limpia:', cadenaOriginal.substring(0, 200) + '...');
+        console.log('🔐 SELLADO: Longitud raw vs limpia:', cadenaOriginalRaw.length, 'vs', cadenaOriginal.length);
+        
+        // 5. Generar sello digital basado en la cadena original limpia
         const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
         console.log('🔐 SELLADO: Sello digital generado');
         
