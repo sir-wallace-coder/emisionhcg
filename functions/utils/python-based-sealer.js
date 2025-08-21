@@ -368,26 +368,26 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         console.log('  - Cadena (encoding):', 'utf8');
         console.log('  - Algoritmo:', 'RSA-SHA256 PKCS#1 v1.5 (exacto como Python)');
         
-        // ⭐ CRÍTICO: Replicar exactamente el método Python cryptography
+        // ⭐ CRÍTICO: Replicar EXACTAMENTE el método Python cryptography exitoso
         // Python: signature = private_key.sign(cadena_original.encode('utf-8'), padding.PKCS1v15(), hashes.SHA256())
         let selloDigitalBinario;
         try {
-            // Método exacto como Python cryptography
-            const sign = crypto.createSign('RSA-SHA256');
+            console.log('🔐 PYTHON-BASED: Replicando método exacto Python cryptography...');
+            
+            // MÉTODO EXACTO: Node.js crypto.sign() es equivalente directo a Python cryptography
+            // Ambos hacen internamente: SHA256 + DigestInfo ASN.1 + RSA PKCS#1 v1.5
+            const sign = crypto.createSign('sha256');
             sign.update(cadenaOriginal, 'utf8'); // Equivalente a cadena_original.encode('utf-8')
             
-            // Firmar con PKCS1v15 (exacto como Python)
-            selloDigitalBinario = sign.sign({
-                key: llaveValidada,
-                padding: crypto.constants.RSA_PKCS1_PADDING // Equivalente a padding.PKCS1v15()
-            });
+            // Firmar con RSA PKCS#1 v1.5 (exacto como Python padding.PKCS1v15())
+            selloDigitalBinario = sign.sign(llaveValidada);
             
-            console.log('🎉 PYTHON-BASED: Cadena firmada con método idéntico a Python cryptography');
-            console.log('📏 PYTHON-BASED: Longitud sello binario:', selloDigitalBinario.length);
+            console.log('🎉 PYTHON-BASED: Firmado con método idéntico a Python cryptography');
+            console.log('📏 PYTHON-BASED: Longitud sello binario:', selloDigitalBinario.length, 'bytes');
             
         } catch (errorFirmado) {
-            console.error('❌ PYTHON-BASED: Error firmando cadena original:', errorFirmado.message);
-            return { exito: false, error: 'Error firmando cadena original: ' + errorFirmado.message };
+            console.error('❌ PYTHON-BASED: Error firmando:', errorFirmado.message);
+            return { exito: false, error: 'Error firmando: ' + errorFirmado.message };
         }
         
         if (!selloDigitalBinario) {
