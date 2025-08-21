@@ -202,6 +202,15 @@ exports.handler = async (event, context) => {
       console.log('🐍 SELLADO: Sellando con implementación basada en código Python exitoso...');
       console.log('📋 SELLADO: Usando XSLT oficiales SAT + flujo Python que funciona');
       
+      // 🔍 DEBUG FORENSE: Rastrear datos del emisor antes del sellado
+      console.log('🔍 SELLADO ENDPOINT: Datos del emisor para sellado:');
+      console.log('  - RFC:', emisor.rfc);
+      console.log('  - certificado_cer (longitud):', emisor.certificado_cer ? emisor.certificado_cer.length : 'NULL/UNDEFINED');
+      console.log('  - certificado_key (longitud):', emisor.certificado_key ? emisor.certificado_key.length : 'NULL/UNDEFINED');
+      console.log('  - password_certificado (valor):', emisor.password_certificado ? `"${emisor.password_certificado}" (longitud: ${emisor.password_certificado.length})` : 'NULL/UNDEFINED/EMPTY');
+      console.log('  - password_certificado (tipo):', typeof emisor.password_certificado);
+      console.log('  - numero_certificado:', emisor.numero_certificado);
+      
       const resultadoPython = await sellarCFDIBasadoEnPython(
         xmlContent,
         emisor.certificado_cer,

@@ -30,6 +30,16 @@ const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-server
 async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivadaKey, passwordLlave, version, numeroSerie) {
     console.log('🐍 PYTHON-BASED SEALER: Iniciando sellado replicando flujo Python exitoso...');
     
+    // 🔍 DEBUG FORENSE: Rastrear parámetros de entrada
+    console.log('🔍 PYTHON-BASED: Parámetros recibidos:');
+    console.log('  - xmlContent (longitud):', xmlContent ? xmlContent.length : 'NULL/UNDEFINED');
+    console.log('  - certificadoCer (longitud):', certificadoCer ? certificadoCer.length : 'NULL/UNDEFINED');
+    console.log('  - llavePrivadaKey (longitud):', llavePrivadaKey ? llavePrivadaKey.length : 'NULL/UNDEFINED');
+    console.log('  - passwordLlave (valor):', passwordLlave ? `"${passwordLlave}" (longitud: ${passwordLlave.length})` : 'NULL/UNDEFINED/EMPTY');
+    console.log('  - passwordLlave (tipo):', typeof passwordLlave);
+    console.log('  - version:', version);
+    console.log('  - numeroSerie:', numeroSerie);
+    
     try {
         // 1. 📄 PARSEAR XML (como Python con etree)
         console.log('📄 PYTHON-BASED: Parseando XML inicial...');
