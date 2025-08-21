@@ -3,7 +3,7 @@ console.log('🔍 SELLADO: Iniciando carga de módulos...');
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
+// const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer'); // ⚠️ DESACTIVADO TEMPORALMENTE
 const FormData = require('form-data');
 // node-fetch es ES module, se carga dinámicamente
 let fetch;
@@ -269,49 +269,45 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 🚀 SELLADO: Determinar método de sellado
-    const usarSelladorExterno = process.env.USAR_SELLADOR_EXTERNO === 'true' && SELLADO_EXTERNO_TOKEN;
+    // 🚀 SELLADO: USANDO SOLO ENDPOINT EXTERNO (NodeCFDI desactivado temporalmente)
+    console.log('🌐 SELLADO: Usando EXCLUSIVAMENTE servicio externo de sellado...');
+    console.log('🔗 SELLADO: Endpoint:', SELLADO_EXTERNO_URL);
+    console.log('⚠️ SELLADO: NodeCFDI desactivado temporalmente por solicitud del usuario');
+    
+    // Verificar que tenemos el token para el servicio externo
+    if (!SELLADO_EXTERNO_TOKEN) {
+      console.error('❌ SELLADO EXTERNO: Token no configurado');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Token del servicio externo no configurado. Verifica SELLADO_EXTERNO_TOKEN en variables de entorno.' 
+        })
+      };
+    }
     
     let resultado;
     
-    if (usarSelladorExterno) {
-      console.log('🌐 SELLADO: Usando servicio externo de sellado...');
-      console.log('🔗 SELLADO: Endpoint:', SELLADO_EXTERNO_URL);
-      
-      try {
-        resultado = await sellarCFDIExterno(
-          xmlContent,
-          emisor.certificado_cer,
-          emisor.certificado_key,
-          emisor.password_key
-        );
-      } catch (errorExterno) {
-        console.error('❌ SELLADO EXTERNO: Falló, intentando con NodeCFDI como fallback...');
-        console.error('❌ SELLADO EXTERNO: Error:', errorExterno.message);
-        
-        // Fallback a NodeCFDI si el servicio externo falla
-        console.log('🔄 SELLADO: Fallback a NodeCFDI oficial...');
-        resultado = await sellarCFDIConNodeCfdi(
-          xmlContent,
-          emisor.certificado_cer,
-          emisor.certificado_key,
-          emisor.password_key,
-          version,
-          emisor.numero_certificado
-        );
-      }
-    } else {
-      console.log('🚀 SELLADO: Usando NodeCFDI oficial (método por defecto)...');
-      console.log('📋 SELLADO: NodeCFDI maneja correctamente llaves privadas SAT encriptadas');
-      
-      resultado = await sellarCFDIConNodeCfdi(
+    try {
+      resultado = await sellarCFDIExterno(
         xmlContent,
         emisor.certificado_cer,
         emisor.certificado_key,
-        emisor.password_key,
-        version,
-        emisor.numero_certificado
+        emisor.password_key
       );
+    } catch (errorExterno) {
+      console.error('❌ SELLADO EXTERNO: Error en servicio externo:', errorExterno.message);
+      console.error('❌ SELLADO EXTERNO: Stack:', errorExterno.stack);
+      
+      // NO HAY FALLBACK - Solo endpoint externo
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Error en servicio externo de sellado: ' + errorExterno.message,
+          detalles: 'NodeCFDI desactivado temporalmente. Solo se usa endpoint externo.'
+        })
+      };
     }
     
     if (!resultado || !resultado.exito) {
