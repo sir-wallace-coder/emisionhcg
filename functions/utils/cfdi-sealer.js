@@ -93,81 +93,107 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
 
 /**
  * Construye la cadena original para CFDI 4.0
+ * CORREGIDO: Implementación basada en XSLT oficial SAT
  * @param {Element} comprobante - Elemento XML del comprobante
  * @returns {string} Cadena original
  */
 function construirCadenaOriginal40(comprobante) {
     let cadena = '||';
     
-    // Atributos del comprobante según XSLT oficial SAT
-    // CRÍTICO: Distinguir entre Requeridos y Opcionales según especificación SAT
+    // ORDEN EXACTO según XSLT SAT oficial para CFDI 4.0
+    // Cada atributo se procesa según su presencia y requerimientos SAT
     
-    // ATRIBUTOS REQUERIDOS (siempre agregan |valor aunque esté vacío)
-    const requeridos = [
-        'Version', 'Fecha', 'NoCertificado', 'SubTotal', 'Moneda', 'Total', 
-        'TipoDeComprobante', 'Exportacion', 'LugarExpedicion'
-    ];
+    // 1. Version (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Version') || '') + '|';
     
-    // ATRIBUTOS OPCIONALES (solo agregan |valor si tienen valor)
-    const opcionales = [
-        'Serie', 'Folio', 'FormaPago', 'CondicionesDePago', 'Descuento', 
-        'TipoCambio', 'MetodoPago', 'Confirmacion'
-    ];
+    // 2. Serie (OPCIONAL)
+    const serie = normalizeSpace(comprobante.getAttribute('Serie') || '');
+    if (serie) cadena += serie + '|';
     
-    // Procesar en orden exacto según XSLT SAT
-    const ordenSAT = [
-        'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
-        'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
-        'TipoCambio', 'Total', 'TipoDeComprobante', 'Exportacion', 'MetodoPago',
-        'LugarExpedicion', 'Confirmacion'
-    ];
+    // 3. Folio (OPCIONAL)
+    const folio = normalizeSpace(comprobante.getAttribute('Folio') || '');
+    if (folio) cadena += folio + '|';
     
-    // Agregar atributos del comprobante según lógica SAT
-    for (let attr of ordenSAT) {
-        const valor = normalizeSpace(comprobante.getAttribute(attr) || ''); // CRÍTICO: normalize-space según XSLT SAT
-        
-        if (requeridos.includes(attr)) {
-            // REQUERIDO: Siempre agregar |valor
-            cadena += valor + '|';
-        } else if (opcionales.includes(attr) && valor) {
-            // OPCIONAL: Solo agregar |valor si tiene valor
-            cadena += valor + '|';
-        }
-        // Si es opcional y no tiene valor, no se agrega nada
-    }
+    // 4. Fecha (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Fecha') || '') + '|';
+    
+    // 5. FormaPago (OPCIONAL)
+    const formaPago = normalizeSpace(comprobante.getAttribute('FormaPago') || '');
+    if (formaPago) cadena += formaPago + '|';
+    
+    // 6. NoCertificado (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('NoCertificado') || '') + '|';
+    
+    // 7. CondicionesDePago (OPCIONAL)
+    const condicionesPago = normalizeSpace(comprobante.getAttribute('CondicionesDePago') || '');
+    if (condicionesPago) cadena += condicionesPago + '|';
+    
+    // 8. SubTotal (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('SubTotal') || '') + '|';
+    
+    // 9. Descuento (OPCIONAL)
+    const descuento = normalizeSpace(comprobante.getAttribute('Descuento') || '');
+    if (descuento) cadena += descuento + '|';
+    
+    // 10. Moneda (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Moneda') || '') + '|';
+    
+    // 11. TipoCambio (OPCIONAL)
+    const tipoCambio = normalizeSpace(comprobante.getAttribute('TipoCambio') || '');
+    if (tipoCambio) cadena += tipoCambio + '|';
+    
+    // 12. Total (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Total') || '') + '|';
+    
+    // 13. TipoDeComprobante (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('TipoDeComprobante') || '') + '|';
+    
+    // 14. Exportacion (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Exportacion') || '') + '|';
+    
+    // 15. MetodoPago (OPCIONAL)
+    const metodoPago = normalizeSpace(comprobante.getAttribute('MetodoPago') || '');
+    if (metodoPago) cadena += metodoPago + '|';
+    
+    // 16. LugarExpedicion (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('LugarExpedicion') || '') + '|';
+    
+    // 17. Confirmacion (OPCIONAL)
+    const confirmacion = normalizeSpace(comprobante.getAttribute('Confirmacion') || '');
+    if (confirmacion) cadena += confirmacion + '|';
     
     // Procesar emisor
     const emisor = comprobante.getElementsByTagName('cfdi:Emisor')[0];
     if (emisor) {
-        cadena += emisor.getAttribute('Rfc') + '|';
-        cadena += emisor.getAttribute('Nombre') + '|';
-        cadena += emisor.getAttribute('RegimenFiscal') + '|';
+        cadena += normalizeSpace(emisor.getAttribute('Rfc') || '') + '|';
+        cadena += normalizeSpace(emisor.getAttribute('Nombre') || '') + '|';
+        cadena += normalizeSpace(emisor.getAttribute('RegimenFiscal') || '') + '|';
     }
     
     // Procesar receptor
     const receptor = comprobante.getElementsByTagName('cfdi:Receptor')[0];
     if (receptor) {
-        cadena += receptor.getAttribute('Rfc') + '|';
-        cadena += receptor.getAttribute('Nombre') + '|';
-        cadena += receptor.getAttribute('DomicilioFiscalReceptor') + '|';
-        cadena += receptor.getAttribute('RegimenFiscalReceptor') + '|';
-        cadena += receptor.getAttribute('UsoCFDI') + '|';
+        cadena += normalizeSpace(receptor.getAttribute('Rfc') || '') + '|';
+        cadena += normalizeSpace(receptor.getAttribute('Nombre') || '') + '|';
+        cadena += normalizeSpace(receptor.getAttribute('DomicilioFiscalReceptor') || '') + '|';
+        cadena += normalizeSpace(receptor.getAttribute('RegimenFiscalReceptor') || '') + '|';
+        cadena += normalizeSpace(receptor.getAttribute('UsoCFDI') || '') + '|';
     }
     
     // Procesar conceptos
     const conceptos = comprobante.getElementsByTagName('cfdi:Concepto');
     for (let i = 0; i < conceptos.length; i++) {
         const concepto = conceptos[i];
-        cadena += concepto.getAttribute('ClaveProdServ') + '|';
-        cadena += concepto.getAttribute('NoIdentificacion') + '|';
-        cadena += concepto.getAttribute('Cantidad') + '|';
-        cadena += concepto.getAttribute('ClaveUnidad') + '|';
-        cadena += concepto.getAttribute('Unidad') + '|';
-        cadena += concepto.getAttribute('Descripcion') + '|';
-        cadena += concepto.getAttribute('ValorUnitario') + '|';
-        cadena += concepto.getAttribute('Importe') + '|';
-        cadena += concepto.getAttribute('Descuento') + '|';
-        cadena += concepto.getAttribute('ObjetoImp') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('ClaveProdServ') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('NoIdentificacion') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('Cantidad') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('ClaveUnidad') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('Unidad') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('Descripcion') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('ValorUnitario') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('Importe') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('Descuento') || '') + '|';
+        cadena += normalizeSpace(concepto.getAttribute('ObjetoImp') || '') + '|';
         
         // Procesar impuestos del concepto
         const impuestos = concepto.getElementsByTagName('cfdi:Impuestos')[0];
@@ -176,11 +202,29 @@ function construirCadenaOriginal40(comprobante) {
             const traslados = impuestos.getElementsByTagName('cfdi:Traslado');
             for (let j = 0; j < traslados.length; j++) {
                 const traslado = traslados[j];
-                cadena += traslado.getAttribute('Base') + '|';
-                cadena += traslado.getAttribute('Impuesto') + '|';
-                cadena += traslado.getAttribute('TipoFactor') + '|';
-                cadena += traslado.getAttribute('TasaOCuota') + '|';
-                cadena += traslado.getAttribute('Importe') + '|';
+                // CRÍTICO: Aplicar normalize-space y manejar atributos según SAT
+                cadena += normalizeSpace(traslado.getAttribute('Base') || '') + '|';
+                cadena += normalizeSpace(traslado.getAttribute('Impuesto') || '') + '|';
+                cadena += normalizeSpace(traslado.getAttribute('TipoFactor') || '') + '|';
+                
+                // TasaOCuota es OPCIONAL en algunos casos
+                const tasaOCuota = normalizeSpace(traslado.getAttribute('TasaOCuota') || '');
+                if (tasaOCuota) cadena += tasaOCuota + '|';
+                
+                // Importe es OPCIONAL cuando TipoFactor = "Exento"
+                const importe = normalizeSpace(traslado.getAttribute('Importe') || '');
+                if (importe) cadena += importe + '|';
+            }
+            
+            // Retenciones
+            const retenciones = impuestos.getElementsByTagName('cfdi:Retencion');
+            for (let j = 0; j < retenciones.length; j++) {
+                const retencion = retenciones[j];
+                cadena += normalizeSpace(retencion.getAttribute('Base') || '') + '|';
+                cadena += normalizeSpace(retencion.getAttribute('Impuesto') || '') + '|';
+                cadena += normalizeSpace(retencion.getAttribute('TipoFactor') || '') + '|';
+                cadena += normalizeSpace(retencion.getAttribute('TasaOCuota') || '') + '|';
+                cadena += normalizeSpace(retencion.getAttribute('Importe') || '') + '|';
             }
         }
     }
@@ -191,47 +235,67 @@ function construirCadenaOriginal40(comprobante) {
 
 /**
  * Construye la cadena original para CFDI 3.3
+ * CORREGIDO: Implementación basada en XSLT oficial SAT
  * @param {Element} comprobante - Elemento XML del comprobante
  * @returns {string} Cadena original
  */
 function construirCadenaOriginal33(comprobante) {
     let cadena = '||';
     
-    // Atributos del comprobante para versión 3.3 según estándar SAT
-    // CRÍTICO: Distinguir entre Requeridos y Opcionales según especificación SAT
+    // ORDEN EXACTO según XSLT SAT oficial para CFDI 3.3
+    // Cada atributo se procesa según su presencia y requerimientos SAT
     
-    // ATRIBUTOS REQUERIDOS (siempre agregan |valor aunque esté vacío)
-    const requeridos = [
-        'Version', 'Fecha', 'NoCertificado', 'SubTotal', 'Moneda', 'Total', 
-        'TipoDeComprobante', 'LugarExpedicion'
-    ];
+    // 1. Version (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Version') || '') + '|';
     
-    // ATRIBUTOS OPCIONALES (solo agregan |valor si tienen valor)
-    const opcionales = [
-        'Serie', 'Folio', 'FormaPago', 'CondicionesDePago', 'Descuento', 
-        'TipoCambio', 'MetodoPago'
-    ];
+    // 2. Serie (OPCIONAL)
+    const serie = normalizeSpace(comprobante.getAttribute('Serie') || '');
+    if (serie) cadena += serie + '|';
     
-    // Procesar en orden exacto según estándar SAT 3.3
-    const ordenSAT = [
-        'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
-        'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
-        'TipoCambio', 'Total', 'TipoDeComprobante', 'MetodoPago', 'LugarExpedicion'
-    ];
+    // 3. Folio (OPCIONAL)
+    const folio = normalizeSpace(comprobante.getAttribute('Folio') || '');
+    if (folio) cadena += folio + '|';
     
-    // Agregar atributos del comprobante según lógica SAT
-    for (let attr of ordenSAT) {
-        const valor = normalizeSpace(comprobante.getAttribute(attr) || ''); // CRÍTICO: normalize-space según XSLT SAT
-        
-        if (requeridos.includes(attr)) {
-            // REQUERIDO: Siempre agregar |valor
-            cadena += valor + '|';
-        } else if (opcionales.includes(attr) && valor) {
-            // OPCIONAL: Solo agregar |valor si tiene valor
-            cadena += valor + '|';
-        }
-        // Si es opcional y no tiene valor, no se agrega nada
-    }
+    // 4. Fecha (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Fecha') || '') + '|';
+    
+    // 5. FormaPago (OPCIONAL)
+    const formaPago = normalizeSpace(comprobante.getAttribute('FormaPago') || '');
+    if (formaPago) cadena += formaPago + '|';
+    
+    // 6. NoCertificado (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('NoCertificado') || '') + '|';
+    
+    // 7. CondicionesDePago (OPCIONAL)
+    const condicionesPago = normalizeSpace(comprobante.getAttribute('CondicionesDePago') || '');
+    if (condicionesPago) cadena += condicionesPago + '|';
+    
+    // 8. SubTotal (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('SubTotal') || '') + '|';
+    
+    // 9. Descuento (OPCIONAL)
+    const descuento = normalizeSpace(comprobante.getAttribute('Descuento') || '');
+    if (descuento) cadena += descuento + '|';
+    
+    // 10. Moneda (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Moneda') || '') + '|';
+    
+    // 11. TipoCambio (OPCIONAL)
+    const tipoCambio = normalizeSpace(comprobante.getAttribute('TipoCambio') || '');
+    if (tipoCambio) cadena += tipoCambio + '|';
+    
+    // 12. Total (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('Total') || '') + '|';
+    
+    // 13. TipoDeComprobante (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('TipoDeComprobante') || '') + '|';
+    
+    // 14. MetodoPago (OPCIONAL)
+    const metodoPago = normalizeSpace(comprobante.getAttribute('MetodoPago') || '');
+    if (metodoPago) cadena += metodoPago + '|';
+    
+    // 15. LugarExpedicion (REQUERIDO)
+    cadena += normalizeSpace(comprobante.getAttribute('LugarExpedicion') || '') + '|';
     
     // Procesar emisor (similar a 4.0)
     const emisor = comprobante.getElementsByTagName('cfdi:Emisor')[0];
@@ -433,6 +497,7 @@ function agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoB
 
 /**
  * Proceso completo de sellado de un CFDI
+ * CORREGIDO: Elimina doble serialización y asegura integridad del sello
  * @param {string} xmlContent - Contenido del XML CFDI
  * @param {string} llavePrivadaPem - Llave privada en formato PEM
  * @param {string} certificadoPem - Certificado en formato PEM
@@ -442,23 +507,36 @@ function agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoB
  */
 function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, version = '4.0') {
     try {
+        console.log('🔐 SELLADO: Iniciando proceso de sellado CFDI...');
+        
         // 1. Convertir certificado a base64 (sin headers PEM)
         const certificadoBase64 = certificadoPem
             .replace(/-----BEGIN CERTIFICATE-----/g, '')
             .replace(/-----END CERTIFICATE-----/g, '')
             .replace(/\n/g, '');
         
-        // 2. CRÍTICO PHPCFDI: Generar cadena original del XML ORIGINAL (sin modificar)
-        const cadenaOriginal = generarCadenaOriginal(xmlContent, version);
+        console.log('🔐 SELLADO: Certificado convertido a base64');
         
-        // 3. Generar sello digital basado en cadena original del XML original
+        // 2. CRÍTICO PHPCFDI: Primero agregar certificados al XML
+        const xmlConCertificados = agregarCertificadosAlXML(xmlContent, noCertificado, certificadoBase64);
+        console.log('🔐 SELLADO: Certificados agregados al XML');
+        
+        // 3. CRÍTICO: Generar cadena original del XML QUE YA INCLUYE NoCertificado
+        const cadenaOriginal = generarCadenaOriginal(xmlConCertificados, version);
+        console.log('🔐 SELLADO: Cadena original generada del XML con certificados');
+        console.log('🔐 SELLADO: Cadena original:', cadenaOriginal.substring(0, 200) + '...');
+        
+        // 4. Generar sello digital basado en la cadena original correcta
         const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
+        console.log('🔐 SELLADO: Sello digital generado');
         
-        // 4. CRÍTICO: UNA SOLA SERIALIZACIÓN - Agregar TODOS los atributos de una vez
-        const xmlSellado = agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoBase64);
+        // 5. CRÍTICO: Agregar SOLO el sello al XML que ya tiene certificados
+        const xmlSellado = agregarSoloSelloAlXML(xmlConCertificados, selloDigital);
+        console.log('🔐 SELLADO: Sello agregado al XML final');
         
-        // 5. Validar el sello generado
+        // 6. Validar el sello generado
         const selloValido = validarSelloDigital(cadenaOriginal, selloDigital, certificadoPem);
+        console.log('🔐 SELLADO: Validación del sello:', selloValido ? 'VÁLIDO' : 'INVÁLIDO');
         
         return {
             exito: true,
@@ -470,7 +548,7 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
         };
         
     } catch (error) {
-        console.error('Error en proceso de sellado:', error);
+        console.error('🔐 SELLADO: Error en proceso de sellado:', error);
         return {
             exito: false,
             error: error.message
