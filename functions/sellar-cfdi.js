@@ -3,7 +3,7 @@ console.log('🔍 SELLADO: Iniciando carga de módulos...');
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-const { sellarCFDIConCSD } = require('./utils/cfdi-csd-sealer');
+const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -129,10 +129,10 @@ exports.handler = async (event, context) => {
     console.log('🚀 SELLADO: Sellando con NodeCFDI oficial (solución a incompatibilidad Node.js crypto)...');
     console.log('📋 SELLADO: NodeCFDI maneja correctamente llaves privadas SAT encriptadas');
     
-    // Usar implementación correcta con CSD (no FIEL)
-    console.log('🎯 SELLADO: Usando sellador CSD correcto (replicando flujo Python)...');
+    // Usar sellador NodeCFDI que ya funciona
+    console.log('🎯 SELLADO: Usando sellador NodeCFDI que ya funciona...');
     
-    const resultadoCSD = await sellarCFDIConCSD(
+    const resultadoNodeCFDI = await sellarCFDIConNodeCfdi(
       xmlContent,
       emisor.certificado_cer,
       emisor.certificado_key,
@@ -141,39 +141,39 @@ exports.handler = async (event, context) => {
       emisor.numero_certificado
     );
     
-    if (!resultadoCSD || !resultadoCSD.exito) {
-      console.error('❌ SELLADO: Error durante el sellado CSD:', resultadoCSD?.error);
+    if (!resultadoNodeCFDI || !resultadoNodeCFDI.exito) {
+      console.error('❌ SELLADO: Error durante el sellado NodeCFDI:', resultadoNodeCFDI?.error);
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           exito: false,
-          error: 'Error en sellado CSD: ' + (resultadoCSD?.error || 'Error desconocido')
+          error: 'Error en sellado NodeCFDI: ' + (resultadoNodeCFDI?.error || 'Error desconocido')
         })
       };
     }
 
-    console.log('✅ SELLADO: CSD completado exitosamente (flujo Python replicado)');
-    console.log('📊 SELLADO: Sello generado:', resultadoCSD.sello ? 'SÍ' : 'NO');
-    console.log('📊 SELLADO: Certificado:', resultadoCSD.numeroSerie ? 'SÍ' : 'NO');
+    console.log('✅ SELLADO: NodeCFDI completado exitosamente');
+    console.log('📊 SELLADO: Sello generado:', resultadoNodeCFDI.sello ? 'SÍ' : 'NO');
+    console.log('📊 SELLADO: Certificado:', resultadoNodeCFDI.numeroCertificado ? 'SÍ' : 'NO');
     
     // Responder con el XML sellado y metadata
     const respuesta = {
       message: 'CFDI sellado exitosamente con NodeCFDI oficial',
       exito: true,
-      xmlSellado: resultadoCSD.xmlSellado,
-      selloDigital: resultadoCSD.sello,
-      cadenaOriginal: resultadoCSD.cadenaOriginal,
-      selloValido: true, // CSD siempre valida el sello
-      numeroCertificado: resultadoCSD.numeroSerie,
+      xmlSellado: resultadoNodeCFDI.xmlSellado,
+      selloDigital: resultadoNodeCFDI.sello,
+      cadenaOriginal: resultadoNodeCFDI.cadenaOriginal,
+      selloValido: resultadoNodeCFDI.selloValido,
+      numeroCertificado: resultadoNodeCFDI.numeroCertificado,
       metadata: {
         version: version,
         fechaSellado: new Date().toISOString(),
         longitudXmlOriginal: xmlContent.length,
-        longitudXmlSellado: resultadoCSD.xmlSellado.length,
-        longitudSello: resultadoCSD.sello.length,
-        longitudCadenaOriginal: resultadoCSD.cadenaOriginal.length,
-        implementacion: 'CSD nativo con cadena original NodeCFDI'
+        longitudXmlSellado: resultadoNodeCFDI.xmlSellado.length,
+        longitudSello: resultadoNodeCFDI.sello.length,
+        longitudCadenaOriginal: resultadoNodeCFDI.cadenaOriginal.length,
+        implementacion: 'NodeCFDI oficial (compatible llaves SAT)'
       },
       emisor: {
         rfc: emisor.rfc,
