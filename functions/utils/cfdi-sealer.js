@@ -448,17 +448,14 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
             .replace(/-----END CERTIFICATE-----/g, '')
             .replace(/\n/g, '');
         
-        // 2. CRÍTICO: Agregar NoCertificado y Certificado al XML ANTES de generar cadena original
-        const xmlConCertificados = agregarCertificadosAlXML(xmlContent, noCertificado, certificadoBase64);
+        // 2. CRÍTICO PHPCFDI: Generar cadena original del XML ORIGINAL (sin modificar)
+        const cadenaOriginal = generarCadenaOriginal(xmlContent, version);
         
-        // 3. Generar cadena original del XML con certificados (sin Sello)
-        const cadenaOriginal = generarCadenaOriginal(xmlConCertificados, version);
-        
-        // 4. Generar sello digital basado en cadena original correcta
+        // 3. Generar sello digital basado en cadena original del XML original
         const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
         
-        // 5. Agregar SOLO el sello al XML con certificados
-        const xmlSellado = agregarSoloSelloAlXML(xmlConCertificados, selloDigital);
+        // 4. CRÍTICO: UNA SOLA SERIALIZACIÓN - Agregar TODOS los atributos de una vez
+        const xmlSellado = agregarSelloAlXML(xmlContent, selloDigital, noCertificado, certificadoBase64);
         
         // 5. Validar el sello generado
         const selloValido = validarSelloDigital(cadenaOriginal, selloDigital, certificadoPem);
