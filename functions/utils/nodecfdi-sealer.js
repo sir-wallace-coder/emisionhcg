@@ -13,7 +13,7 @@ const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
 const crypto = require('crypto');
 
 // Importar funciones existentes que ya funcionan correctamente
-const { generarCadenaOriginal } = require('./xslt-processor');
+const { generarCadenaOriginal } = require('../xslt-processor');
 const { limpiarCadenaOriginalChatGPT, removerAtributoSelloCompletamente } = require('./cfdi-sealer');
 
 /**
