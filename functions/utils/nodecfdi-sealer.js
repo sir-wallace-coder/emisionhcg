@@ -299,32 +299,6 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         // CRÍTICO: Usar serialización que preserve el base64 sin escape
         let xmlSellado = xmlSerializer.serializeToString(xmlDoc);
         
-        // CORRECCIÓN AGRESIVA: Siempre forzar el sello base64 correcto
-        console.log('🔧 NODECFDI: Aplicando corrección agresiva de sello base64...');
-        console.log('🔍 NODECFDI: Sello base64 original:', selloDigital.substring(0, 50) + '...');
-        
-        // Buscar y reemplazar CUALQUIER contenido del atributo Sello
-        const selloActual = xmlSellado.match(/Sello="([^"]*)"/)?.[1];
-        if (selloActual) {
-            console.log('🔍 NODECFDI: Sello actual en XML:', selloActual.substring(0, 50) + '...');
-            
-            if (selloActual !== selloDigital) {
-                console.log('🚨 NODECFDI: Sello corrupto detectado - aplicando corrección...');
-                
-                // Reemplazar FORZADAMENTE el sello corrupto con el base64 correcto
-                xmlSellado = xmlSellado.replace(
-                    /Sello="[^"]*"/, 
-                    `Sello="${selloDigital}"`
-                );
-                
-                console.log('✅ NODECFDI: Sello base64 forzado correctamente');
-                console.log('🔍 NODECFDI: Sello corregido (primeros 50):', selloDigital.substring(0, 50));
-            } else {
-                console.log('✅ NODECFDI: Sello ya estaba correcto en XML');
-            }
-        } else {
-            console.error('❌ NODECFDI: No se encontró atributo Sello en XML');
-        }
         console.log('✅ NODECFDI: XML sellado generado');
         console.log('📏 NODECFDI: Longitud XML sellado:', xmlSellado.length);
         
@@ -345,6 +319,34 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         }
         
         console.log('✅ NODECFDI: Validación básica de formato exitosa');
+        
+        // CORRECCIÓN AGRESIVA: Siempre forzar el sello base64 correcto ANTES de auditoría
+        console.log('🔧 NODECFDI: Aplicando corrección agresiva de sello base64...');
+        console.log('🔍 NODECFDI: Sello base64 original:', selloDigital.substring(0, 50) + '...');
+        
+        // Buscar y reemplazar CUALQUIER contenido del atributo Sello
+        const selloActualEnXML = xmlSellado.match(/Sello="([^"]*)"/)?.[1];
+        if (selloActualEnXML) {
+            console.log('🔍 NODECFDI: Sello actual en XML:', selloActualEnXML.substring(0, 50) + '...');
+            
+            if (selloActualEnXML !== selloDigital) {
+                console.log('🚨 NODECFDI: Sello corrupto detectado - aplicando corrección...');
+                
+                // Reemplazar FORZADAMENTE el sello corrupto con el base64 correcto
+                xmlSellado = xmlSellado.replace(
+                    /Sello="[^"]*"/, 
+                    `Sello="${selloDigital}"`
+                );
+                
+                console.log('✅ NODECFDI: Sello base64 forzado correctamente');
+                console.log('🔍 NODECFDI: Sello corregido (primeros 50):', selloDigital.substring(0, 50));
+                console.log('📏 NODECFDI: Nueva longitud XML:', xmlSellado.length);
+            } else {
+                console.log('✅ NODECFDI: Sello ya estaba correcto en XML');
+            }
+        } else {
+            console.error('❌ NODECFDI: No se encontró atributo Sello en XML');
+        }
         
         // 11. AUDITORÍA FORENSE CFDI40102: Verificar digestión vs desencriptación
         console.log('🔬 FORENSE CFDI40102: Iniciando auditoría de digestión vs desencriptación...');
