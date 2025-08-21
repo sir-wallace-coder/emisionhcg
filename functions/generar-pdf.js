@@ -10,15 +10,8 @@
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
 
-// Importar SDK oficial de redoc.mx
-let Redoc;
-try {
-    // Intentar importar el SDK oficial de redoc.mx
-    Redoc = require('@redocmx/client');
-} catch (error) {
-    console.log('⚠️ GENERAR PDF: SDK @redocmx/client no instalado, usando fallback HTTP');
-    Redoc = null;
-}
+// SDK de redoc.mx se cargará dinámicamente en la función handler
+// debido a que es un ES module y necesita import() dinámico
 
 /**
  * Handler principal para generar PDF desde XML
@@ -119,15 +112,23 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Verificar disponibilidad del SDK
-        if (!Redoc) {
-            console.error('❌ GENERAR PDF: SDK redocmx no disponible');
+        // Cargar SDK de redoc.mx dinámicamente (ES module)
+        let Redoc;
+        try {
+            console.log('🚀 GENERAR PDF: Cargando SDK @redocmx/client...');
+            const redocModule = await import('@redocmx/client');
+            Redoc = redocModule.default || redocModule;
+            console.log('✅ GENERAR PDF: SDK @redocmx/client cargado exitosamente');
+        } catch (importError) {
+            console.error('❌ GENERAR PDF: Error cargando SDK @redocmx/client:', importError.message);
+            console.error('Stack:', importError.stack);
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({
                     error: 'SDK de PDF no disponible',
-                    mensaje: 'El SDK redocmx no está instalado. Ejecutar: npm install redocmx'
+                    mensaje: `Error cargando @redocmx/client: ${importError.message}`,
+                    timestamp: new Date().toISOString()
                 })
             };
         }
