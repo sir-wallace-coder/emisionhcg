@@ -2985,12 +2985,22 @@
                 const receptor = xmlDoc.querySelector('cfdi\\:Receptor, Receptor');
                 const timbreFiscal = xmlDoc.querySelector('tfd\\:TimbreFiscalDigital, TimbreFiscalDigital');
                 
+                // DIAGNÓSTICO CFDI40102: Logging de valores críticos del XML importado
+                const subtotalXML = comprobante.getAttribute('SubTotal') || comprobante.getAttribute('subtotal') || '0.00';
+                const totalXML = comprobante.getAttribute('Total') || comprobante.getAttribute('total') || '0.00';
+                
+                console.log('🔍 DIAGNÓSTICO CFDI40102 - XML IMPORTADO:');
+                console.log('   SubTotal en XML:', subtotalXML);
+                console.log('   Total en XML:', totalXML);
+                console.log('   Diferencia:', (parseFloat(totalXML) - parseFloat(subtotalXML)).toFixed(2));
+                
                 // Extraer datos
                 const datos = {
                     version: comprobante.getAttribute('Version') || comprobante.getAttribute('version') || '4.0',
                     serie: comprobante.getAttribute('Serie') || comprobante.getAttribute('serie') || null,
                     folio: comprobante.getAttribute('Folio') || comprobante.getAttribute('folio') || '1',
-                    total: comprobante.getAttribute('Total') || comprobante.getAttribute('total') || '0.00',
+                    subtotal: subtotalXML,
+                    total: totalXML,
                     sello: comprobante.getAttribute('Sello') || comprobante.getAttribute('sello') || null,
                     
                     // Datos del emisor
