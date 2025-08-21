@@ -3355,6 +3355,28 @@
                             statusText: response.statusText,
                             error: errorResult
                         });
+                        
+                        // Mostrar error específico al usuario
+                        let errorMessage = `Error en ${file.name}: `;
+                        if (errorResult && errorResult.error) {
+                            errorMessage += errorResult.error;
+                            
+                            // Agregar detalles adicionales si están disponibles
+                            if (errorResult.tipo) {
+                                errorMessage += ` (Tipo: ${errorResult.tipo})`;
+                            }
+                            if (errorResult.campo) {
+                                errorMessage += ` - Campo: ${errorResult.campo}`;
+                            }
+                            if (errorResult.longitud_actual && errorResult.longitud_maxima) {
+                                errorMessage += ` - Longitud actual: ${errorResult.longitud_actual}, máxima: ${errorResult.longitud_maxima}`;
+                            }
+                        } else {
+                            errorMessage += `Error HTTP ${response.status}: ${response.statusText}`;
+                        }
+                        
+                        alert(errorMessage);
+                        break; // Detener el procesamiento si hay un error
                     }
                 }
                 
