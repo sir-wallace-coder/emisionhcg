@@ -1439,7 +1439,8 @@
                 });
                 
                 Object.values(impuestosAgrupados).forEach(impuesto => {
-                    xml += `      <cfdi:Traslado Base="${impuesto.base.toFixed(2)}" Impuesto="${impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${impuesto.tasa.toFixed(6)}" Importe="${impuesto.importe.toFixed(2)}"/>
+                    // CRÍTICO: En traslados TOTALES NO incluir Base (solo en conceptos)
+                    xml += `      <cfdi:Traslado Impuesto="${impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${impuesto.tasa.toFixed(6)}" Importe="${impuesto.importe.toFixed(2)}"/>
 `;
                 });
                 
