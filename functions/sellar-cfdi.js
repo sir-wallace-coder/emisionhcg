@@ -120,30 +120,19 @@ exports.handler = async (event, context) => {
     console.log('🔍 SELLADO ENDPOINT: Certificado No:', emisor.numero_certificado);
     console.log('🔍 SELLADO ENDPOINT: Vigencia hasta:', emisor.vigencia_hasta);
 
-    // 3. Validar vigencia del certificado (opcional pero recomendado)
+    // 3. VALIDACIÓN DE VIGENCIA DESHABILITADA (permite certificados vencidos)
     if (emisor.vigencia_hasta) {
       const vigenciaDate = new Date(emisor.vigencia_hasta);
       const ahora = new Date();
       
+      // SOLO LOG INFORMATIVO - NO BLOQUEAR
       if (vigenciaDate < ahora) {
-        console.error('❌ SELLADO ENDPOINT: Certificado vencido');
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ 
-            error: 'El certificado ha vencido',
-            vigencia_hasta: emisor.vigencia_hasta
-          })
-        };
+        console.log('ℹ️ SELLADO ENDPOINT: Certificado vencido (permitido):', emisor.vigencia_hasta);
+      } else {
+        console.log('✅ SELLADO ENDPOINT: Certificado vigente hasta:', emisor.vigencia_hasta);
       }
-      
-      // Advertir si vence pronto (30 días)
-      const treintaDias = new Date();
-      treintaDias.setDate(treintaDias.getDate() + 30);
-      
-      if (vigenciaDate < treintaDias) {
-        console.log('⚠️ SELLADO ENDPOINT: Certificado vence pronto:', emisor.vigencia_hasta);
-      }
+    } else {
+      console.log('ℹ️ SELLADO ENDPOINT: Sin información de vigencia del certificado');
     }
 
     // 4. Procesar el sellado del CFDI
