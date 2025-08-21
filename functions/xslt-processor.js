@@ -1,6 +1,6 @@
-const libxmljs = require('libxmljs2');
 const fs = require('fs');
 const path = require('path');
+const { DOMParser } = require('xmldom');
 
 /**
  * Procesador XSLT oficial SAT para generación de cadena original CFDI
@@ -42,57 +42,51 @@ class XSLTProcessor {
     }
 
     /**
-     * Genera la cadena original usando el XSLT oficial del SAT
+     * Genera la cadena original usando las reglas XSLT oficial del SAT
+     * Implementación compatible con serverless (sin libxmljs2)
      * @param {string} xmlString - XML del CFDI
      * @param {string} version - Versión del CFDI (3.3 o 4.0)
      * @returns {string} - Cadena original generada
      */
     generarCadenaOriginalXSLT(xmlString, version) {
         try {
-            console.log(`🔄 Generando cadena original con XSLT oficial SAT ${version}`);
+            console.log(`🔄 XSLT SERVERLESS: Generando cadena original SAT ${version}`);
             
             // Validar versión
             if (!['3.3', '4.0'].includes(version)) {
                 throw new Error(`Versión CFDI no soportada: ${version}`);
             }
             
-            // Parsear el XML
-            const xmlDoc = libxmljs.parseXml(xmlString);
+            // Parsear el XML con xmldom (compatible serverless)
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+            
             if (!xmlDoc) {
                 throw new Error('Error parseando XML del CFDI');
             }
             
-            // Obtener el XSLT correspondiente
-            const xsltContent = this.xsltCache.get(version);
-            if (!xsltContent) {
-                throw new Error(`XSLT no encontrado para versión ${version}`);
-            }
-            
-            // Procesar con implementación manual optimizada
-            // Nota: libxmljs2 no soporta XSLT directamente, 
-            // pero podemos implementar las reglas XSLT manualmente
+            // Procesar con implementación manual basada en XSLT oficial SAT
             const cadenaOriginal = this.procesarXMLConReglasXSLT(xmlDoc, version);
             
-            console.log(`✅ Cadena original generada exitosamente (${cadenaOriginal.length} caracteres)`);
-            console.log(`📋 Cadena: ${cadenaOriginal.substring(0, 200)}...`);
+            console.log(`✅ XSLT SERVERLESS: Cadena original generada (${cadenaOriginal.length} chars)`);
+            console.log(`📋 XSLT SERVERLESS: Cadena: ${cadenaOriginal.substring(0, 200)}...`);
             
             return cadenaOriginal;
             
         } catch (error) {
-            console.error('❌ Error generando cadena original con XSLT:', error);
+            console.error('❌ XSLT SERVERLESS: Error generando cadena original:', error);
             throw error;
         }
     }
 
     /**
-     * Implementa las reglas XSLT del SAT manualmente
+     * Implementa las reglas XSLT del SAT manualmente (compatible serverless)
      * Basado en el XSLT oficial descargado
      */
     procesarXMLConReglasXSLT(xmlDoc, version) {
         try {
-            const comprobante = xmlDoc.get('//cfdi:Comprobante', {
-                cfdi: version === '4.0' ? 'http://www.sat.gob.mx/cfd/4' : 'http://www.sat.gob.mx/cfd/3'
-            });
+            // Buscar el elemento Comprobante con xmldom
+            const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
             
             if (!comprobante) {
                 throw new Error('Nodo Comprobante no encontrado en el XML');
@@ -171,12 +165,10 @@ class XSLTProcessor {
     }
 
     /**
-     * Procesa el nodo Emisor según XSLT oficial
+     * Procesa el nodo Emisor según XSLT oficial (compatible serverless)
      */
     procesarEmisor(xmlDoc, version) {
-        const emisor = xmlDoc.get('//cfdi:Emisor', {
-            cfdi: version === '4.0' ? 'http://www.sat.gob.mx/cfd/4' : 'http://www.sat.gob.mx/cfd/3'
-        });
+        const emisor = xmlDoc.getElementsByTagName('cfdi:Emisor')[0];
         
         if (!emisor) return '';
         
@@ -193,12 +185,10 @@ class XSLTProcessor {
     }
 
     /**
-     * Procesa el nodo Receptor según XSLT oficial
+     * Procesa el nodo Receptor según XSLT oficial (compatible serverless)
      */
     procesarReceptor(xmlDoc, version) {
-        const receptor = xmlDoc.get('//cfdi:Receptor', {
-            cfdi: version === '4.0' ? 'http://www.sat.gob.mx/cfd/4' : 'http://www.sat.gob.mx/cfd/3'
-        });
+        const receptor = xmlDoc.getElementsByTagName('cfdi:Receptor')[0];
         
         if (!receptor) return '';
         
@@ -219,12 +209,10 @@ class XSLTProcessor {
     }
 
     /**
-     * Procesa los Conceptos según XSLT oficial
+     * Procesa los Conceptos según XSLT oficial (compatible serverless)
      */
     procesarConceptos(xmlDoc, version) {
-        const conceptos = xmlDoc.find('//cfdi:Conceptos/cfdi:Concepto', {
-            cfdi: version === '4.0' ? 'http://www.sat.gob.mx/cfd/4' : 'http://www.sat.gob.mx/cfd/3'
-        });
+        const conceptos = Array.from(xmlDoc.getElementsByTagName('cfdi:Concepto'));
         
         let cadena = '';
         
@@ -243,42 +231,43 @@ class XSLTProcessor {
                 cadena += this.procesarAtributo(concepto, 'ObjetoImp', true);
             }
             
-            // Procesar impuestos del concepto
-            const traslados = concepto.find('.//cfdi:Impuestos/cfdi:Traslados/cfdi:Traslado', {
-                cfdi: version === '4.0' ? 'http://www.sat.gob.mx/cfd/4' : 'http://www.sat.gob.mx/cfd/3'
-            });
-            
-            traslados.forEach(traslado => {
-                cadena += this.procesarAtributo(traslado, 'Base', true);
-                cadena += this.procesarAtributo(traslado, 'Impuesto', true);
-                cadena += this.procesarAtributo(traslado, 'TipoFactor', true);
-                cadena += this.procesarAtributo(traslado, 'TasaOCuota', false);
-                cadena += this.procesarAtributo(traslado, 'Importe', false);
-            });
-        });
+            // Procesar impuestos del concepto (compatible serverless)
+            const impuestosConcepto = concepto.getElementsByTagName('cfdi:Impuestos')[0];
+            if (impuestosConcepto) {
+                const trasladosConcepto = impuestosConcepto.getElementsByTagName('cfdi:Traslado');
+                
+                Array.from(trasladosConcepto).forEach(traslado => {
+                    cadena += this.procesarAtributo(traslado, 'Base', true);
+                    cadena += this.procesarAtributo(traslado, 'Impuesto', true);
+                    cadena += this.procesarAtributo(traslado, 'TipoFactor', true);
+                    cadena += this.procesarAtributo(traslado, 'TasaOCuota', false);
+                    cadena += this.procesarAtributo(traslado, 'Importe', false);
+                });
+            }
         
         return cadena;
     }
 
     /**
-     * Procesa los Impuestos totales según XSLT oficial
+     * Procesa los Impuestos totales según XSLT oficial (compatible serverless)
      * CRÍTICO: En impuestos totales NO se incluye Base (diferencia clave con conceptos)
      */
     procesarImpuestos(xmlDoc, version) {
         let cadena = '';
         
         // Procesar traslados totales - SIN Base según XSLT oficial
-        const traslados = xmlDoc.find('//cfdi:Impuestos/cfdi:Traslados/cfdi:Traslado', {
-            cfdi: version === '4.0' ? 'http://www.sat.gob.mx/cfd/4' : 'http://www.sat.gob.mx/cfd/3'
-        });
-        
-        traslados.forEach(traslado => {
-            // CRÍTICO: NO incluir Base en traslados totales
-            cadena += this.procesarAtributo(traslado, 'Impuesto', true);
-            cadena += this.procesarAtributo(traslado, 'TipoFactor', true);
-            cadena += this.procesarAtributo(traslado, 'TasaOCuota', false);
-            cadena += this.procesarAtributo(traslado, 'Importe', false);
-        });
+        const impuestosTotales = xmlDoc.getElementsByTagName('cfdi:Impuestos')[0];
+        if (impuestosTotales) {
+            const trasladosTotales = impuestosTotales.getElementsByTagName('cfdi:Traslado');
+            
+            Array.from(trasladosTotales).forEach(traslado => {
+                // CRÍTICO: NO incluir Base en traslados totales
+                cadena += this.procesarAtributo(traslado, 'Impuesto', true);
+                cadena += this.procesarAtributo(traslado, 'TipoFactor', true);
+                cadena += this.procesarAtributo(traslado, 'TasaOCuota', false);
+                cadena += this.procesarAtributo(traslado, 'Importe', false);
+            });
+        }
         
         return cadena;
     }
