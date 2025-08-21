@@ -160,32 +160,37 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         // 🧪 PYTHON-BASED: Probando métodos de carga como en Python (orden exacto)...
         console.log('🧪 PYTHON-BASED: Probando métodos de carga como en Python (orden exacto)...');
         
-        // Métodos basados en el código Python exitoso (mismo orden de prioridad)
+        // Métodos basados en el código Python exitoso (sintaxis Node.js crypto correcta)
         const metodosLlave = [
-            // Método 1: DER con contraseña (método principal en Python)
+            // Método 1: Buffer DER con contraseña (método principal en Python)
             {
-                nombre: 'DER con contraseña',
-                objeto: { key: llavePrivadaBuffer, passphrase: passwordLlave, format: 'der' }
+                nombre: 'Buffer DER con contraseña',
+                objeto: { key: llavePrivadaBuffer, passphrase: passwordLlave }
             },
             // Método 2: PEM con contraseña
             {
                 nombre: 'PEM con contraseña', 
                 objeto: { key: llavePrivadaPem, passphrase: passwordLlave }
             },
-            // Método 3: DER sin contraseña (fallback)
+            // Método 3: Buffer DER sin contraseña (fallback)
             {
-                nombre: 'DER sin contraseña',
-                objeto: { key: llavePrivadaBuffer, format: 'der' }
+                nombre: 'Buffer DER sin contraseña',
+                objeto: llavePrivadaBuffer
             },
             // Método 4: PEM sin contraseña (fallback)
             {
                 nombre: 'PEM sin contraseña',
-                objeto: { key: llavePrivadaPem }
+                objeto: llavePrivadaPem
             },
-            // Método 5: Formato string directo (como último recurso)
+            // Método 5: String PEM con contraseña (como último recurso)
             {
-                nombre: 'String directo con contraseña',
+                nombre: 'String PEM con contraseña',
                 objeto: { key: llavePrivadaPem.toString(), passphrase: passwordLlave }
+            },
+            // Método 6: Solo contraseña como string (fallback extremo)
+            {
+                nombre: 'Solo contraseña string',
+                objeto: { key: llavePrivadaPem, passphrase: passwordLlave.toString() }
             }
         ];
         
