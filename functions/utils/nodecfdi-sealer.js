@@ -226,7 +226,7 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         // 11. Verificación adicional: regenerar cadena original del XML sellado
         console.log('🔍 NODECFDI: Verificación adicional de integridad...');
         const xmlParaVerificacion = removerAtributoSelloCompletamente(xmlSellado);
-        const cadenaOriginalFinal = generarCadenaOriginal(xmlParaVerificacion, version);
+        const cadenaOriginalFinal = generarCadenaOriginalXSLT(xmlParaVerificacion, version);
         
         if (cadenaOriginalFinal) {
             const cadenaFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
