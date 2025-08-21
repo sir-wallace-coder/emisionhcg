@@ -125,11 +125,14 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 🐍 SELLADO: Usando implementación basada en código Python exitoso
-    console.log('🐍 SELLADO: Sellando con implementación basada en código Python exitoso...');
-    console.log('📋 SELLADO: Enfoque en resolver error de digestión CFDI40102');
+    // 🚀 SELLADO: Usando NodeCFDI oficial (compatible con llaves SAT)
+    console.log('🚀 SELLADO: Sellando con NodeCFDI oficial (solución a incompatibilidad Node.js crypto)...');
+    console.log('📋 SELLADO: NodeCFDI maneja correctamente llaves privadas SAT encriptadas');
     
-    const resultadoPython = await sellarCFDIBasadoEnPython(
+    // Importar NodeCFDI
+    const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
+    
+    const resultadoNodeCFDI = await sellarCFDIConNodeCfdi(
       xmlContent,
       emisor.certificado_cer,
       emisor.certificado_key,
@@ -138,39 +141,39 @@ exports.handler = async (event, context) => {
       emisor.numero_certificado
     );
     
-    if (!resultadoPython || !resultadoPython.exito) {
-      console.error('❌ SELLADO: Error durante el sellado Python-based:', resultadoPython?.error);
+    if (!resultadoNodeCFDI || !resultadoNodeCFDI.exito) {
+      console.error('❌ SELLADO: Error durante el sellado NodeCFDI:', resultadoNodeCFDI?.error);
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           exito: false,
-          error: 'Error en sellado Python-based: ' + (resultadoPython?.error || 'Error desconocido')
+          error: 'Error en sellado NodeCFDI: ' + (resultadoNodeCFDI?.error || 'Error desconocido')
         })
       };
     }
 
-    console.log('✅ SELLADO: Implementación Python-based completada exitosamente');
-    console.log('📊 SELLADO: Sello generado:', resultadoPython.sello ? 'SÍ' : 'NO');
-    console.log('📊 SELLADO: Certificado:', resultadoPython.numeroCertificado ? 'SÍ' : 'NO');
+    console.log('✅ SELLADO: NodeCFDI completado exitosamente');
+    console.log('📊 SELLADO: Sello generado:', resultadoNodeCFDI.sello ? 'SÍ' : 'NO');
+    console.log('📊 SELLADO: Certificado:', resultadoNodeCFDI.numeroCertificado ? 'SÍ' : 'NO');
     
     // Responder con el XML sellado y metadata
     const respuesta = {
-      message: 'CFDI sellado exitosamente con implementación basada en Python',
+      message: 'CFDI sellado exitosamente con NodeCFDI oficial',
       exito: true,
-      xmlSellado: resultadoPython.xmlSellado,
-      selloDigital: resultadoPython.sello,
-      cadenaOriginal: resultadoPython.cadenaOriginal,
-      selloValido: resultadoPython.selloValido,
-      numeroCertificado: resultadoPython.numeroCertificado,
+      xmlSellado: resultadoNodeCFDI.xmlSellado,
+      selloDigital: resultadoNodeCFDI.sello,
+      cadenaOriginal: resultadoNodeCFDI.cadenaOriginal,
+      selloValido: resultadoNodeCFDI.selloValido,
+      numeroCertificado: resultadoNodeCFDI.numeroCertificado,
       metadata: {
         version: version,
         fechaSellado: new Date().toISOString(),
         longitudXmlOriginal: xmlContent.length,
-        longitudXmlSellado: resultadoPython.xmlSellado.length,
-        longitudSello: resultadoPython.sello.length,
-        longitudCadenaOriginal: resultadoPython.cadenaOriginal.length,
-        implementacion: 'Python-based con node-forge fallback'
+        longitudXmlSellado: resultadoNodeCFDI.xmlSellado.length,
+        longitudSello: resultadoNodeCFDI.sello.length,
+        longitudCadenaOriginal: resultadoNodeCFDI.cadenaOriginal.length,
+        implementacion: 'NodeCFDI oficial (compatible llaves SAT)'
       },
       emisor: {
         rfc: emisor.rfc,
