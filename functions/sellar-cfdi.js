@@ -207,15 +207,15 @@ exports.handler = async (event, context) => {
       console.log('  - RFC:', emisor.rfc);
       console.log('  - certificado_cer (longitud):', emisor.certificado_cer ? emisor.certificado_cer.length : 'NULL/UNDEFINED');
       console.log('  - certificado_key (longitud):', emisor.certificado_key ? emisor.certificado_key.length : 'NULL/UNDEFINED');
-      console.log('  - password_certificado (valor):', emisor.password_certificado ? `"${emisor.password_certificado}" (longitud: ${emisor.password_certificado.length})` : 'NULL/UNDEFINED/EMPTY');
-      console.log('  - password_certificado (tipo):', typeof emisor.password_certificado);
+      console.log('  - password_key (valor):', emisor.password_key ? `"${emisor.password_key}" (longitud: ${emisor.password_key.length})` : 'NULL/UNDEFINED/EMPTY');
+      console.log('  - password_key (tipo):', typeof emisor.password_key);
       console.log('  - numero_certificado:', emisor.numero_certificado);
       
       const resultadoPython = await sellarCFDIBasadoEnPython(
         xmlContent,
         emisor.certificado_cer,
         emisor.certificado_key,
-        emisor.password_certificado,
+        emisor.password_key,
         version,
         emisor.numero_certificado  // CRÍTICO: Pasar número de certificado correcto
       );
