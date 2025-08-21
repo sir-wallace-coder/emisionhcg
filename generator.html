@@ -1236,34 +1236,11 @@
                 let sellado = false;
                 let infoSellado = null;
 
-                // Verificar si hay un emisor seleccionado para sellado automático
-                const emisorSeleccionado = document.getElementById('emisorSelect').value;
-                if (emisorSeleccionado && currentUser) {
-                    try {
-                        showAlert('🔐 Procesando sellado digital...', 'info');
-                        
-                        // Llamar a la función de sellado
-                        const resultadoSellado = await sellarXMLConEmisor(xmlContent, emisorSeleccionado, version);
-                        
-                        if (resultadoSellado.exito) {
-                            xmlFinal = resultadoSellado.xmlSellado;
-                            sellado = true;
-                            infoSellado = {
-                                selloDigital: resultadoSellado.selloDigital,
-                                numeroCertificado: resultadoSellado.numeroCertificado,
-                                emisor: resultadoSellado.emisor
-                            };
-                            showAlert('✅ XML generado y sellado digitalmente', 'success');
-                        } else {
-                            showAlert('⚠️ XML generado sin sellar: ' + resultadoSellado.error, 'warning');
-                        }
-                    } catch (selladoError) {
-                        console.error('Error en sellado:', selladoError);
-                        showAlert('⚠️ XML generado sin sellar: Error en el proceso de sellado', 'warning');
-                    }
-                } else {
-                    showAlert('✅ XML generado exitosamente (sin sellar)', 'success');
-                }
+                // XML generado sin sellar según especificaciones SAT
+                // Los atributos NoCertificado, Certificado y Sello se agregan solo durante el sellado
+                showAlert('✅ XML generado exitosamente (sin sellar)', 'success');
+                
+                // Nota: El sellado debe ser un proceso separado usando el botón "Sellar XML"
 
                 // Actualizar variable global
                 xmlGenerado = xmlFinal;

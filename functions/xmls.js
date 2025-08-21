@@ -103,6 +103,53 @@ async function saveXML(userId, data, headers) {
       estado: data.estado
     });
     
+    // ===== VALIDACIÓN PREVIA CON NODECFDI =====
+    console.log('🔍 XML IMPORT: Iniciando validación previa con NodeCFDI...');
+    try {
+      const { validateXMLWithNodeCFDI } = require('./utils/nodecfdi-validator');
+      const validationResult = await validateXMLWithNodeCFDI(data.xml_content);
+      
+      console.log('📊 XML IMPORT: Resultado de validación NodeCFDI:', validationResult);
+      
+      if (!validationResult.isValid) {
+        // Filtrar solo errores críticos, permitir errores de certificado vencido
+        const criticalErrors = validationResult.errors.filter(error => {
+          const errorMsg = error.message || error.toString();
+          // Permitir errores de certificado vencido según requerimiento
+          return !errorMsg.toLowerCase().includes('certificado') || 
+                 !errorMsg.toLowerCase().includes('vencido') ||
+                 !errorMsg.toLowerCase().includes('expired');
+        });
+        
+        if (criticalErrors.length > 0) {
+          console.error('❌ XML IMPORT: Errores críticos de validación NodeCFDI:', criticalErrors);
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              error: 'XML no válido según validador oficial NodeCFDI',
+              tipo: 'VALIDACION_NODECFDI_FALLIDA',
+              errores_nodecfdi: criticalErrors.map(err => ({
+                codigo: err.code || 'UNKNOWN',
+                mensaje: err.message || err.toString(),
+                nivel: err.level || 'error'
+              })),
+              total_errores: criticalErrors.length,
+              validador: 'NodeCFDI oficial'
+            })
+          };
+        } else {
+          console.log('⚠️ XML IMPORT: Solo errores de certificado vencido detectados, continuando importación...');
+        }
+      } else {
+        console.log('✅ XML IMPORT: XML válido según NodeCFDI');
+      }
+    } catch (validationError) {
+      console.error('❌ XML IMPORT: Error en validación NodeCFDI:', validationError);
+      // Continuar con importación si hay error en el validador, pero registrar el error
+      console.log('⚠️ XML IMPORT: Continuando importación pese a error en validador NodeCFDI');
+    }
+    
     const {
       xml_content,
       version_cfdi,
