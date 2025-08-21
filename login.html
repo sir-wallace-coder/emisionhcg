@@ -226,7 +226,7 @@
                     localStorage.setItem('cfdi_user', JSON.stringify(data.user));
                     showAlert('¡Login exitoso! Redirigiendo...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        window.location.href = 'dashboard.html';
                     }, 1500);
                 } else {
                     showAlert(data.error || 'Error al iniciar sesión', 'error');
@@ -264,7 +264,7 @@
                     localStorage.setItem('cfdi_user', JSON.stringify(data.user));
                     showAlert('¡Registro exitoso! Redirigiendo...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        window.location.href = 'dashboard.html';
                     }, 1500);
                 } else {
                     showAlert(data.error || 'Error al registrarse', 'error');
@@ -302,7 +302,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.valid) {
-                    window.location.href = '/dashboard';
+                    window.location.href = 'dashboard.html';
                 }
             })
             .catch(() => {
