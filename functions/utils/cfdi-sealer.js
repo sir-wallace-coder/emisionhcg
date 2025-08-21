@@ -51,21 +51,41 @@ function generarCadenaOriginal(xmlContent, version = '4.0') {
 function construirCadenaOriginal40(comprobante) {
     let cadena = '||';
     
-    // Atributos del comprobante en orden específico SAT OFICIAL
-    // CRÍTICO: Orden exacto según XSLT oficial SAT - NO incluir 'Sello' ni 'Certificado'
-    const atributos = [
+    // Atributos del comprobante según XSLT oficial SAT
+    // CRÍTICO: Distinguir entre Requeridos y Opcionales según especificación SAT
+    
+    // ATRIBUTOS REQUERIDOS (siempre agregan |valor aunque esté vacío)
+    const requeridos = [
+        'Version', 'Fecha', 'NoCertificado', 'SubTotal', 'Moneda', 'Total', 
+        'TipoDeComprobante', 'Exportacion', 'LugarExpedicion'
+    ];
+    
+    // ATRIBUTOS OPCIONALES (solo agregan |valor si tienen valor)
+    const opcionales = [
+        'Serie', 'Folio', 'FormaPago', 'CondicionesDePago', 'Descuento', 
+        'TipoCambio', 'MetodoPago', 'Confirmacion'
+    ];
+    
+    // Procesar en orden exacto según XSLT SAT
+    const ordenSAT = [
         'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
         'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
         'TipoCambio', 'Total', 'TipoDeComprobante', 'Exportacion', 'MetodoPago',
         'LugarExpedicion', 'Confirmacion'
     ];
     
-    // Agregar atributos del comprobante
-    for (let attr of atributos) {
-        const valor = comprobante.getAttribute(attr);
-        if (valor) {
+    // Agregar atributos del comprobante según lógica SAT
+    for (let attr of ordenSAT) {
+        const valor = comprobante.getAttribute(attr) || '';
+        
+        if (requeridos.includes(attr)) {
+            // REQUERIDO: Siempre agregar |valor
+            cadena += valor + '|';
+        } else if (opcionales.includes(attr) && valor) {
+            // OPCIONAL: Solo agregar |valor si tiene valor
             cadena += valor + '|';
         }
+        // Si es opcional y no tiene valor, no se agrega nada
     }
     
     // Procesar emisor
@@ -129,20 +149,40 @@ function construirCadenaOriginal40(comprobante) {
 function construirCadenaOriginal33(comprobante) {
     let cadena = '||';
     
-    // Atributos del comprobante para versión 3.3 SAT OFICIAL
-    // CRÍTICO: Orden exacto según estándar SAT - NO incluir 'Sello' ni 'Certificado'
-    const atributos = [
+    // Atributos del comprobante para versión 3.3 según estándar SAT
+    // CRÍTICO: Distinguir entre Requeridos y Opcionales según especificación SAT
+    
+    // ATRIBUTOS REQUERIDOS (siempre agregan |valor aunque esté vacío)
+    const requeridos = [
+        'Version', 'Fecha', 'NoCertificado', 'SubTotal', 'Moneda', 'Total', 
+        'TipoDeComprobante', 'LugarExpedicion'
+    ];
+    
+    // ATRIBUTOS OPCIONALES (solo agregan |valor si tienen valor)
+    const opcionales = [
+        'Serie', 'Folio', 'FormaPago', 'CondicionesDePago', 'Descuento', 
+        'TipoCambio', 'MetodoPago'
+    ];
+    
+    // Procesar en orden exacto según estándar SAT 3.3
+    const ordenSAT = [
         'Version', 'Serie', 'Folio', 'Fecha', 'FormaPago', 'NoCertificado',
         'CondicionesDePago', 'SubTotal', 'Descuento', 'Moneda',
         'TipoCambio', 'Total', 'TipoDeComprobante', 'MetodoPago', 'LugarExpedicion'
     ];
     
-    // Similar a 4.0 pero sin algunos campos específicos de 4.0
-    for (let attr of atributos) {
-        const valor = comprobante.getAttribute(attr);
-        if (valor) {
+    // Agregar atributos del comprobante según lógica SAT
+    for (let attr of ordenSAT) {
+        const valor = comprobante.getAttribute(attr) || '';
+        
+        if (requeridos.includes(attr)) {
+            // REQUERIDO: Siempre agregar |valor
+            cadena += valor + '|';
+        } else if (opcionales.includes(attr) && valor) {
+            // OPCIONAL: Solo agregar |valor si tiene valor
             cadena += valor + '|';
         }
+        // Si es opcional y no tiene valor, no se agrega nada
     }
     
     // Procesar emisor (similar a 4.0)
