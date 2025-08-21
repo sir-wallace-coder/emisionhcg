@@ -1416,8 +1416,8 @@
                 });
                 
                 Object.values(impuestosAgrupados).forEach(impuesto => {
-                    // CRÍTICO: En traslados TOTALES NO incluir Base (solo en conceptos)
-                    xml += `      <cfdi:Traslado Impuesto="${impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${impuesto.tasa.toFixed(6)}" Importe="${impuesto.importe.toFixed(2)}"/>
+                    // CRÍTICO: Según validador SAT oficial, Base SÍ es obligatorio en traslados totales
+                    xml += `      <cfdi:Traslado Base="${impuesto.base.toFixed(2)}" Impuesto="${impuesto.codigo}" TipoFactor="Tasa" TasaOCuota="${impuesto.tasa.toFixed(6)}" Importe="${impuesto.importe.toFixed(2)}"/>
 `;
                 });
                 
