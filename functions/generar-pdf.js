@@ -18,86 +18,52 @@ const jwt = require('jsonwebtoken');
  * Prueba diferentes endpoints y configuraciones
  */
 async function generarPdfViaHttp(xmlContent, apiKey, stylePdf) {
-    console.log('🚀 HTTP FALLBACK: Iniciando pruebas de API directa...');
+    console.log('🔧 REDOC HTTP: Iniciando generación PDF via HTTP directo');
     
-    // Lista de endpoints a probar
-    const endpoints = [
-        'https://api.redoc.mx/cfdi/pdf',
-        'https://api.redoc.mx/v1/pdf', 
-        'https://api.redoc.mx/pdf',
-        'https://redoc.mx/api/pdf',
-        'https://redoc.mx/api/v1/pdf'
-    ];
+    // Endpoint correcto según documentación oficial
+    const endpoint = 'https://api.redoc.mx/v1/cfdis/convert';
+    console.log(`🌐 REDOC HTTP: Usando endpoint oficial: ${endpoint}`);
     
-    // Preparar payload base
-    const xmlBase64 = Buffer.from(xmlContent, 'utf8').toString('base64');
-    const basePayload = {
-        xml: xmlBase64,
-        encoding: 'base64'
-    };
-    
-    // Agregar estilo si se especifica
-    if (stylePdf && stylePdf !== 'default') {
-        basePayload.style_pdf = stylePdf;
-    }
-    
-    // Probar cada endpoint
-    for (let i = 0; i < endpoints.length; i++) {
-        const endpoint = endpoints[i];
-        console.log(`🔍 HTTP FALLBACK: Probando endpoint ${i + 1}/${endpoints.length}: ${endpoint}`);
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'X-Redoc-Api-Key': apiKey,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                xml: xmlContent, // XML como string directo (no base64)
+                encoding: 'utf8', // Especificar encoding
+                style_pdf: stylePdf || undefined // Solo incluir si se proporciona
+            })
+        });
         
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'X-Redoc-Api-Key': apiKey,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'CFDI-Sistema-Completo/1.0'
-                },
-                body: JSON.stringify(basePayload)
-            });
+        console.log(`📊 REDOC HTTP: Status: ${response.status}`);
+        console.log(`📊 REDOC HTTP: Headers:`, Object.fromEntries(response.headers.entries()));
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ REDOC HTTP: PDF generado exitosamente via HTTP oficial');
             
-            console.log(`📡 HTTP FALLBACK: Respuesta ${endpoint}:`, {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok
-            });
-            
-            // Leer headers de respuesta
-            const responseHeaders = {};
-            response.headers.forEach((value, key) => {
-                responseHeaders[key] = value;
-            });
-            console.log(`📋 HTTP FALLBACK: Headers ${endpoint}:`, responseHeaders);
-            
-            if (response.ok) {
-                // Éxito! Procesar respuesta
-                const result = await response.json();
-                console.log(`✅ HTTP FALLBACK: Éxito con endpoint: ${endpoint}`);
-                
-                return {
-                    content: result.content || result.pdf || result.data,
-                    metadata: {
-                        endpoint: endpoint,
-                        transactionId: responseHeaders['x-redoc-transaction-id'],
-                        totalPages: responseHeaders['x-redoc-pdf-total-pages'],
-                        processTime: responseHeaders['x-redoc-process-total-time']
-                    }
-                };
-            } else {
-                // Error, leer detalles
-                const errorText = await response.text();
-                console.log(`❌ HTTP FALLBACK: Error ${response.status} en ${endpoint}:`, errorText.substring(0, 200));
-            }
-            
-        } catch (fetchError) {
-            console.log(`❌ HTTP FALLBACK: Error de conexión en ${endpoint}:`, fetchError.message);
+            return {
+                content: result.content,
+                metadata: {
+                    transactionId: response.headers.get('X-Redoc-Transaction-Id'),
+                    totalPages: response.headers.get('X-Redoc-Pdf-Total-Pages'),
+                    totalTime: response.headers.get('X-Redoc-Process-Total-Time'),
+                    endpoint: endpoint
+                }
+            };
+        } else {
+            const errorText = await response.text();
+            console.log(`❌ REDOC HTTP: Error ${response.status}: ${errorText}`);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
+    } catch (error) {
+        console.log(`❌ REDOC HTTP: Excepción:`, error.message);
+        throw error;
     }
-    
-    // Si llegamos aquí, todos los endpoints fallaron
-    throw new Error('Todos los endpoints de redoc.mx fallaron. Verificar cuenta y API key.');
 }
 
 /**
