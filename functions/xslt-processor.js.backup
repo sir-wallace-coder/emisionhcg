@@ -93,9 +93,9 @@ class XSLTProcessor {
                 throw new Error('Nodo Comprobante no encontrado en el XML');
             }
             
-            let cadena = '||';
+            let cadena = '|';
             
-            // Procesar atributos del Comprobante según XSLT oficial
+            // Procesar atributos del comprobante según XSLT oficial
             cadena += this.procesarAtributo(comprobante, 'Version', true);
             cadena += this.procesarAtributo(comprobante, 'Serie', false);
             cadena += this.procesarAtributo(comprobante, 'Folio', false);
@@ -127,6 +127,8 @@ class XSLTProcessor {
             cadena += this.procesarConceptos(xmlDoc, version);
             cadena += this.procesarImpuestos(xmlDoc, version);
             
+            cadena += '||';
+            
             return cadena;
             
         } catch (error) {
@@ -139,24 +141,28 @@ class XSLTProcessor {
      * Procesa un atributo según las reglas XSLT (Requerido u Opcional)
      */
     procesarAtributo(nodo, nombreAtributo, esRequerido) {
-        if (!nodo) return '';
+        const valor = nodo.attr(nombreAtributo);
         
-        const valor = nodo.getAttribute(nombreAtributo);
-        
-        if (esRequerido || (valor && valor.trim() !== '')) {
-            const valorNormalizado = this.normalizeSpace(valor || '');
-            return `|${valorNormalizado}`;
+        if (esRequerido) {
+            // Regla "Requerido" del XSLT
+            const valorFinal = valor ? this.normalizarEspacios(valor.value()) : '';
+            return `|${valorFinal}`;
+        } else {
+            // Regla "Opcional" del XSLT
+            if (valor && valor.value()) {
+                const valorFinal = this.normalizarEspacios(valor.value());
+                return `|${valorFinal}`;
+            }
+            return '';
         }
-        
-        return '';
     }
 
     /**
-     * Implementa normalize-space según especificación XSLT
+     * Implementa normalize-space() del XSLT
      */
-    normalizeSpace(str) {
-        if (!str) return '';
-        return str.trim().replace(/\s+/g, ' ');
+    normalizarEspacios(texto) {
+        if (!texto) return '';
+        return texto.toString().trim().replace(/\s+/g, ' ');
     }
 
     /**
@@ -239,7 +245,6 @@ class XSLTProcessor {
                     cadena += this.procesarAtributo(traslado, 'Importe', false);
                 });
             }
-        });
         
         return cadena;
     }
