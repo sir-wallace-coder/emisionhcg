@@ -11,12 +11,10 @@
  */
 
 const crypto = require('crypto');
-const { DOMParser, XMLSerializer, DOMImplementation } = require('@xmldom/xmldom');
-const { install } = require('@nodecfdi/cfdiutils-common');
-const { XmlResolver, SaxonbCliBuilder } = require('@nodecfdi/cfdiutils-core');
+const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
 
-// Instalar resolución DOM para NodeCFDI
-install(new DOMParser(), new XMLSerializer(), new DOMImplementation());
+// Importar nuestro procesador XSLT que ya funciona
+const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-serverless');
 
 /**
  * 🚀 SELLADO CFDI CON CSD - REPLICANDO FLUJO PYTHON FUNCIONAL
@@ -145,34 +143,23 @@ async function sellarCFDIConCSD(xmlContent, certificadoCer, llavePrivadaKey, pas
 }
 
 /**
- * 🔗 Generar cadena original usando NodeCFDI cfdiutils-core con XSLT oficial
+ * 🔗 Generar cadena original usando nuestro procesador XSLT (compatible serverless)
  */
 async function generarCadenaOriginalConNodeCFDI(xmlDoc, version) {
     try {
-        console.log('🔗 NODECFDI: Generando cadena original con XSLT oficial...');
+        console.log('🔗 CSD: Generando cadena original con XSLT oficial...');
         
-        // Serializar XML para NodeCFDI
+        // Serializar XML
         const xmlSerializer = new XMLSerializer();
         const xmlContent = xmlSerializer.serializeToString(xmlDoc);
         
-        // Usar el resolvedor para obtener la ubicación del XSLT
-        const resolver = new XmlResolver();
-        const xsltLocation = resolver.resolveCadenaOrigenLocation(version);
-        
-        console.log(`🔍 NODECFDI: XSLT location: ${xsltLocation}`);
-        
-        // Generar cadena original con SaxonB (si está disponible)
-        // NOTA: En entorno serverless, necesitamos una implementación alternativa
-        // Por ahora, usaremos nuestro procesador XSLT existente como fallback
-        
-        console.log('⚠️ NODECFDI: Usando fallback XSLT processor...');
-        const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-serverless');
+        console.log('🔍 CSD: Usando procesador XSLT serverless (compatible)...');
         const cadenaOriginal = await generarCadenaOriginalXSLTServerless(xmlContent, version);
         
         return cadenaOriginal;
         
     } catch (error) {
-        console.error('❌ NODECFDI: Error generando cadena original:', error);
+        console.error('❌ CSD: Error generando cadena original:', error);
         return null;
     }
 }
