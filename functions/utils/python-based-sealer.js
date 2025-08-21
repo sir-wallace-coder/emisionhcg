@@ -66,33 +66,27 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         console.log('  - Certificado PEM (longitud):', certificadoPem.length);
         console.log('  - Llave privada PEM (longitud):', llavePrivadaPem.length);
         
-        // 🔐 PROCESAR LLAVE PRIVADA SEGÚN FORMATO (encriptada o no)
-        let llavePrivadaParaFirmar;
+        // 🔐 PROCESAR LLAVE PRIVADA ENCRIPTADA SAT (siempre encriptada con contraseña)
+        console.log('🔐 PYTHON-BASED: Procesando llave privada encriptada SAT...');
+        
+        // Las llaves SAT siempre están encriptadas, usar objeto con key y passphrase
+        const llavePrivadaParaFirmar = {
+            key: llavePrivadaPem,
+            passphrase: passwordLlave || ''
+        };
+        
+        // Validar que la llave es válida con la contraseña
         try {
-            // Verificar si la llave está encriptada
-            if (llavePrivadaPem.includes('ENCRYPTED')) {
-                console.log('🔐 PYTHON-BASED: Llave privada encriptada detectada, usando contraseña...');
-                // Para llaves encriptadas, usar objeto con key y passphrase
-                llavePrivadaParaFirmar = {
-                    key: llavePrivadaPem,
-                    passphrase: passwordLlave || ''
-                };
-            } else {
-                console.log('🔐 PYTHON-BASED: Llave privada no encriptada detectada...');
-                // Para llaves no encriptadas, usar directamente el string PEM
-                llavePrivadaParaFirmar = llavePrivadaPem;
-            }
-            
-            // Verificar que la llave es válida intentando crear un objeto de firma
             const testSign = crypto.createSign('RSA-SHA256');
             testSign.update('test', 'utf8');
-            testSign.sign(llavePrivadaParaFirmar); // Esto lanzará error si la llave es inválida
+            testSign.sign(llavePrivadaParaFirmar); // Esto lanzará error si la llave/contraseña es inválida
             
-            console.log('✅ PYTHON-BASED: Llave privada validada exitosamente');
+            console.log('✅ PYTHON-BASED: Llave privada SAT validada exitosamente con contraseña');
             
         } catch (errorLlave) {
-            console.error('❌ PYTHON-BASED: Error procesando llave privada:', errorLlave.message);
-            return { exito: false, error: 'Error procesando llave privada: ' + errorLlave.message };
+            console.error('❌ PYTHON-BASED: Error validando llave privada SAT:', errorLlave.message);
+            console.error('❌ PYTHON-BASED: Verifique que la contraseña sea correcta');
+            return { exito: false, error: 'Error validando llave privada SAT (verifique contraseña): ' + errorLlave.message };
         }
         
         // 4. 📝 AGREGAR SOLO NoCertificado AL XML (como Python: root.set("NoCertificado", no_certificado))
