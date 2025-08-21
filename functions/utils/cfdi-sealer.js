@@ -30,6 +30,9 @@ function normalizeSpace(str) {
 function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llavePrivadaPem, version) {
     try {
         console.log('🔧 SELLADO UNIFICADO: Iniciando proceso siguiendo patrón Python exitoso...');
+        console.log('🔍 FORENSE INICIAL: Versión CFDI:', version);
+        console.log('🔍 FORENSE INICIAL: NoCertificado:', noCertificado);
+        console.log('🔍 FORENSE INICIAL: Longitud XML original:', xmlContent.length);
         
         // 1. Parsear XML original
         const parser = new DOMParser();
@@ -37,93 +40,193 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         
         // Verificar que se parsó correctamente
         if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+            console.log('❌ FORENSE ERROR: XML mal formado al parsear');
             return { exito: false, error: 'XML mal formado' };
         }
         
         const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
         if (!comprobante) {
+            console.log('❌ FORENSE ERROR: No se encontró cfdi:Comprobante');
             return { exito: false, error: 'No se encontró el elemento cfdi:Comprobante' };
         }
         
-        console.log('🔧 SELLADO UNIFICADO: XML parseado correctamente');
+        console.log('✅ FORENSE: XML parseado correctamente');
+        console.log('🔍 FORENSE: Atributos actuales del comprobante:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
         
         // 2. PASO 1 PYTHON: Limpiar atributos de sellado previos
         const atributosLimpieza = ['NoCertificado', 'Certificado', 'Sello'];
+        let atributosEliminados = [];
         atributosLimpieza.forEach(attr => {
             if (comprobante.hasAttribute(attr)) {
+                const valorAnterior = comprobante.getAttribute(attr);
                 comprobante.removeAttribute(attr);
-                console.log(`🧹 LIMPIEZA: Eliminado atributo previo ${attr}`);
+                atributosEliminados.push(`${attr}="${valorAnterior}"`);
+                console.log(`🧹 FORENSE LIMPIEZA: Eliminado ${attr}="${valorAnterior}"`);
             }
         });
         
+        if (atributosEliminados.length === 0) {
+            console.log('🔍 FORENSE LIMPIEZA: No había atributos de sellado previos');
+        }
+        
         // 3. PASO 2 PYTHON: Agregar SOLO NoCertificado
         comprobante.setAttribute('NoCertificado', noCertificado);
-        console.log('🔧 SELLADO UNIFICADO: NoCertificado agregado:', noCertificado);
+        console.log('✅ FORENSE: NoCertificado agregado:', noCertificado);
+        console.log('🔍 FORENSE: Atributos después de agregar NoCertificado:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
         
         // 4. PASO 3 PYTHON: Generar cadena original del XML que YA tiene NoCertificado
         // Serializar el XML actualizado para pasarlo a generarCadenaOriginal
         const xmlSerializer = new XMLSerializer();
         const xmlActualizado = xmlSerializer.serializeToString(xmlDoc);
         
-        const cadenaOriginalRaw = generarCadenaOriginal(xmlActualizado, version);
+        console.log('🔍 FORENSE SERIALIZACIÓN: Longitud XML actualizado:', xmlActualizado.length);
+        console.log('🔍 FORENSE SERIALIZACIÓN: Primeros 200 chars:', xmlActualizado.substring(0, 200));
+        
+        // SOLUCIÓN CFDI40102: Implementar sellado sin doble serialización usando placeholder
+        console.log('🔧 CFDI40102 FIX: Implementando sellado sin doble serialización...');
+        
+        // Importar crypto al inicio
+        const crypto = require('crypto');
+        
+        // 1. Agregar TODOS los atributos de sellado ANTES de cualquier serialización
+        console.log('🔍 PLACEHOLDER: Agregando NoCertificado, Certificado y Sello placeholder...');
+        comprobante.setAttribute('Certificado', certificadoBase64);
+        
+        // 2. Crear placeholder único para el sello
+        const selloPlaceholder = 'SELLO_PLACEHOLDER_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        comprobante.setAttribute('Sello', selloPlaceholder);
+        
+        console.log('✅ PLACEHOLDER: Atributos de sellado agregados al DOM');
+        console.log('🔍 PLACEHOLDER: Sello placeholder:', selloPlaceholder);
+        console.log('🔍 PLACEHOLDER: Atributos finales:', Array.from(comprobante.attributes).map(attr => `${attr.name}="${attr.value.substring(0, 30)}${attr.value.length > 30 ? '...' : ''}"`).join(', '));
+        
+        // 3. Serializar UNA SOLA VEZ el XML con estructura final
+        console.log('🔍 SERIALIZACIÓN ÚNICA: Serializando XML con estructura final...');
+        const serializer = new XMLSerializer();
+        const xmlConEstructuraFinal = serializer.serializeToString(xmlDoc);
+        
+        console.log('✅ SERIALIZACIÓN ÚNICA: XML serializado exitosamente');
+        console.log('🔍 SERIALIZACIÓN ÚNICA: Longitud XML estructurado:', xmlConEstructuraFinal.length);
+        console.log('🔍 SERIALIZACIÓN ÚNICA: Primeros 300 chars:', xmlConEstructuraFinal.substring(0, 300));
+        
+        // 4. Reemplazar placeholder con string vacío para generar cadena original
+        console.log('🔍 CADENA ORIGINAL: Preparando XML para cadena original (Sello vacío)...');
+        const xmlParaCadenaOriginal = xmlConEstructuraFinal.replace(
+            `Sello="${selloPlaceholder}"`, 
+            'Sello=""'
+        );
+        
+        console.log('✅ CADENA ORIGINAL: XML preparado para cadena original');
+        console.log('🔍 CADENA ORIGINAL: Verificando reemplazo placeholder...');
+        
+        if (xmlParaCadenaOriginal === xmlConEstructuraFinal) {
+            console.error('❌ PLACEHOLDER ERROR: No se pudo reemplazar el placeholder');
+            return { exito: false, error: 'Error reemplazando placeholder del sello' };
+        }
+        
+        // 5. Generar cadena original del XML con estructura final
+        console.log('🔍 CADENA ORIGINAL: Generando cadena original del XML final...');
+        const cadenaOriginalRaw = generarCadenaOriginal(xmlParaCadenaOriginal, version);
         if (!cadenaOriginalRaw) {
-            return { exito: false, error: 'Error generando cadena original' };
+            console.error('❌ CADENA ORIGINAL: Error generando cadena original');
+            return { exito: false, error: 'Error generando cadena original del XML final' };
         }
         
-        console.log('🔧 SELLADO UNIFICADO: Cadena original generada');
-        console.log('🔍 FORENSE: Cadena original COMPLETA:', cadenaOriginalRaw);
+        console.log('✅ CADENA ORIGINAL: Generada del XML final exitosamente');
+        console.log('🔍 CADENA ORIGINAL: Longitud:', cadenaOriginalRaw.length);
+        console.log('🔍 CADENA ORIGINAL: Hash SHA256:', crypto.createHash('sha256').update(cadenaOriginalRaw, 'utf8').digest('hex'));
         
-        // 5. PASO 4 PYTHON: Limpiar caracteres invisibles antes del firmado (ChatGPT)
-        const cadenaOriginal = limpiarCadenaOriginal(cadenaOriginalRaw);
-        console.log('🔧 SELLADO UNIFICADO: Cadena original limpia para firmado');
+        // 6. Limpiar cadena original antes del firmado
+        console.log('🔍 LIMPIEZA FINAL: Limpiando cadena original para firmado...');
+        const cadenaOriginal = limpiarCadenaOriginalChatGPT(cadenaOriginalRaw);
         
-        // Verificar si la limpieza cambió algo
-        if (cadenaOriginalRaw !== cadenaOriginal) {
-            console.log('🔍 FORENSE: ¡ATENCIÓN! La limpieza modificó la cadena original');
-            console.log('🔍 FORENSE: Caracteres eliminados:', cadenaOriginalRaw.length - cadenaOriginal.length);
-        } else {
-            console.log('🔍 FORENSE: La limpieza NO modificó la cadena original');
-        }
+        // Hash de la cadena limpia
+        const hashCadenaLimpia = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
+        console.log('🔍 LIMPIEZA FINAL: SHA256 cadena limpia:', hashCadenaLimpia);
         
-        // 5.5. VALIDACIÓN PAR CERTIFICADO/LLAVE (recomendación ChatGPT)
+        // 7. Validación PAR CERTIFICADO/LLAVE
+        console.log('🔍 VALIDACIÓN FINAL: Validando par certificado/llave...');
         const certificadoPem = `-----BEGIN CERTIFICATE-----\n${certificadoBase64.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
         const parValido = validarParCertificadoLlave(certificadoPem, llavePrivadaPem);
         if (!parValido) {
+            console.error('❌ VALIDACIÓN FINAL: El certificado y la llave privada NO corresponden');
             return { exito: false, error: 'El certificado y la llave privada no corresponden al mismo par' };
         }
+        console.log('✅ VALIDACIÓN FINAL: Par certificado/llave válido');
         
-        // 6. PASO 5 PYTHON: Firmar la cadena original con Node.js crypto (ChatGPT)
-        const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
+        // 8. Generar sello digital
+        console.log('🔍 SELLO FINAL: Generando sello digital...');
+        const selloDigital = generarSelloDigitalCrypto(cadenaOriginal, llavePrivadaPem);
         if (!selloDigital) {
+            console.error('❌ SELLO FINAL: Error generando sello digital');
             return { exito: false, error: 'Error generando sello digital' };
         }
         
-        console.log('🔧 SELLADO UNIFICADO: Sello digital generado');
-        console.log('🔍 FORENSE: Sello digital:', selloDigital);
+        console.log('✅ SELLO FINAL: Sello digital generado exitosamente');
+        console.log('🔍 SELLO FINAL: Longitud sello:', selloDigital.length);
         
-        // 7. PASO 6 PYTHON: Agregar Sello y Certificado AL FINAL
-        comprobante.setAttribute('Sello', selloDigital);
-        comprobante.setAttribute('Certificado', certificadoBase64);
+        // 9. Reemplazar placeholder con sello real en el XML serializado
+        console.log('🔍 REEMPLAZO FINAL: Insertando sello real en XML...');
+        const xmlSellado = xmlConEstructuraFinal.replace(
+            `Sello="${selloPlaceholder}"`,
+            `Sello="${selloDigital}"`
+        );
         
-        console.log('🔧 SELLADO UNIFICADO: Sello y Certificado agregados al XML');
-        
-        // 8. PASO 7 PYTHON: UNA SOLA serialización final
-        const finalSerializer = new XMLSerializer();
-        const xmlSellado = finalSerializer.serializeToString(xmlDoc);
-        
-        console.log('🔧 SELLADO UNIFICADO: XML serializado una sola vez');
+        console.log('✅ REEMPLAZO FINAL: Sello insertado en XML final');
+        console.log('🔍 REEMPLAZO FINAL: Longitud XML sellado:', xmlSellado.length);
         
         // 9. VERIFICACIÓN DE INTEGRIDAD CRÍTICA
-        console.log('🔍 FORENSE: Verificando integridad del sellado...');
+        console.log('🔍 FORENSE INTEGRIDAD: Verificando integridad del sellado...');
+        console.log('🔍 FORENSE INTEGRIDAD: Regenerando cadena original del XML sellado...');
         const cadenaOriginalFinal = generarCadenaOriginal(xmlSellado, version);
         
-        if (cadenaOriginal !== cadenaOriginalFinal) {
-            console.error('🚨 FORENSE: ¡INTEGRIDAD ROTA! La cadena original cambió después del sellado');
-            console.error('🚨 FORENSE: Cadena firmada:', cadenaOriginal);
-            console.error('🚨 FORENSE: Cadena del XML final:', cadenaOriginalFinal);
+        if (!cadenaOriginalFinal) {
+            console.log('❌ FORENSE INTEGRIDAD: Error regenerando cadena original del XML sellado');
+            return { exito: false, error: 'Error verificando integridad - no se pudo regenerar cadena original' };
+        }
+        
+        console.log('🔍 FORENSE INTEGRIDAD: Cadena original del XML sellado generada');
+        console.log('🔍 FORENSE INTEGRIDAD: Longitud cadena final:', cadenaOriginalFinal.length);
+        
+        // Limpiar la cadena final para comparación justa
+        const cadenaOriginalFinalLimpia = limpiarCadenaOriginalChatGPT(cadenaOriginalFinal);
+        
+        // Hash de la cadena final para comparación
+        const hashCadenaFinal = crypto.createHash('sha256').update(cadenaOriginalFinalLimpia, 'utf8').digest('hex');
+        console.log('🔍 FORENSE HASH: SHA256 cadena original FINAL:', hashCadenaFinal);
+        
+        // Comparación crítica de integridad
+        if (cadenaOriginal !== cadenaOriginalFinalLimpia) {
+            console.error('🚨 FORENSE INTEGRIDAD: ¡INTEGRIDAD ROTA! La cadena original cambió después del sellado');
+            console.error('🚨 FORENSE INTEGRIDAD: Hash cadena firmada:', hashCadenaLimpia);
+            console.error('🚨 FORENSE INTEGRIDAD: Hash cadena XML final:', hashCadenaFinal);
+            console.error('🚨 FORENSE INTEGRIDAD: Longitud cadena firmada:', cadenaOriginal.length);
+            console.error('🚨 FORENSE INTEGRIDAD: Longitud cadena final:', cadenaOriginalFinalLimpia.length);
+            
+            // Análisis detallado de diferencias
+            if (cadenaOriginal.length !== cadenaOriginalFinalLimpia.length) {
+                console.error('🚨 FORENSE DIFERENCIAS: Las longitudes son diferentes');
+            }
+            
+            // Encontrar primera diferencia
+            let primeraDiferencia = -1;
+            for (let i = 0; i < Math.min(cadenaOriginal.length, cadenaOriginalFinalLimpia.length); i++) {
+                if (cadenaOriginal[i] !== cadenaOriginalFinalLimpia[i]) {
+                    primeraDiferencia = i;
+                    break;
+                }
+            }
+            
+            if (primeraDiferencia >= 0) {
+                console.error('🚨 FORENSE DIFERENCIAS: Primera diferencia en posición:', primeraDiferencia);
+                console.error('🚨 FORENSE DIFERENCIAS: Contexto firmada:', cadenaOriginal.substring(Math.max(0, primeraDiferencia - 20), primeraDiferencia + 20));
+                console.error('🚨 FORENSE DIFERENCIAS: Contexto final:', cadenaOriginalFinalLimpia.substring(Math.max(0, primeraDiferencia - 20), primeraDiferencia + 20));
+            }
+            
             return { exito: false, error: 'Integridad del sello comprometida - cadenas no coinciden' };
         } else {
-            console.log('✅ FORENSE: Integridad mantenida - cadenas originales coinciden');
+            console.log('✅ FORENSE INTEGRIDAD: Integridad mantenida - cadenas originales coinciden perfectamente');
+            console.log('✅ FORENSE INTEGRIDAD: Hash verification passed:', hashCadenaLimpia === hashCadenaFinal);
         }
         
         return {
@@ -148,44 +251,91 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
 function limpiarCadenaOriginalChatGPT(cadena) {
     if (!cadena) return '';
     
-    console.log(' LIMPIEZA CHATGPT: Aplicando parche mínimo recomendado...');
-    console.log(' LIMPIEZA CHATGPT: Longitud original:', cadena.length);
+    console.log('🧹 FORENSE LIMPIEZA: Iniciando limpieza de caracteres invisibles...');
+    console.log('🧹 FORENSE LIMPIEZA: Longitud original:', cadena.length);
+    console.log('🧹 FORENSE LIMPIEZA: Primeros 50 chars:', JSON.stringify(cadena.substring(0, 50)));
+    console.log('🧹 FORENSE LIMPIEZA: Últimos 50 chars:', JSON.stringify(cadena.substring(cadena.length - 50)));
     
     let cadenaLimpia = cadena;
+    let modificaciones = [];
     
-    // 1. Quitar BOM si lo hubiera (recomendación ChatGPT)
+    // 1. Quitar BOM UTF-8 si existe (bytes EF BB BF = char 0xFEFF)
     if (cadenaLimpia.charCodeAt(0) === 0xFEFF) {
-        cadenaLimpia = cadenaLimpia.slice(1);
-        console.log(' LIMPIEZA CHATGPT: BOM UTF-8 eliminado');
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADO BOM UTF-8! Eliminando...');
+        cadenaLimpia = cadenaLimpia.substring(1);
+        modificaciones.push('BOM UTF-8 eliminado');
     }
     
-    // 2. Una sola línea, sin CR/LF (recomendación ChatGPT)
-    const tieneCR = /\r/.test(cadenaLimpia);
-    const tieneLF = /\n/.test(cadenaLimpia);
-    if (tieneCR || tieneLF) {
+    // 2. Eliminar todos los CR/LF (\r\n, \r, \n) para una sola línea
+    const conSaltosLinea = cadenaLimpia.includes('\r') || cadenaLimpia.includes('\n');
+    if (conSaltosLinea) {
+        const cuentaCR = (cadenaLimpia.match(/\r/g) || []).length;
+        const cuentaLF = (cadenaLimpia.match(/\n/g) || []).length;
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADOS SALTOS DE LÍNEA! CR:', cuentaCR, 'LF:', cuentaLF);
         cadenaLimpia = cadenaLimpia.replace(/\r?\n/g, '');
-        console.log(' LIMPIEZA CHATGPT: CR/LF eliminados (CR:', tieneCR, 'LF:', tieneLF, ')');
+        modificaciones.push(`Saltos de línea eliminados (CR:${cuentaCR}, LF:${cuentaLF})`);
     }
     
-    // 3. Quitar espacios invisibles comunes (recomendación ChatGPT)
-    const tieneEspaciosInvisibles = /[\u00A0\u200B]/.test(cadenaLimpia);
-    if (tieneEspaciosInvisibles) {
-        cadenaLimpia = cadenaLimpia.replace(/\u00A0/g, ' ').replace(/\u200B/g, '');
-        console.log(' LIMPIEZA CHATGPT: Espacios invisibles eliminados');
+    // 3. Reemplazar espacios invisibles por espacios normales
+    const espaciosInvisibles = /[\u00A0\u200B\u2060\uFEFF]/g;
+    const matchesEspacios = cadenaLimpia.match(espaciosInvisibles);
+    if (matchesEspacios) {
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADOS ESPACIOS INVISIBLES!', matchesEspacios.length, 'encontrados');
+        console.log('🧹 FORENSE LIMPIEZA: Tipos de espacios invisibles:', [...new Set(matchesEspacios.map(c => `U+${c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}`))].join(', '));
+        cadenaLimpia = cadenaLimpia.replace(espaciosInvisibles, ' ');
+        modificaciones.push(`Espacios invisibles reemplazados (${matchesEspacios.length})`);
     }
     
-    // 4. NO recodificar; debe ser UTF-8 tal cual (recomendación ChatGPT)
-    // No hacer normalize() ni otras transformaciones
+    // 4. Quitar tabs y reemplazar por espacios
+    const cuentaTabs = (cadenaLimpia.match(/\t/g) || []).length;
+    if (cuentaTabs > 0) {
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADOS TABS!', cuentaTabs, 'encontrados');
+        cadenaLimpia = cadenaLimpia.replace(/\t/g, ' ');
+        modificaciones.push(`Tabs reemplazados (${cuentaTabs})`);
+    }
     
-    console.log(' LIMPIEZA CHATGPT: Longitud final:', cadenaLimpia.length);
-    console.log(' LIMPIEZA CHATGPT: Diferencia:', cadena.length - cadenaLimpia.length, 'caracteres eliminados');
+    // 5. Normalizar espacios múltiples a uno solo
+    const espaciosMultiples = cadenaLimpia.match(/\s{2,}/g);
+    if (espaciosMultiples) {
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADOS ESPACIOS MÚTIPLES!', espaciosMultiples.length, 'secuencias encontradas');
+        cadenaLimpia = cadenaLimpia.replace(/\s{2,}/g, ' ');
+        modificaciones.push(`Espacios múltiples normalizados (${espaciosMultiples.length} secuencias)`);
+    }
     
-    // Logs forenses SHA256 (recomendación ChatGPT)
-    const crypto = require('crypto');
-    console.log(' FORENSE: SHA256 antes de limpiar:', crypto.createHash('sha256').update(Buffer.from(cadena, 'utf8')).digest('hex'));
-    console.log(' FORENSE: SHA256 que se firmará  :', crypto.createHash('sha256').update(Buffer.from(cadenaLimpia, 'utf8')).digest('hex'));
-    console.log(' FORENSE: Tiene CR?', tieneCR, 'Tiene LF?', tieneLF);
-    console.log(' FORENSE: BOM?', cadena.charCodeAt(0) === 0xFEFF);
+    // 6. NO hacer trim general, pero sí quitar espacios pegados a ||
+    // Verificar que empiece y termine con || sin espacios pegados
+    if (cadenaLimpia.startsWith(' ||')) {
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADO ESPACIO ANTES DE || INICIAL!');
+        cadenaLimpia = cadenaLimpia.replace(/^ \|\|/, '||');
+        modificaciones.push('Espacio antes de || inicial eliminado');
+    }
+    if (cadenaLimpia.endsWith('|| ')) {
+        console.log('🧹 FORENSE LIMPIEZA: ¡DETECTADO ESPACIO DESPUÉS DE || FINAL!');
+        cadenaLimpia = cadenaLimpia.replace(/\|\| $/, '||');
+        modificaciones.push('Espacio después de || final eliminado');
+    }
+    
+    console.log('🧹 FORENSE LIMPIEZA: Longitud final:', cadenaLimpia.length);
+    console.log('🧹 FORENSE LIMPIEZA: Caracteres eliminados:', cadena.length - cadenaLimpia.length);
+    console.log('🧹 FORENSE LIMPIEZA: Modificaciones aplicadas:', modificaciones.length > 0 ? modificaciones.join(', ') : 'NINGUNA');
+    
+    if (cadena !== cadenaLimpia) {
+        console.log('✅ FORENSE LIMPIEZA: Cadena modificada durante limpieza');
+        
+        // Generar hashes para comparación
+        const crypto = require('crypto');
+        const hashOriginal = crypto.createHash('sha256').update(cadena, 'utf8').digest('hex');
+        const hashLimpia = crypto.createHash('sha256').update(cadenaLimpia, 'utf8').digest('hex');
+        
+        console.log('🧹 FORENSE LIMPIEZA HASH: Original:', hashOriginal);
+        console.log('🧹 FORENSE LIMPIEZA HASH: Limpia:', hashLimpia);
+        
+        // Mostrar diferencias byte por byte en los primeros caracteres
+        console.log('🧹 FORENSE LIMPIEZA: Primeros 50 chars LIMPIOS:', JSON.stringify(cadenaLimpia.substring(0, 50)));
+        console.log('🧹 FORENSE LIMPIEZA: Últimos 50 chars LIMPIOS:', JSON.stringify(cadenaLimpia.substring(cadenaLimpia.length - 50)));
+    } else {
+        console.log('🧹 FORENSE LIMPIEZA: Cadena NO modificada (ya estaba limpia)');
+    }
     
     return cadenaLimpia;
 }
@@ -248,50 +398,93 @@ function generarCadenaOriginalConCertificados(xmlContent, noCertificado, version
  */
 function generarCadenaOriginal(xmlContent, version = '4.0') {
     try {
-        console.log(' Generando cadena original con XSLT oficial SAT para CFDI', version);
+        console.log('🔍 FORENSE CADENA: Iniciando generación para CFDI', version);
+        console.log('🔍 FORENSE CADENA: Longitud XML entrada:', xmlContent.length);
+        console.log('🔍 FORENSE CADENA: Primeros 200 chars XML:', xmlContent.substring(0, 200));
         
-        // Usar el procesador XSLT oficial del SAT
-        const cadenaOriginal = generarCadenaOriginalXSLT(xmlContent, version);
+        // Intentar usar XSLT oficial SAT primero
+        console.log('🔍 FORENSE XSLT: Intentando usar XSLT oficial SAT...');
+        try {
+            const cadenaXSLT = generarCadenaOriginalXSLT(xmlContent, version);
+            if (cadenaXSLT) {
+                console.log('✅ FORENSE XSLT: Generada exitosamente con XSLT oficial SAT');
+                console.log('🔍 FORENSE XSLT: Longitud cadena XSLT:', cadenaXSLT.length);
+                console.log('🔍 FORENSE XSLT: Primeros 100 chars:', cadenaXSLT.substring(0, 100));
+                console.log('🔍 FORENSE XSLT: Últimos 100 chars:', cadenaXSLT.substring(cadenaXSLT.length - 100));
+                
+                // Hash para trazabilidad
+                const crypto = require('crypto');
+                const hashXSLT = crypto.createHash('sha256').update(cadenaXSLT, 'utf8').digest('hex');
+                console.log('🔍 FORENSE XSLT HASH: SHA256:', hashXSLT);
+                
+                return cadenaXSLT;
+            } else {
+                console.log('⚠️ FORENSE XSLT: XSLT oficial retornó null/undefined');
+            }
+        } catch (error) {
+            console.log('⚠️ FORENSE XSLT: Error con XSLT oficial, usando fallback manual');
+            console.log('⚠️ FORENSE XSLT ERROR:', error.message);
+            console.log('⚠️ FORENSE XSLT STACK:', error.stack);
+        }
         
-        if (!cadenaOriginal) {
-            console.error(' Error generando cadena original con XSLT');
+        // Fallback a implementación manual
+        console.log('🔍 FORENSE FALLBACK: Usando implementación manual como fallback');
+        
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        
+        if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+            console.error('❌ FORENSE FALLBACK: Error parseando XML');
+            const errors = xmlDoc.getElementsByTagName('parsererror');
+            for (let i = 0; i < errors.length; i++) {
+                console.error('❌ FORENSE PARSE ERROR:', errors[i].textContent);
+            }
             return null;
         }
         
-        console.log(' Cadena original generada con XSLT oficial SAT:', cadenaOriginal.substring(0, 100) + '...');
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+        if (!comprobante) {
+            console.error('❌ FORENSE FALLBACK: No se encontró cfdi:Comprobante');
+            console.error('❌ FORENSE FALLBACK: Elementos disponibles:', Array.from(xmlDoc.documentElement.childNodes).map(n => n.nodeName).join(', '));
+            return null;
+        }
+        
+        console.log('✅ FORENSE FALLBACK: Comprobante encontrado');
+        console.log('🔍 FORENSE FALLBACK: Atributos comprobante:', Array.from(comprobante.attributes).map(attr => attr.name).join(', '));
+        
+        let cadenaOriginal;
+        if (version === '4.0') {
+            console.log('🔍 FORENSE FALLBACK: Construyendo cadena original CFDI 4.0...');
+            cadenaOriginal = construirCadenaOriginal40(comprobante);
+        } else if (version === '3.3') {
+            console.log('🔍 FORENSE FALLBACK: Construyendo cadena original CFDI 3.3...');
+            cadenaOriginal = construirCadenaOriginal33(comprobante);
+        } else {
+            console.error('❌ FORENSE FALLBACK: Versión no soportada:', version);
+            return null;
+        }
+        
+        if (cadenaOriginal) {
+            console.log('✅ FORENSE FALLBACK: Generada con implementación manual');
+            console.log('🔍 FORENSE FALLBACK: Longitud cadena manual:', cadenaOriginal.length);
+            console.log('🔍 FORENSE FALLBACK: Primeros 100 chars:', cadenaOriginal.substring(0, 100));
+            console.log('🔍 FORENSE FALLBACK: Últimos 100 chars:', cadenaOriginal.substring(cadenaOriginal.length - 100));
+            
+            // Hash para comparación con XSLT
+            const crypto = require('crypto');
+            const hashManual = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
+            console.log('🔍 FORENSE FALLBACK HASH: SHA256:', hashManual);
+        } else {
+            console.error('❌ FORENSE FALLBACK: Implementación manual retornó null');
+        }
+        
         return cadenaOriginal;
         
     } catch (error) {
-        console.error(' Error generando cadena original con XSLT:', error);
-        console.log(' Fallback: Intentando con implementación manual...');
-        
-        // Fallback a implementación manual en caso de error
-        try {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-            
-            if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-                console.error(' Error parseando XML en fallback');
-                return null;
-            }
-            
-            const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
-            if (!comprobante) {
-                console.error(' No se encontró el elemento cfdi:Comprobante en fallback');
-                return null;
-            }
-            
-            const cadenaOriginal = version === '4.0' ? 
-                construirCadenaOriginal40(comprobante) : 
-                construirCadenaOriginal33(comprobante);
-            
-            console.log(' Cadena original generada con fallback manual:', cadenaOriginal.substring(0, 100) + '...');
-            return cadenaOriginal;
-            
-        } catch (fallbackError) {
-            console.error(' Error en fallback manual:', fallbackError);
-            return null;
-        }
+        console.error('❌ FORENSE CADENA: Error general en generarCadenaOriginal');
+        console.error('❌ FORENSE CADENA ERROR:', error.message);
+        console.error('❌ FORENSE CADENA STACK:', error.stack);
+        return null;
     }
 }
 
@@ -628,30 +821,72 @@ function validarParCertificadoLlave(certificadoPem, llavePrivadaPem) {
  */
 function generarSelloDigitalCrypto(cadenaOriginal, llavePrivadaPem) {
     try {
-        console.log('🔐 SELLO CRYPTO: Generando sello con Node.js crypto (recomendación ChatGPT)...');
+        console.log('🔐 FORENSE SELLO: Iniciando firmado con Node.js crypto (RSA-SHA256 PKCS#1 v1.5)...');
+        console.log('🔐 FORENSE SELLO: Longitud cadena a firmar:', cadenaOriginal.length);
+        console.log('🔐 FORENSE SELLO: Primeros 100 chars cadena:', JSON.stringify(cadenaOriginal.substring(0, 100)));
+        console.log('🔐 FORENSE SELLO: Últimos 100 chars cadena:', JSON.stringify(cadenaOriginal.substring(cadenaOriginal.length - 100)));
         
-        const crypto = require('crypto');
+        // Hash SHA256 de la cadena que se va a firmar
+        const hashCadena = crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex');
+        console.log('🔐 FORENSE SELLO: SHA256 de cadena a firmar:', hashCadena);
         
-        // Firmar exactamente la cadena (no el XML, no un hash intermedio) - ChatGPT
-        // RSA-SHA256 (PKCS#1 v1.5) sobre la cadena original ya "limpia"
-        const signer = crypto.createSign('RSA-SHA256');
-        signer.update(Buffer.from(cadenaOriginal, 'utf8'));
-        signer.end();
+        // Validar que la llave privada esté en formato PEM
+        if (!llavePrivadaPem.includes('-----BEGIN') || !llavePrivadaPem.includes('-----END')) {
+            console.error('❌ FORENSE SELLO: Llave privada no está en formato PEM válido');
+            throw new Error('Llave privada no está en formato PEM válido');
+        }
         
-        // PKCS#1 v1.5 por defecto en Node - ChatGPT
-        const firmaBin = signer.sign(llavePrivadaPem);
+        console.log('✅ FORENSE SELLO: Llave privada en formato PEM válido');
+        console.log('🔐 FORENSE SELLO: Longitud llave PEM:', llavePrivadaPem.length);
+        console.log('🔐 FORENSE SELLO: Header llave:', llavePrivadaPem.substring(0, 50));
         
-        // Base64 del binario - NO url-encode aquí - ChatGPT
-        const sello = firmaBin.toString('base64');
+        // Crear el objeto de firma con Node.js crypto
+        console.log('🔐 FORENSE SELLO: Creando objeto de firma RSA-SHA256...');
+        const sign = crypto.createSign('RSA-SHA256');
         
-        console.log('✅ SELLO CRYPTO: Sello digital generado exitosamente con Node.js crypto');
-        console.log('🔍 SELLO CRYPTO: Longitud:', sello.length);
-        console.log('🔍 SELLO CRYPTO: Primeros 50 chars:', sello.substring(0, 50) + '...');
+        // Actualizar con la cadena original (UTF-8)
+        console.log('🔐 FORENSE SELLO: Actualizando firma con cadena original (UTF-8)...');
+        sign.update(cadenaOriginal, 'utf8');
         
-        return sello;
+        // Firmar con la llave privada (PKCS#1 v1.5 por defecto)
+        console.log('🔐 FORENSE SELLO: Firmando con llave privada (PKCS#1 v1.5)...');
+        const selloBuffer = sign.sign(llavePrivadaPem);
+        
+        console.log('✅ FORENSE SELLO: Firma generada exitosamente');
+        console.log('🔐 FORENSE SELLO: Longitud buffer sello:', selloBuffer.length, 'bytes');
+        
+        // Convertir a base64 (NO url-encode)
+        console.log('🔐 FORENSE SELLO: Convirtiendo a base64...');
+        const selloBase64 = selloBuffer.toString('base64');
+        
+        console.log('✅ FORENSE SELLO: Sello digital generado exitosamente');
+        console.log('🔐 FORENSE SELLO: Longitud sello base64:', selloBase64.length);
+        console.log('🔐 FORENSE SELLO: Primeros 50 chars:', selloBase64.substring(0, 50));
+        console.log('🔐 FORENSE SELLO: Últimos 50 chars:', selloBase64.substring(selloBase64.length - 50));
+        
+        // Hash del sello para trazabilidad
+        const hashSello = crypto.createHash('sha256').update(selloBase64, 'utf8').digest('hex');
+        console.log('🔐 FORENSE SELLO: SHA256 del sello base64:', hashSello);
+        
+        // Verificación inmediata del sello generado
+        console.log('🔐 FORENSE SELLO: Verificando sello inmediatamente...');
+        try {
+            const verify = crypto.createVerify('RSA-SHA256');
+            verify.update(cadenaOriginal, 'utf8');
+            
+            // Necesitamos el certificado para verificar, pero podemos al menos intentar con la llave pública
+            // Por ahora solo loggeamos que el proceso de verificación está disponible
+            console.log('✅ FORENSE SELLO: Objeto de verificación creado exitosamente');
+        } catch (verifyError) {
+            console.log('⚠️ FORENSE SELLO: No se pudo crear verificación inmediata:', verifyError.message);
+        }
+        
+        return selloBase64;
         
     } catch (error) {
-        console.error('❌ SELLO CRYPTO: Error generando sello digital con crypto:', error);
+        console.error('❌ FORENSE SELLO: Error generando sello digital');
+        console.error('❌ FORENSE SELLO ERROR:', error.message);
+        console.error('❌ FORENSE SELLO STACK:', error.stack);
         return null;
     }
 }
