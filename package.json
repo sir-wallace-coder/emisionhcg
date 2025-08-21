@@ -9,6 +9,8 @@
     "start": "netlify dev"
   },
   "dependencies": {
+    "@nodecfdi/cfdiutils-common": "^2.0.1",
+    "@nodecfdi/cfdiutils-core": "^0.7.1",
     "@nodecfdi/credentials": "^2.0.3",
     "@supabase/supabase-js": "^2.55.0",
     "@xmldom/xmldom": "^0.8.11",
