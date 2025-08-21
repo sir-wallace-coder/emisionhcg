@@ -60,11 +60,40 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         
         // Convertir a PEM (como Python)
         const certificadoPem = certificadoBuffer.toString('utf8');
-        const llavePrivadaPem = llavePrivadaBuffer.toString('utf8');
+        let llavePrivadaPem = llavePrivadaBuffer.toString('utf8');
         
         console.log('📋 PYTHON-BASED: Certificado y llave convertidos a PEM');
         console.log('  - Certificado PEM (longitud):', certificadoPem.length);
         console.log('  - Llave privada PEM (longitud):', llavePrivadaPem.length);
+        
+        // 🔐 PROCESAR LLAVE PRIVADA SEGÚN FORMATO (encriptada o no)
+        let llavePrivadaParaFirmar;
+        try {
+            // Verificar si la llave está encriptada
+            if (llavePrivadaPem.includes('ENCRYPTED')) {
+                console.log('🔐 PYTHON-BASED: Llave privada encriptada detectada, usando contraseña...');
+                // Para llaves encriptadas, usar objeto con key y passphrase
+                llavePrivadaParaFirmar = {
+                    key: llavePrivadaPem,
+                    passphrase: passwordLlave || ''
+                };
+            } else {
+                console.log('🔐 PYTHON-BASED: Llave privada no encriptada detectada...');
+                // Para llaves no encriptadas, usar directamente el string PEM
+                llavePrivadaParaFirmar = llavePrivadaPem;
+            }
+            
+            // Verificar que la llave es válida intentando crear un objeto de firma
+            const testSign = crypto.createSign('RSA-SHA256');
+            testSign.update('test', 'utf8');
+            testSign.sign(llavePrivadaParaFirmar); // Esto lanzará error si la llave es inválida
+            
+            console.log('✅ PYTHON-BASED: Llave privada validada exitosamente');
+            
+        } catch (errorLlave) {
+            console.error('❌ PYTHON-BASED: Error procesando llave privada:', errorLlave.message);
+            return { exito: false, error: 'Error procesando llave privada: ' + errorLlave.message };
+        }
         
         // 4. 📝 AGREGAR SOLO NoCertificado AL XML (como Python: root.set("NoCertificado", no_certificado))
         console.log('📝 PYTHON-BASED: Agregando NoCertificado al XML...');
@@ -140,7 +169,7 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
             
             // Firmar con PKCS1v15 (exacto como Python)
             selloDigitalBinario = sign.sign({
-                key: llavePrivadaPem,
+                key: llavePrivadaParaFirmar,
                 padding: crypto.constants.RSA_PKCS1_PADDING // Equivalente a padding.PKCS1v15()
             });
             
