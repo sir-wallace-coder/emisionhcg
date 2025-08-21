@@ -5,7 +5,20 @@ const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
 const { sellarCFDIConNodeCfdi } = require('./utils/nodecfdi-sealer');
 const FormData = require('form-data');
-const fetch = require('node-fetch');
+// node-fetch es ES module, se carga dinámicamente
+let fetch;
+
+/**
+ * Carga dinámicamente node-fetch (ES module)
+ * @returns {Promise<Function>} fetch function
+ */
+async function loadFetch() {
+    if (!fetch) {
+        const { default: nodeFetch } = await import('node-fetch');
+        fetch = nodeFetch;
+    }
+    return fetch;
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const SELLADO_EXTERNO_URL = 'https://consulta.click/api/v1/sellado';
@@ -53,7 +66,8 @@ async function sellarCFDIExterno(xmlContent, certificadoCer, certificadoKey, pas
         console.log('📦 SELLADO EXTERNO: FormData preparado con archivos y contraseña');
         
         // Realizar request al servicio externo
-        const response = await fetch(SELLADO_EXTERNO_URL, {
+        const fetchFn = await loadFetch();
+        const response = await fetchFn(SELLADO_EXTERNO_URL, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${SELLADO_EXTERNO_TOKEN}`,

@@ -8,7 +8,20 @@
  * @version 1.0.0
  */
 
-const fetch = require('node-fetch');
+// node-fetch es ES module, se carga dinámicamente
+let fetch;
+
+/**
+ * Carga dinámicamente node-fetch (ES module)
+ * @returns {Promise<Function>} fetch function
+ */
+async function loadFetch() {
+    if (!fetch) {
+        const { default: nodeFetch } = await import('node-fetch');
+        fetch = nodeFetch;
+    }
+    return fetch;
+}
 
 /**
  * Configuración del servicio externo de sellado
@@ -64,7 +77,8 @@ async function loginServicioExterno() {
     console.log('👤 EXTERNAL LOGIN: Email:', EXTERNAL_SEALER_CONFIG.email);
     
     try {
-        const response = await fetch(EXTERNAL_SEALER_CONFIG.loginUrl, {
+        const fetchFn = await loadFetch();
+        const response = await fetchFn(EXTERNAL_SEALER_CONFIG.loginUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -222,7 +236,8 @@ async function sellarConServicioExterno({
             };
 
             // Realizar request al servicio externo
-            const response = await fetch(EXTERNAL_SEALER_CONFIG.sellarUrl, {
+            const fetchFn = await loadFetch();
+            const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(payload),
@@ -331,7 +346,8 @@ async function probarConectividadServicioExterno() {
         
         console.log('🔍 Probando URL de login:', EXTERNAL_SEALER_CONFIG.loginUrl);
         try {
-            const loginResponse = await fetch(EXTERNAL_SEALER_CONFIG.loginUrl, {
+            const fetchFn = await loadFetch();
+            const loginResponse = await fetchFn(EXTERNAL_SEALER_CONFIG.loginUrl, {
                 method: 'HEAD',
                 timeout: 5000
             });
@@ -356,7 +372,8 @@ async function probarConectividadServicioExterno() {
         
         console.log('🔍 Probando URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
         try {
-            const sellarResponse = await fetch(EXTERNAL_SEALER_CONFIG.sellarUrl, {
+            const fetchFn2 = await loadFetch();
+            const sellarResponse = await fetchFn2(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'HEAD',
                 timeout: 5000
             });
