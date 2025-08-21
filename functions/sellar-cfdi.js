@@ -111,6 +111,13 @@ exports.handler = async (event, context) => {
     console.log('✅ SELLADO ENDPOINT: Emisor encontrado:', emisor.rfc);
 
     // 2. Verificar que el emisor tenga certificados CSD
+    console.log('🔍 SELLADO ENDPOINT: Verificando certificados del emisor...');
+    console.log('🔍 SELLADO ENDPOINT: certificado_cer existe:', !!emisor.certificado_cer);
+    console.log('🔍 SELLADO ENDPOINT: certificado_key existe:', !!emisor.certificado_key);
+    console.log('🔍 SELLADO ENDPOINT: numero_certificado existe:', !!emisor.numero_certificado);
+    console.log('🔍 SELLADO ENDPOINT: certificado_cer longitud:', emisor.certificado_cer?.length || 0);
+    console.log('🔍 SELLADO ENDPOINT: certificado_key longitud:', emisor.certificado_key?.length || 0);
+    
     if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.numero_certificado) {
       console.error('❌ SELLADO ENDPOINT: Emisor sin certificados completos');
       console.error('❌ SELLADO ENDPOINT: certificado_cer:', !!emisor.certificado_cer);

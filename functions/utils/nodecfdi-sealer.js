@@ -95,7 +95,23 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         
         // 4. Extraer información del certificado
         const certificado = credential.certificate();
-        const numeroCertificado = certificado.serialNumber().bytes();
+        
+        // CRÍTICO: Obtener número de certificado como string de 20 dígitos
+        let numeroCertificado;
+        try {
+            const serialBytes = certificado.serialNumber().bytes();
+            // Convertir bytes a string hexadecimal y luego a decimal
+            const serialHex = Buffer.from(serialBytes).toString('hex');
+            numeroCertificado = BigInt('0x' + serialHex).toString().padStart(20, '0');
+            console.log('🔍 NODECFDI: Serial bytes:', serialBytes);
+            console.log('🔍 NODECFDI: Serial hex:', serialHex);
+            console.log('🔍 NODECFDI: Serial decimal:', numeroCertificado);
+        } catch (serialError) {
+            console.error('❌ NODECFDI: Error extrayendo número de certificado:', serialError.message);
+            // Fallback: intentar obtener directamente como string
+            numeroCertificado = certificado.serialNumber().toString().padStart(20, '0');
+        }
+        
         const certificadoPem = certificado.pem();
         
         console.log('📋 NODECFDI: Información del certificado:');
