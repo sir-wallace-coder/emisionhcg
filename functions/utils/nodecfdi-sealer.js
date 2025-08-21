@@ -199,27 +199,45 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             return { exito: false, error: 'Error generando sello digital con NodeCfdi' };
         }
         
-        // 🔧 CRÍTICO: Convertir datos binarios a base64 para XML
+        // 🔧 CRÍTICO: Forzar conversión correcta a base64
+        console.log('🔍 NODECFDI DEBUG: Tipo de sello recibido:', typeof selloDigitalBinario);
+        console.log('🔍 NODECFDI DEBUG: Es Buffer?', Buffer.isBuffer(selloDigitalBinario));
+        console.log('🔍 NODECFDI DEBUG: Longitud original:', selloDigitalBinario?.length);
+        
         let selloDigital;
-        if (Buffer.isBuffer(selloDigitalBinario)) {
-            // Si es Buffer, convertir a base64
-            selloDigital = selloDigitalBinario.toString('base64');
-            console.log('🔄 NODECFDI: Sello convertido de Buffer a base64');
-        } else if (typeof selloDigitalBinario === 'string') {
-            // Si ya es string, verificar si es base64 válido
-            try {
-                // Intentar decodificar para verificar si es base64 válido
-                Buffer.from(selloDigitalBinario, 'base64');
-                selloDigital = selloDigitalBinario;
-                console.log('🔄 NODECFDI: Sello ya está en formato base64');
-            } catch (error) {
-                // Si no es base64 válido, convertir desde string binario
-                selloDigital = Buffer.from(selloDigitalBinario, 'binary').toString('base64');
-                console.log('🔄 NODECFDI: Sello convertido de string binario a base64');
+        try {
+            if (Buffer.isBuffer(selloDigitalBinario)) {
+                // Método 1: Buffer directo a base64
+                selloDigital = selloDigitalBinario.toString('base64');
+                console.log('✅ NODECFDI: Conversión Buffer → base64 exitosa');
+            } else if (typeof selloDigitalBinario === 'string') {
+                // Método 2: Detectar si es base64 válido
+                const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+                if (base64Regex.test(selloDigitalBinario) && selloDigitalBinario.length % 4 === 0) {
+                    selloDigital = selloDigitalBinario;
+                    console.log('✅ NODECFDI: String ya es base64 válido');
+                } else {
+                    // Método 3: Convertir string a Buffer y luego a base64
+                    const buffer = Buffer.from(selloDigitalBinario, 'latin1');
+                    selloDigital = buffer.toString('base64');
+                    console.log('✅ NODECFDI: Conversión string → Buffer → base64 exitosa');
+                }
+            } else {
+                // Método 4: Forzar conversión como último recurso
+                const buffer = Buffer.from(String(selloDigitalBinario), 'latin1');
+                selloDigital = buffer.toString('base64');
+                console.log('✅ NODECFDI: Conversión forzada a base64 exitosa');
             }
-        } else {
-            console.error('❌ NODECFDI: Tipo de sello no reconocido:', typeof selloDigitalBinario);
-            return { exito: false, error: 'Tipo de sello digital no válido' };
+            
+            // Validación final del base64
+            const base64Test = /^[A-Za-z0-9+/]*={0,2}$/;
+            if (!base64Test.test(selloDigital)) {
+                throw new Error('Base64 generado no es válido');
+            }
+            
+        } catch (error) {
+            console.error('❌ NODECFDI: Error en conversión base64:', error.message);
+            return { exito: false, error: 'Error convirtiendo sello a base64: ' + error.message };
         }
         
         console.log('🎉 NODECFDI: ¡Sello digital generado exitosamente!');
