@@ -87,20 +87,40 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
             let llaveBase64Limpia;
             
             // Si la llave tiene contenido mixto, extraer solo el base64 puro
-            if (llavePrivadaString.includes('BEGIN') || llavePrivadaString.includes('END')) {
+            if (llavePrivadaString.includes('BEGIN') || llavePrivadaString.includes('END') || llavePrivadaString.includes('+')) {
                 console.log('🧩 PYTHON-BASED: Limpiando headers existentes de la llave...');
-                // Extraer solo el contenido base64, removiendo todos los headers y saltos de línea
-                llaveBase64Limpia = llavePrivadaString
-                    .replace(/-----BEGIN[^-]*-----/g, '') // Remover headers BEGIN
-                    .replace(/-----END[^-]*-----/g, '')   // Remover headers END
-                    .replace(/\+{5}.*?\+{5}/g, '')        // Remover patrones +++++TEXTO+++++
-                    .replace(/[^A-Za-z0-9+/=]/g, '')     // Mantener solo caracteres válidos base64
-                    .trim();
                 
-                console.log('🧩 PYTHON-BASED: Después de limpieza (primeros 50):', llaveBase64Limpia.substring(0, 50));
+                // 🔥 LIMPIEZA AGRESIVA: Múltiples métodos para extraer base64 puro
+                let contenidoLimpio = llavePrivadaString;
+                
+                // Método 1: Remover headers conocidos
+                contenidoLimpio = contenidoLimpio.replace(/-----BEGIN[^-]*-----/g, '');
+                contenidoLimpio = contenidoLimpio.replace(/-----END[^-]*-----/g, '');
+                
+                // Método 2: Remover patrones con + de forma agresiva
+                contenidoLimpio = contenidoLimpio.replace(/\+{3,}[^\+]*\+{3,}/g, ''); // 3 o más +
+                contenidoLimpio = contenidoLimpio.replace(/\+{2}[^\+]*\+{2}/g, '');   // 2 o más +
+                contenidoLimpio = contenidoLimpio.replace(/\+[^\+]*\+/g, '');         // Cualquier cosa entre +
+                
+                // Método 3: Buscar y extraer solo secuencias base64 válidas
+                const base64Matches = contenidoLimpio.match(/[A-Za-z0-9+/]{20,}/g);
+                if (base64Matches && base64Matches.length > 0) {
+                    // Tomar la secuencia más larga (probablemente la llave real)
+                    llaveBase64Limpia = base64Matches.reduce((a, b) => a.length > b.length ? a : b);
+                    console.log('🎯 PYTHON-BASED: Extracción por coincidencia - longitud:', llaveBase64Limpia.length);
+                } else {
+                    // Método 4: Filtro final - solo caracteres base64 válidos
+                    llaveBase64Limpia = contenidoLimpio.replace(/[^A-Za-z0-9+/=]/g, '');
+                    console.log('🔍 PYTHON-BASED: Extracción por filtro - longitud:', llaveBase64Limpia.length);
+                }
+                
+                console.log('🧩 PYTHON-BASED: Después de limpieza agresiva (primeros 50):', llaveBase64Limpia.substring(0, 50));
+                console.log('🧩 PYTHON-BASED: Últimos 20 chars:', llaveBase64Limpia.substring(llaveBase64Limpia.length - 20));
+                
             } else {
                 // Convertir buffer binario directamente a base64
                 llaveBase64Limpia = llavePrivadaBuffer.toString('base64');
+                console.log('🔧 PYTHON-BASED: Conversión directa de buffer binario');
             }
             
             console.log('🔍 PYTHON-BASED: Base64 limpio (longitud):', llaveBase64Limpia.length);
