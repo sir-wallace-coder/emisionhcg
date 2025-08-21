@@ -2989,10 +2989,14 @@
                 const subtotalXML = comprobante.getAttribute('SubTotal') || comprobante.getAttribute('subtotal') || '0.00';
                 const totalXML = comprobante.getAttribute('Total') || comprobante.getAttribute('total') || '0.00';
                 
+                // Definir variables numéricas al inicio para evitar ReferenceError
+                const subtotalNum = parseFloat(subtotalXML);
+                const totalNum = parseFloat(totalXML);
+                
                 console.log('🔍 DIAGNÓSTICO CFDI40102 - XML IMPORTADO:');
                 console.log('   SubTotal en XML:', subtotalXML);
                 console.log('   Total en XML:', totalXML);
-                console.log('   Diferencia:', (parseFloat(totalXML) - parseFloat(subtotalXML)).toFixed(2));
+                console.log('   Diferencia:', (totalNum - subtotalNum).toFixed(2));
                 
                 // 🚨 ANÁLISIS FORENSE DETALLADO DE IMPUESTOS
                 console.log('\n🔬 ANÁLISIS FORENSE - ESTRUCTURA DE IMPUESTOS:');
@@ -3049,7 +3053,6 @@
                     console.log('   Total retenciones calculado:', totalRetencionesCalculado.toFixed(2));
                     
                     // 🎯 CÁLCULO ESPERADO DEL TOTAL
-                    const subtotalNum = parseFloat(subtotalXML);
                     const trasladosNum = parseFloat(totalImpuestosTrasladados);
                     const retencionesNum = parseFloat(totalImpuestosRetenidos);
                     const totalCalculado = subtotalNum + trasladosNum - retencionesNum;
@@ -3059,16 +3062,16 @@
                     console.log('   + Traslados:', trasladosNum.toFixed(2));
                     console.log('   - Retenciones:', retencionesNum.toFixed(2));
                     console.log('   = Total Calculado:', totalCalculado.toFixed(2));
-                    console.log('   Total en XML:', parseFloat(totalXML).toFixed(2));
-                    console.log('   ¿Coincide?:', Math.abs(totalCalculado - parseFloat(totalXML)) < 0.01 ? '✅ SÍ' : '❌ NO');
+                    console.log('   Total en XML:', totalNum.toFixed(2));
+                    console.log('   ¿Coincide?:', Math.abs(totalCalculado - totalNum) < 0.01 ? '✅ SÍ' : '❌ NO');
                     
                     // 🚨 HIPÓTESIS: ¿El SubTotal debería incluir impuestos?
                     const subtotalConImpuestos = subtotalNum + trasladosNum;
                     console.log('\n🤔 HIPÓTESIS - SubTotal con impuestos incluidos:');
                     console.log('   SubTotal actual:', subtotalNum.toFixed(2));
                     console.log('   SubTotal + Traslados:', subtotalConImpuestos.toFixed(2));
-                    console.log('   Total en XML:', parseFloat(totalXML).toFixed(2));
-                    console.log('   ¿SubTotal debería incluir impuestos?:', Math.abs(subtotalConImpuestos - parseFloat(totalXML)) < 0.01 ? '✅ SÍ' : '❌ NO');
+                    console.log('   Total en XML:', totalNum.toFixed(2));
+                    console.log('   ¿SubTotal debería incluir impuestos?:', Math.abs(subtotalConImpuestos - totalNum) < 0.01 ? '✅ SÍ' : '❌ NO');
                     
                 } else {
                     console.log('   ⚠️ No se encontró nodo de Impuestos en el XML');
@@ -3104,8 +3107,8 @@
                 // 🎯 RESUMEN FINAL
                 console.log('\n🎯 RESUMEN DIAGNÓSTICO:');
                 console.log('   1. SubTotal XML vs Conceptos:', Math.abs(subtotalConceptosCalculado - subtotalNum) < 0.01 ? '✅ Correcto' : '❌ Incorrecto');
-                console.log('   2. Total XML vs Cálculo:', Math.abs(parseFloat(totalXML) - (subtotalNum + parseFloat(impuestos?.getAttribute('TotalImpuestosTrasladados') || '0') - parseFloat(impuestos?.getAttribute('TotalImpuestosRetenidos') || '0'))) < 0.01 ? '✅ Correcto' : '❌ Incorrecto');
-                console.log('   3. Diferencia SubTotal-Total:', (parseFloat(totalXML) - subtotalNum).toFixed(2));
+                console.log('   2. Total XML vs Cálculo:', Math.abs(totalNum - (subtotalNum + parseFloat(impuestos?.getAttribute('TotalImpuestosTrasladados') || '0') - parseFloat(impuestos?.getAttribute('TotalImpuestosRetenidos') || '0'))) < 0.01 ? '✅ Correcto' : '❌ Incorrecto');
+                console.log('   3. Diferencia SubTotal-Total:', (totalNum - subtotalNum).toFixed(2));
                 console.log('   4. Impuestos trasladados:', impuestos?.getAttribute('TotalImpuestosTrasladados') || '0.00');
                 console.log('   \n🔍 ORIGEN DEL PROBLEMA: El XML importado ya tiene valores incorrectos desde el origen.');
                 console.log('   📝 ACCIÓN REQUERIDA: Verificar el sistema/proceso que genera este XML antes de importarlo.');
