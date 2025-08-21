@@ -225,10 +225,12 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
             console.error('❌ CFDI40102 FIX: Error firmando DigestInfo con crypto:', errorCrypto.message);
             console.log('🔄 CFDI40102 FIX: Intentando fallback con NodeCfdi...');
             
-            // Fallback: usar NodeCfdi pero con el DigestInfo
+            // Fallback: usar NodeCfdi con la cadena original directamente
             try {
-                selloDigitalBinario = credential.sign(digestInfo);
-                console.log('🎉 CFDI40102 FIX: DigestInfo firmado exitosamente con NodeCfdi fallback');
+                // CRÍTICO: NodeCfdi debe firmar la cadena original, no el DigestInfo
+                selloDigitalBinario = credential.sign(cadenaOriginal);
+                console.log('🎉 CFDI40102 FIX: Cadena original firmada exitosamente con NodeCfdi fallback');
+                console.log('🔍 CFDI40102 FIX: Cadena firmada (hash):', crypto.createHash('sha256').update(cadenaOriginal, 'utf8').digest('hex'));
             } catch (errorNodeCfdi) {
                 console.error('❌ CFDI40102 FIX: Error firmando DigestInfo con NodeCfdi:', errorNodeCfdi.message);
                 return { exito: false, error: 'Error generando sello digital con DigestInfo ASN.1' };
