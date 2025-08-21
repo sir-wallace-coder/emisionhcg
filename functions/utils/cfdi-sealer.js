@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const forge = require('node-forge');
 const { DOMParser, XMLSerializer } = require('xmldom');
+const { generarCadenaOriginalXSLT } = require('../xslt-processor');
 
 /**
  * Normaliza espacios en blanco según XSLT SAT (normalize-space)
@@ -72,7 +73,7 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
         console.log('🔧 SELLADO UNIFICADO: Cadena original generada');
         console.log('🔍 FORENSE: Cadena original COMPLETA:', cadenaOriginalRaw);
         
-        // 5. PASO 4 PYTHON: Limpiar caracteres invisibles antes del firmado
+        // 5. PASO 4 PYTHON: Limpiar caracteres invisibles antes del firmado (ChatGPT)
         const cadenaOriginal = limpiarCadenaOriginal(cadenaOriginalRaw);
         console.log('🔧 SELLADO UNIFICADO: Cadena original limpia para firmado');
         
@@ -84,7 +85,14 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
             console.log('🔍 FORENSE: La limpieza NO modificó la cadena original');
         }
         
-        // 6. PASO 5 PYTHON: Firmar la cadena original
+        // 5.5. VALIDACIÓN PAR CERTIFICADO/LLAVE (recomendación ChatGPT)
+        const certificadoPem = `-----BEGIN CERTIFICATE-----\n${certificadoBase64.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
+        const parValido = validarParCertificadoLlave(certificadoPem, llavePrivadaPem);
+        if (!parValido) {
+            return { exito: false, error: 'El certificado y la llave privada no corresponden al mismo par' };
+        }
+        
+        // 6. PASO 5 PYTHON: Firmar la cadena original con Node.js crypto (ChatGPT)
         const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
         if (!selloDigital) {
             return { exito: false, error: 'Error generando sello digital' };
@@ -133,58 +141,64 @@ function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llaveP
 
 /**
  * Limpia caracteres invisibles de la cadena original antes del firmado
+ * CRÍTICO CFDI40102: Elimina BOM, saltos de línea, espacios invisibles según ChatGPT
+ * @param {string} cadena - Cadena original a limpiar
+ * @returns {string} Cadena limpia para firmado
+ */
+function limpiarCadenaOriginalChatGPT(cadena) {
+    if (!cadena) return '';
+    
+    console.log(' LIMPIEZA CHATGPT: Aplicando parche mínimo recomendado...');
+    console.log(' LIMPIEZA CHATGPT: Longitud original:', cadena.length);
+    
+    let cadenaLimpia = cadena;
+    
+    // 1. Quitar BOM si lo hubiera (recomendación ChatGPT)
+    if (cadenaLimpia.charCodeAt(0) === 0xFEFF) {
+        cadenaLimpia = cadenaLimpia.slice(1);
+        console.log(' LIMPIEZA CHATGPT: BOM UTF-8 eliminado');
+    }
+    
+    // 2. Una sola línea, sin CR/LF (recomendación ChatGPT)
+    const tieneCR = /\r/.test(cadenaLimpia);
+    const tieneLF = /\n/.test(cadenaLimpia);
+    if (tieneCR || tieneLF) {
+        cadenaLimpia = cadenaLimpia.replace(/\r?\n/g, '');
+        console.log(' LIMPIEZA CHATGPT: CR/LF eliminados (CR:', tieneCR, 'LF:', tieneLF, ')');
+    }
+    
+    // 3. Quitar espacios invisibles comunes (recomendación ChatGPT)
+    const tieneEspaciosInvisibles = /[\u00A0\u200B]/.test(cadenaLimpia);
+    if (tieneEspaciosInvisibles) {
+        cadenaLimpia = cadenaLimpia.replace(/\u00A0/g, ' ').replace(/\u200B/g, '');
+        console.log(' LIMPIEZA CHATGPT: Espacios invisibles eliminados');
+    }
+    
+    // 4. NO recodificar; debe ser UTF-8 tal cual (recomendación ChatGPT)
+    // No hacer normalize() ni otras transformaciones
+    
+    console.log(' LIMPIEZA CHATGPT: Longitud final:', cadenaLimpia.length);
+    console.log(' LIMPIEZA CHATGPT: Diferencia:', cadena.length - cadenaLimpia.length, 'caracteres eliminados');
+    
+    // Logs forenses SHA256 (recomendación ChatGPT)
+    const crypto = require('crypto');
+    console.log(' FORENSE: SHA256 antes de limpiar:', crypto.createHash('sha256').update(Buffer.from(cadena, 'utf8')).digest('hex'));
+    console.log(' FORENSE: SHA256 que se firmará  :', crypto.createHash('sha256').update(Buffer.from(cadenaLimpia, 'utf8')).digest('hex'));
+    console.log(' FORENSE: Tiene CR?', tieneCR, 'Tiene LF?', tieneLF);
+    console.log(' FORENSE: BOM?', cadena.charCodeAt(0) === 0xFEFF);
+    
+    return cadenaLimpia;
+}
+
+/**
+ * Limpia caracteres invisibles de la cadena original antes del firmado (FUNCIÓN LEGACY)
  * CRÍTICO CFDI40102: Elimina BOM, saltos de línea, espacios invisibles, etc.
  * @param {string} cadena - Cadena original a limpiar
  * @returns {string} Cadena limpia para firmado
  */
 function limpiarCadenaOriginal(cadena) {
-    if (!cadena) return '';
-    
-    console.log(' LIMPIEZA: Iniciando limpieza de caracteres invisibles...');
-    console.log(' LIMPIEZA: Longitud original:', cadena.length);
-    
-    // 1. Eliminar BOM UTF-8 (bytes EF BB BF)
-    let cadenaLimpia = cadena.replace(/^\uFEFF/, '');
-    
-    // 2. Eliminar saltos de línea \r\n (Windows) y \r
-    cadenaLimpia = cadenaLimpia.replace(/\r\n/g, '').replace(/\r/g, '').replace(/\n/g, '');
-    
-    // 3. Reemplazar espacios invisibles por espacios normales
-    cadenaLimpia = cadenaLimpia.replace(/\u00A0/g, ' '); // No-breaking space
-    cadenaLimpia = cadenaLimpia.replace(/\u200B/g, '');  // Zero-width space (eliminar)
-    cadenaLimpia = cadenaLimpia.replace(/\u2060/g, '');  // Word joiner (eliminar)
-    cadenaLimpia = cadenaLimpia.replace(/\u200C/g, '');  // Zero-width non-joiner (eliminar)
-    cadenaLimpia = cadenaLimpia.replace(/\u200D/g, '');  // Zero-width joiner (eliminar)
-    
-    // 4. Reemplazar tabs por espacios normales
-    cadenaLimpia = cadenaLimpia.replace(/\t/g, ' ');
-    
-    // 5. Normalizar espacios múltiples (pero cuidado con no afectar números)
-    // Solo aplicar si no estamos en medio de un número decimal
-    cadenaLimpia = cadenaLimpia.replace(/([^\d])\s+([^\d])/g, '$1 $2');
-    
-    // 6. Verificar que empiece y termine con || sin espacios pegados
-    if (!cadenaLimpia.startsWith('||')) {
-        console.warn(' LIMPIEZA: Cadena no empieza con ||');
-    }
-    if (!cadenaLimpia.endsWith('||')) {
-        console.warn(' LIMPIEZA: Cadena no termina con ||');
-    }
-    
-    // 7. Eliminar espacios antes y después de los || iniciales/finales
-    cadenaLimpia = cadenaLimpia.replace(/^\s*\|\|/, '||');
-    cadenaLimpia = cadenaLimpia.replace(/\|\|\s*$/, '||');
-    
-    console.log(' LIMPIEZA: Longitud después de limpieza:', cadenaLimpia.length);
-    console.log(' LIMPIEZA: Caracteres eliminados:', cadena.length - cadenaLimpia.length);
-    
-    // 8. Diagnóstico de caracteres especiales restantes
-    const caracteresEspeciales = cadenaLimpia.match(/[^\x20-\x7E\u00C0-\u017F]/g);
-    if (caracteresEspeciales) {
-        console.log(' LIMPIEZA: Caracteres especiales encontrados:', caracteresEspeciales.slice(0, 10));
-    }
-    
-    return cadenaLimpia;
+    // Usar la nueva función recomendada por ChatGPT
+    return limpiarCadenaOriginalChatGPT(cadena);
 }
 
 /**
@@ -227,38 +241,57 @@ function generarCadenaOriginalConCertificados(xmlContent, noCertificado, version
 }
 
 /**
- * Genera la cadena original de un XML CFDI (FUNCIÓN LEGACY)
+ * Genera la cadena original de un XML CFDI usando XSLT oficial SAT
  * @param {string} xmlContent - Contenido del XML CFDI
  * @param {string} version - Versión del CFDI (3.3 o 4.0)
  * @returns {string} Cadena original
  */
 function generarCadenaOriginal(xmlContent, version = '4.0') {
     try {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        console.log(' Generando cadena original con XSLT oficial SAT para CFDI', version);
         
-        // Obtener el nodo raíz del comprobante
-        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
-        if (!comprobante) {
-            throw new Error('No se encontró el elemento cfdi:Comprobante en el XML');
+        // Usar el procesador XSLT oficial del SAT
+        const cadenaOriginal = generarCadenaOriginalXSLT(xmlContent, version);
+        
+        if (!cadenaOriginal) {
+            console.error(' Error generando cadena original con XSLT');
+            return null;
         }
         
-        // Construir cadena original según la versión
-        let cadenaOriginal = '';
-        
-        if (version === '4.0') {
-            cadenaOriginal = construirCadenaOriginal40(comprobante);
-        } else if (version === '3.3') {
-            cadenaOriginal = construirCadenaOriginal33(comprobante);
-        } else {
-            throw new Error('Versión de CFDI no soportada: ' + version);
-        }
-        
+        console.log(' Cadena original generada con XSLT oficial SAT:', cadenaOriginal.substring(0, 100) + '...');
         return cadenaOriginal;
         
     } catch (error) {
-        console.error('Error generando cadena original:', error);
-        throw new Error('Error al generar cadena original: ' + error.message);
+        console.error(' Error generando cadena original con XSLT:', error);
+        console.log(' Fallback: Intentando con implementación manual...');
+        
+        // Fallback a implementación manual en caso de error
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+            
+            if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                console.error(' Error parseando XML en fallback');
+                return null;
+            }
+            
+            const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+            if (!comprobante) {
+                console.error(' No se encontró el elemento cfdi:Comprobante en fallback');
+                return null;
+            }
+            
+            const cadenaOriginal = version === '4.0' ? 
+                construirCadenaOriginal40(comprobante) : 
+                construirCadenaOriginal33(comprobante);
+            
+            console.log(' Cadena original generada con fallback manual:', cadenaOriginal.substring(0, 100) + '...');
+            return cadenaOriginal;
+            
+        } catch (fallbackError) {
+            console.error(' Error en fallback manual:', fallbackError);
+            return null;
+        }
     }
 }
 
@@ -548,32 +581,90 @@ function construirCadenaOriginal33(comprobante) {
 }
 
 /**
- * Genera el sello digital de un CFDI
+ * Valida que el certificado y la llave privada sean el par correcto
+ * Recomendación ChatGPT: Validar antes de firmar
+ * @param {string} certificadoPem - Certificado en formato PEM
+ * @param {string} llavePrivadaPem - Llave privada en formato PEM
+ * @returns {boolean} True si son el par correcto
+ */
+function validarParCertificadoLlave(certificadoPem, llavePrivadaPem) {
+    try {
+        console.log('🔍 VALIDACIÓN PAR: Verificando que certificado y llave correspondan...');
+        
+        const crypto = require('crypto');
+        
+        // 1. Validar que el cert PEM parsea (recomendación ChatGPT)
+        if (crypto.X509Certificate) {
+            new crypto.X509Certificate(certificadoPem);
+            console.log('✅ VALIDACIÓN PAR: Certificado PEM válido');
+        }
+        
+        // 2. Confirmar que llave hace par con cert (recomendación ChatGPT)
+        const prueba = Buffer.from('probe', 'utf8');
+        const testSig = crypto.sign('RSA-SHA256', prueba, llavePrivadaPem);
+        
+        const pubKeyPem = new crypto.X509Certificate(certificadoPem).publicKey.export({ type: 'spki', format: 'pem' });
+        const ok = crypto.verify('RSA-SHA256', prueba, pubKeyPem, testSig);
+        
+        if (!ok) {
+            console.error('❌ VALIDACIÓN PAR: La llave privada NO corresponde al certificado (.cer)');
+            return false;
+        }
+        
+        console.log('✅ VALIDACIÓN PAR: Certificado y llave privada son el par correcto');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ VALIDACIÓN PAR: Error validando par certificado/llave:', error);
+        return false;
+    }
+}
+
+/**
+ * Genera el sello digital de un CFDI usando Node.js crypto (ChatGPT)
+ * @param {string} cadenaOriginal - Cadena original del CFDI
+ * @param {string} llavePrivadaPem - Llave privada en formato PEM
+ * @returns {string} Sello digital en base64
+ */
+function generarSelloDigitalCrypto(cadenaOriginal, llavePrivadaPem) {
+    try {
+        console.log('🔐 SELLO CRYPTO: Generando sello con Node.js crypto (recomendación ChatGPT)...');
+        
+        const crypto = require('crypto');
+        
+        // Firmar exactamente la cadena (no el XML, no un hash intermedio) - ChatGPT
+        // RSA-SHA256 (PKCS#1 v1.5) sobre la cadena original ya "limpia"
+        const signer = crypto.createSign('RSA-SHA256');
+        signer.update(Buffer.from(cadenaOriginal, 'utf8'));
+        signer.end();
+        
+        // PKCS#1 v1.5 por defecto en Node - ChatGPT
+        const firmaBin = signer.sign(llavePrivadaPem);
+        
+        // Base64 del binario - NO url-encode aquí - ChatGPT
+        const sello = firmaBin.toString('base64');
+        
+        console.log('✅ SELLO CRYPTO: Sello digital generado exitosamente con Node.js crypto');
+        console.log('🔍 SELLO CRYPTO: Longitud:', sello.length);
+        console.log('🔍 SELLO CRYPTO: Primeros 50 chars:', sello.substring(0, 50) + '...');
+        
+        return sello;
+        
+    } catch (error) {
+        console.error('❌ SELLO CRYPTO: Error generando sello digital con crypto:', error);
+        return null;
+    }
+}
+
+/**
+ * Genera el sello digital de un CFDI (FUNCIÓN LEGACY con forge)
  * @param {string} cadenaOriginal - Cadena original del CFDI
  * @param {string} llavePrivadaPem - Llave privada en formato PEM
  * @returns {string} Sello digital en base64
  */
 function generarSelloDigital(cadenaOriginal, llavePrivadaPem) {
-    try {
-        // Parsear la llave privada
-        const privateKey = forge.pki.privateKeyFromPem(llavePrivadaPem);
-        
-        // Crear hash SHA-256 de la cadena original
-        const md = forge.md.sha256.create();
-        md.update(cadenaOriginal, 'utf8');
-        
-        // Firmar con la llave privada
-        const signature = privateKey.sign(md);
-        
-        // Convertir a base64
-        const selloBase64 = forge.util.encode64(signature);
-        
-        return selloBase64;
-        
-    } catch (error) {
-        console.error('Error generando sello digital:', error);
-        throw new Error('Error al generar sello digital: ' + error.message);
-    }
+    // Usar la nueva función con Node.js crypto (recomendación ChatGPT)
+    return generarSelloDigitalCrypto(cadenaOriginal, llavePrivadaPem);
 }
 
 /**
@@ -776,9 +867,14 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
 module.exports = {
     normalizeSpace,
     limpiarCadenaOriginal,
+    limpiarCadenaOriginalChatGPT,
+    validarParCertificadoLlave,
+    generarSelloDigitalCrypto,
     sellarXMLUnificado,
-    generarCadenaOriginal,
     generarCadenaOriginalConCertificados,
+    generarCadenaOriginal,
+    construirCadenaOriginal40,
+    construirCadenaOriginal33,
     generarSelloDigital,
     validarSelloDigital,
     agregarCertificadosAlXML,
