@@ -58,9 +58,31 @@ async function sellarCFDIBasadoEnPython(xmlContent, certificadoCer, llavePrivada
         const certificadoBuffer = Buffer.from(certificadoCer, 'base64');
         const llavePrivadaBuffer = Buffer.from(llavePrivadaKey, 'base64');
         
-        // Convertir a PEM (como Python)
+        // Convertir certificado a PEM (como Python)
         const certificadoPem = certificadoBuffer.toString('utf8');
-        let llavePrivadaPem = llavePrivadaBuffer.toString('utf8');
+        
+        // 🔧 CONVERTIR LLAVE PRIVADA DE BINARIO/DER A PEM
+        // La llave está en formato binario, necesita conversión a PEM con headers
+        let llavePrivadaPem;
+        
+        // Verificar si ya está en formato PEM (contiene headers)
+        const llavePrivadaString = llavePrivadaBuffer.toString('utf8');
+        if (llavePrivadaString.includes('BEGIN') && llavePrivadaString.includes('PRIVATE KEY')) {
+            console.log('🔍 PYTHON-BASED: Llave ya está en formato PEM');
+            llavePrivadaPem = llavePrivadaString;
+        } else {
+            console.log('🔧 PYTHON-BASED: Convirtiendo llave de formato binario/DER a PEM...');
+            // Convertir buffer binario a base64 y agregar headers PEM
+            const llaveBase64 = llavePrivadaBuffer.toString('base64');
+            
+            // Formatear como PEM con headers estándar para llave privada encriptada
+            const lineas = llaveBase64.match(/.{1,64}/g) || [];
+            llavePrivadaPem = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
+                             lineas.join('\n') + 
+                             '\n-----END ENCRYPTED PRIVATE KEY-----';
+            
+            console.log('✅ PYTHON-BASED: Llave convertida a formato PEM con headers');
+        }
         
         console.log('📋 PYTHON-BASED: Certificado y llave convertidos a PEM');
         console.log('  - Certificado PEM (longitud):', certificadoPem.length);
