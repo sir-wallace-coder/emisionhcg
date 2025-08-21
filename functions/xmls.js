@@ -62,6 +62,8 @@ exports.handler = async (event, context) => {
 
 async function getXMLs(userId, headers) {
   try {
+    // 🌐 ACCESO GLOBAL: Todos los usuarios pueden ver todos los XMLs
+    console.log('📋 XMLS: Obteniendo todos los XMLs (acceso global)');
     const { data: xmls, error } = await supabase
       .from('xmls_generados')
       .select(`
@@ -71,7 +73,7 @@ async function getXMLs(userId, headers) {
           nombre
         )
       `)
-      .eq('usuario_id', userId)
+      // .eq('usuario_id', userId) // ❌ REMOVIDO: Sin filtro por usuario
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -408,11 +410,13 @@ async function deleteXML(userId, xmlId, headers) {
       };
     }
 
+    // 🌐 ACCESO GLOBAL: Permitir eliminar cualquier XML
+    console.log('🗑️ XMLS: Eliminando XML (acceso global):', xmlId);
     const { error } = await supabase
       .from('xmls_generados')
       .delete()
-      .eq('id', xmlId)
-      .eq('usuario_id', userId);
+      .eq('id', xmlId);
+      // .eq('usuario_id', userId); // ❌ REMOVIDO: Sin filtro por usuario
 
     if (error) throw error;
 

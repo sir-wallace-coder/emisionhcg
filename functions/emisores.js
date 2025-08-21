@@ -234,10 +234,12 @@ async function getEmisores(userId, headers, emisorId = null) {
   try {
     console.log('🔍 GET EMISORES: Consultando', emisorId ? `emisor específico: ${emisorId}` : 'todos los emisores');
     
+    // 🌐 ACCESO GLOBAL: Todos los usuarios pueden ver todos los emisores
+    console.log('📋 EMISORES: Obteniendo todos los emisores (acceso global)');
     let query = supabase
       .from('emisores')
-      .select('*')
-      .eq('usuario_id', userId);
+      .select('*');
+      // .eq('usuario_id', userId); // ❌ REMOVIDO: Sin filtro por usuario
     
     // Si se especifica un ID, consultar solo ese emisor
     if (emisorId) {
