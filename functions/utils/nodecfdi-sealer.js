@@ -53,20 +53,28 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         // 3. Crear credencial NodeCfdi desde archivos base64
         console.log('🔐 NODECFDI: Creando credencial desde archivos CSD...');
         
-        // Convertir base64 a binary string (formato requerido por NodeCfdi)
-        const certBinary = Buffer.from(certificadoCer, 'base64').toString('binary');
-        const keyBinary = Buffer.from(llavePrivadaKey, 'base64').toString('binary');
+        // Convertir base64 a Buffer (formato correcto para NodeCfdi)
+        const certBuffer = Buffer.from(certificadoCer, 'base64');
+        const keyBuffer = Buffer.from(llavePrivadaKey, 'base64');
         
-        console.log('📋 NODECFDI: Archivos CSD convertidos a formato binary');
-        console.log('  - Certificado (longitud):', certBinary.length);
-        console.log('  - Llave privada (longitud):', keyBinary.length);
+        console.log('📋 NODECFDI: Archivos CSD convertidos a Buffer');
+        console.log('  - Certificado (longitud):', certBuffer.length);
+        console.log('  - Llave privada (longitud):', keyBuffer.length);
+        
+        // Verificar que los buffers no estén vacíos
+        if (certBuffer.length === 0) {
+            throw new Error('Certificado vacío después de conversión base64');
+        }
+        if (keyBuffer.length === 0) {
+            throw new Error('Llave privada vacía después de conversión base64');
+        }
         
         // 🚨 CRÍTICO: Crear credencial NodeCfdi (PERMITE CERTIFICADOS VENCIDOS)
         console.log('⚠️ NODECFDI: Creando credencial (permitiendo certificados vencidos)...');
         let credential;
         
         try {
-            credential = Credential.create(certBinary, keyBinary, passwordLlave);
+            credential = Credential.create(certBuffer, keyBuffer, passwordLlave);
             console.log('✅ NODECFDI: Credencial creada exitosamente');
         } catch (error) {
             console.error('❌ NODECFDI: Error creando credencial:', error.message);
