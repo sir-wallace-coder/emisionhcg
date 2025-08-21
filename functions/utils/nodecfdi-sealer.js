@@ -13,7 +13,7 @@ const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
 const crypto = require('crypto');
 
 // Importar funciones existentes que ya funcionan correctamente
-const { generarCadenaOriginal } = require('../xslt-processor');
+const { generarCadenaOriginalXSLT } = require('../xslt-processor');
 const { limpiarCadenaOriginalChatGPT, removerAtributoSelloCompletamente } = require('./cfdi-sealer');
 
 /**
@@ -147,7 +147,7 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         // 6. Generar cadena original del XML con certificados
         console.log('🔗 NODECFDI: Generando cadena original...');
         const xmlConCertificados = xmlSerializer.serializeToString(xmlDoc);
-        const cadenaOriginalRaw = generarCadenaOriginal(xmlConCertificados, version);
+        const cadenaOriginalRaw = generarCadenaOriginalXSLT(xmlConCertificados, version);
         
         if (!cadenaOriginalRaw) {
             console.error('❌ NODECFDI: Error generando cadena original');
