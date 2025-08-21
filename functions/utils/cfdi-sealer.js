@@ -17,6 +17,117 @@ function normalizeSpace(str) {
 }
 
 /**
+ * Sella XML CFDI siguiendo el flujo unificado del código Python exitoso
+ * CRÍTICO: UNA SOLA serialización para evitar alteración de integridad
+ * @param {string} xmlContent - XML original sin sellar
+ * @param {string} noCertificado - Número de certificado
+ * @param {string} certificadoBase64 - Certificado en base64
+ * @param {string} llavePrivadaPem - Llave privada en formato PEM
+ * @param {string} version - Versión CFDI (3.3 o 4.0)
+ * @returns {object} Resultado del sellado unificado
+ */
+function sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llavePrivadaPem, version) {
+    try {
+        console.log('🔧 SELLADO UNIFICADO: Iniciando proceso siguiendo patrón Python exitoso...');
+        
+        // 1. Parsear XML original
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        
+        // Verificar que se parsó correctamente
+        if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+            return { exito: false, error: 'XML mal formado' };
+        }
+        
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0];
+        if (!comprobante) {
+            return { exito: false, error: 'No se encontró el elemento cfdi:Comprobante' };
+        }
+        
+        console.log('🔧 SELLADO UNIFICADO: XML parseado correctamente');
+        
+        // 2. PASO 1 PYTHON: Limpiar atributos de sellado previos
+        const atributosLimpieza = ['NoCertificado', 'Certificado', 'Sello'];
+        atributosLimpieza.forEach(attr => {
+            if (comprobante.hasAttribute(attr)) {
+                comprobante.removeAttribute(attr);
+                console.log(`🧹 LIMPIEZA: Eliminado atributo previo ${attr}`);
+            }
+        });
+        
+        // 3. PASO 2 PYTHON: Agregar SOLO NoCertificado
+        comprobante.setAttribute('NoCertificado', noCertificado);
+        console.log('🔧 SELLADO UNIFICADO: NoCertificado agregado:', noCertificado);
+        
+        // 4. PASO 3 PYTHON: Generar cadena original del XML que YA tiene NoCertificado
+        const cadenaOriginalRaw = generarCadenaOriginal(xmlDoc.documentElement.outerHTML, version);
+        if (!cadenaOriginalRaw) {
+            return { exito: false, error: 'Error generando cadena original' };
+        }
+        
+        console.log('🔧 SELLADO UNIFICADO: Cadena original generada');
+        console.log('🔍 FORENSE: Cadena original COMPLETA:', cadenaOriginalRaw);
+        
+        // 5. PASO 4 PYTHON: Limpiar caracteres invisibles antes del firmado
+        const cadenaOriginal = limpiarCadenaOriginal(cadenaOriginalRaw);
+        console.log('🔧 SELLADO UNIFICADO: Cadena original limpia para firmado');
+        
+        // Verificar si la limpieza cambió algo
+        if (cadenaOriginalRaw !== cadenaOriginal) {
+            console.log('🔍 FORENSE: ¡ATENCIÓN! La limpieza modificó la cadena original');
+            console.log('🔍 FORENSE: Caracteres eliminados:', cadenaOriginalRaw.length - cadenaOriginal.length);
+        } else {
+            console.log('🔍 FORENSE: La limpieza NO modificó la cadena original');
+        }
+        
+        // 6. PASO 5 PYTHON: Firmar la cadena original
+        const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
+        if (!selloDigital) {
+            return { exito: false, error: 'Error generando sello digital' };
+        }
+        
+        console.log('🔧 SELLADO UNIFICADO: Sello digital generado');
+        console.log('🔍 FORENSE: Sello digital:', selloDigital);
+        
+        // 7. PASO 6 PYTHON: Agregar Sello y Certificado AL FINAL
+        comprobante.setAttribute('Sello', selloDigital);
+        comprobante.setAttribute('Certificado', certificadoBase64);
+        
+        console.log('🔧 SELLADO UNIFICADO: Sello y Certificado agregados al XML');
+        
+        // 8. PASO 7 PYTHON: UNA SOLA serialización final
+        const serializer = new XMLSerializer();
+        const xmlSellado = serializer.serializeToString(xmlDoc);
+        
+        console.log('🔧 SELLADO UNIFICADO: XML serializado una sola vez');
+        
+        // 9. VERIFICACIÓN DE INTEGRIDAD CRÍTICA
+        console.log('🔍 FORENSE: Verificando integridad del sellado...');
+        const cadenaOriginalFinal = generarCadenaOriginal(xmlSellado, version);
+        
+        if (cadenaOriginal !== cadenaOriginalFinal) {
+            console.error('🚨 FORENSE: ¡INTEGRIDAD ROTA! La cadena original cambió después del sellado');
+            console.error('🚨 FORENSE: Cadena firmada:', cadenaOriginal);
+            console.error('🚨 FORENSE: Cadena del XML final:', cadenaOriginalFinal);
+            return { exito: false, error: 'Integridad del sello comprometida - cadenas no coinciden' };
+        } else {
+            console.log('✅ FORENSE: Integridad mantenida - cadenas originales coinciden');
+        }
+        
+        return {
+            exito: true,
+            xmlSellado: xmlSellado,
+            cadenaOriginal: cadenaOriginal,
+            selloDigital: selloDigital
+        };
+        
+    } catch (error) {
+        console.error('🚨 SELLADO UNIFICADO: Error:', error);
+        return { exito: false, error: error.message };
+    }
+}
+
+/**
  * Limpia caracteres invisibles de la cadena original antes del firmado
  * CRÍTICO CFDI40102: Elimina BOM, saltos de línea, espacios invisibles, etc.
  * @param {string} cadena - Cadena original a limpiar
@@ -617,27 +728,24 @@ function sellarCFDI(xmlContent, llavePrivadaPem, certificadoPem, noCertificado, 
         
         console.log('🔐 SELLADO: Certificado convertido a base64');
         
-        // 2. CRÍTICO PHPCFDI: Primero agregar certificados al XML
-        const xmlConCertificados = agregarCertificadosAlXML(xmlContent, noCertificado, certificadoBase64);
-        console.log('🔐 SELLADO: Certificados agregados al XML');
+        // 2. AUDITORÍA FORENSE: XML original antes de modificaciones
+        console.log('🔍 FORENSE: XML original (primeros 300 chars):', xmlContent.substring(0, 300));
+        console.log('🔍 FORENSE: Longitud XML original:', xmlContent.length);
         
-        // 3. CRÍTICO: Generar cadena original del XML QUE YA INCLUYE NoCertificado
-        const cadenaOriginalRaw = generarCadenaOriginal(xmlConCertificados, version);
-        console.log('🔐 SELLADO: Cadena original generada del XML con certificados');
-        console.log('🔐 SELLADO: Cadena original raw:', cadenaOriginalRaw.substring(0, 200) + '...');
+        // 2. CRÍTICO: FLUJO UNIFICADO - Una sola serialización siguiendo código Python exitoso
+        const resultadoSellado = sellarXMLUnificado(xmlContent, noCertificado, certificadoBase64, llavePrivadaPem, version);
         
-        // 4. CRÍTICO CFDI40102: Limpiar caracteres invisibles antes del firmado
-        const cadenaOriginal = limpiarCadenaOriginal(cadenaOriginalRaw);
-        console.log('🔐 SELLADO: Cadena original limpia:', cadenaOriginal.substring(0, 200) + '...');
-        console.log('🔐 SELLADO: Longitud raw vs limpia:', cadenaOriginalRaw.length, 'vs', cadenaOriginal.length);
+        if (!resultadoSellado.exito) {
+            throw new Error('Error en sellado unificado: ' + resultadoSellado.error);
+        }
         
-        // 5. Generar sello digital basado en la cadena original limpia
-        const selloDigital = generarSelloDigital(cadenaOriginal, llavePrivadaPem);
-        console.log('🔐 SELLADO: Sello digital generado');
+        const xmlSellado = resultadoSellado.xmlSellado;
+        const cadenaOriginal = resultadoSellado.cadenaOriginal;
+        const selloDigital = resultadoSellado.selloDigital;
         
-        // 5. CRÍTICO: Agregar SOLO el sello al XML que ya tiene certificados
-        const xmlSellado = agregarSoloSelloAlXML(xmlConCertificados, selloDigital);
-        console.log('🔐 SELLADO: Sello agregado al XML final');
+        console.log('🔐 SELLADO: Proceso unificado completado exitosamente');
+        console.log('🔍 FORENSE: XML sellado (primeros 400 chars):', xmlSellado.substring(0, 400));
+        console.log('🔍 FORENSE: Longitud XML sellado:', xmlSellado.length);
         
         // 6. Validar el sello generado
         const selloValido = validarSelloDigital(cadenaOriginal, selloDigital, certificadoPem);
