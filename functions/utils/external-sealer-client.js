@@ -132,9 +132,19 @@ async function loginServicioExterno() {
  * @returns {Promise<string>} Token válido
  */
 async function obtenerTokenValido() {
+    // 🚨 DEBUG CRÍTICO: Estado inicial del cache
+    console.log('🚨 TOKEN CACHE DEBUG:');
+    console.log('  - Cache token existe:', !!tokenCache.token);
+    console.log('  - Cache expiresAt:', tokenCache.expiresAt);
+    console.log('  - Tiempo actual:', Date.now());
+    console.log('  - Token válido:', tokenCache.token && tokenCache.expiresAt && Date.now() < tokenCache.expiresAt);
+    console.log('  - isRefreshing:', tokenCache.isRefreshing);
+    
     // Si hay token válido en cache, usarlo
     if (tokenCache.token && tokenCache.expiresAt && Date.now() < tokenCache.expiresAt) {
         console.log('🎫 TOKEN CACHE: Usando token del cache');
+        console.log('  - Token length:', tokenCache.token.length);
+        console.log('  - Token primeros 20:', tokenCache.token.substring(0, 20));
         return tokenCache.token;
     }
     
@@ -156,9 +166,16 @@ async function obtenerTokenValido() {
     tokenCache.isRefreshing = true;
     
     try {
+        console.log('🚨 INICIANDO LOGIN EXTERNO...');
         const nuevoToken = await loginServicioExterno();
+        console.log('🎉 LOGIN EXITOSO - Token obtenido:');
+        console.log('  - Token existe:', !!nuevoToken);
+        console.log('  - Token length:', nuevoToken?.length || 0);
+        console.log('  - Token primeros 20:', nuevoToken?.substring(0, 20) || 'NULL');
         return nuevoToken;
     } catch (error) {
+        console.log('❌ LOGIN FALLIDO:', error.message);
+        console.log('❌ LOGIN STACK:', error.stack);
         tokenCache.isRefreshing = false;
         throw error;
     }
