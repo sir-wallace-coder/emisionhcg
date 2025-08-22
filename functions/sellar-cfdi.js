@@ -135,39 +135,6 @@ exports.handler = async (event, context) => {
       numero_certificado: emisor.numero_certificado
     });
     
-    // 🚨 DEBUG FORENSE TEMPRANO: Extraer RFC del certificado ANTES del sellado
-    console.log('🚨 DEBUG FORENSE TEMPRANO: Analizando discrepancia RFC...');
-    let rfcDelCertificadoTemprano = null;
-    try {
-      const crypto = require('crypto');
-      const certificadoPemTemprano = '-----BEGIN CERTIFICATE-----\n' + 
-                                    emisor.certificado_cer.match(/.{1,64}/g).join('\n') + 
-                                    '\n-----END CERTIFICATE-----';
-      const certTemprano = new crypto.X509Certificate(certificadoPemTemprano);
-      const subjectTemprano = certTemprano.subject;
-      console.log('🔍 DEBUG TEMPRANO CERT: Subject completo:', subjectTemprano);
-      
-      const rfcMatchTemprano = subjectTemprano.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
-      if (rfcMatchTemprano && rfcMatchTemprano.length > 0) {
-        rfcDelCertificadoTemprano = rfcMatchTemprano[0];
-      }
-    } catch (certErrorTemprano) {
-      console.log('❌ DEBUG TEMPRANO CERT: Error:', certErrorTemprano.message);
-    }
-    
-    // 🚨 COMPARACIÓN CRÍTICA TEMPRANA
-    console.log('🚨 COMPARACIÓN RFC CRÍTICA TEMPRANA:');
-    console.log('  📋 RFC Emisor (BD):', emisor.rfc);
-    console.log('  🔐 RFC Certificado:', rfcDelCertificadoTemprano || 'NO_EXTRAIDO');
-    console.log('  ⚖️ COINCIDEN:', emisor.rfc === rfcDelCertificadoTemprano ? '✅ SÍ' : '❌ NO');
-    
-    if (emisor.rfc !== rfcDelCertificadoTemprano && rfcDelCertificadoTemprano) {
-      console.log('🚨 PROBLEMA IDENTIFICADO:');
-      console.log('  - RFC en BD/XML:', emisor.rfc);
-      console.log('  - RFC en Certificado:', rfcDelCertificadoTemprano);
-      console.log('  - ESTO CAUSARÁ ERROR 500 en servicio externo');
-    }
-
     // Verificar que el emisor tenga certificados
     if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.password_key) {
       return {
@@ -344,10 +311,7 @@ exports.handler = async (event, context) => {
       
       // 🔧 PREPARACIÓN PARA SERVICIO EXTERNO - SIN MANIPULACIÓN
       console.log('🔧 PREPARACIÓN: Enviando certificado y llave tal como están almacenados...');
-      console.log('🔍 DEBUG CERT: Formato almacenado:', emisor.certificado_cer.substring(0, 50) + '...');
-      console.log('🔍 DEBUG LLAVE: Formato almacenado:', emisor.certificado_key.substring(0, 50) + '...');
-      console.log('🔍 DEBUG LLAVE: Longitud original:', emisor.certificado_key.length, 'chars');
-      console.log('🔍 DEBUG LLAVE: ¿Contiene ENCRYPTED PRIVATE KEY?', emisor.certificado_key.includes('ENCRYPTED PRIVATE KEY'));
+
       
       // Usar certificado y llave tal como están almacenados
       const certificadoBase64Puro = emisor.certificado_cer
@@ -358,8 +322,7 @@ exports.handler = async (event, context) => {
       // ⚠️ CRÍTICO: Usar llave privada SIN MANIPULACIÓN (tal como se almacenó)
       const llavePrivadaBase64Pura = emisor.certificado_key;
       
-      console.log('🔧 PREPARACIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
-      console.log('🔧 PREPARACIÓN: Llave privada original:', llavePrivadaBase64Pura.length, 'chars');
+
       
       // Usar cliente externo que maneja login automático
       const resultadoExterno = await sellarConServicioExterno({
@@ -371,11 +334,7 @@ exports.handler = async (event, context) => {
         versionCfdi: version || '4.0'
       });
       
-      console.log('✅ SELLADO EXTERNO: Respuesta recibida:', {
-        exito: resultadoExterno.exito,
-        tieneXmlSellado: !!resultadoExterno.xmlSellado,
-        longitudXml: resultadoExterno.xmlSellado?.length || 0
-      });
+
       
       // Adaptar respuesta del cliente externo al formato esperado
       resultado = {

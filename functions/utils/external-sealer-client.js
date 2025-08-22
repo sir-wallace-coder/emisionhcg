@@ -107,15 +107,12 @@ async function loginServicioExterno() {
         }
         
         const loginResult = await response.json();
-        console.log('✅ EXTERNAL LOGIN: Login exitoso');
+        console.log('✅ EXTERNAL LOGIN: Autenticación exitosa');
         
         // Extraer token y tiempo de expiración (formato consulta.click)
         const token = loginResult.access_token || loginResult.token;
         const tokenType = loginResult.token_type || 'Bearer';
         const expiresIn = loginResult.expires_in || 3600; // Default 1 hora
-        
-        console.log('🎫 EXTERNAL LOGIN: Token type:', tokenType);
-        console.log('📏 EXTERNAL LOGIN: Token length:', token ? token.length : 0);
         
         if (!token) {
             throw new Error('Token no recibido en respuesta de login');
@@ -125,9 +122,6 @@ async function loginServicioExterno() {
         tokenCache.token = token;
         tokenCache.expiresAt = Date.now() + (expiresIn * 1000) - 60000; // -1 minuto de margen
         tokenCache.isRefreshing = false;
-        
-        console.log('🎫 EXTERNAL LOGIN: Token guardado en cache');
-        console.log('⏰ EXTERNAL LOGIN: Expira en:', expiresIn, 'segundos');
         
         return token;
         
@@ -258,57 +252,6 @@ async function sellarConServicioExterno({
         console.log('  - SOLUCIÓN: Usar certificado CSD del RFC', rfc, 'o cambiar emisor al RFC', rfcCertificadoCritico);
     }
     
-    // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación (solo para análisis interno)
-    console.log('🔍 DEBUG FORENSE CLIENTE: Analizando certificado enviado...');
-    let rfcDelCertificadoEnviado = null;
-    try {
-        const crypto = require('crypto');
-        // Convertir base64 a PEM válido SOLO para análisis interno (no se envía así)
-        const certificadoPemDebug = '-----BEGIN CERTIFICATE-----\n' + 
-                                   certificadoBase64.match(/.{1,64}/g).join('\n') + 
-                                   '\n-----END CERTIFICATE-----';
-        const cert = new crypto.X509Certificate(certificadoPemDebug);
-        const subject = cert.subject;
-        console.log('🔍 DEBUG CLIENTE CERT: Subject completo:', subject);
-        console.log('📋 DEBUG CLIENTE: Certificado enviado tal cual se guarda (base64 string)');
-        console.log('📏 DEBUG CLIENTE: Longitud base64:', certificadoBase64.length, 'chars');
-        
-        // Buscar RFC en el subject
-        const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
-        if (rfcMatch && rfcMatch.length > 0) {
-            rfcDelCertificadoEnviado = rfcMatch[0];
-        }
-        
-        // Extraer número de serie
-        const serialHex = cert.serialNumber;
-        let serialString = '';
-        for (let i = 0; i < serialHex.length; i += 2) {
-            const hexByte = serialHex.substr(i, 2);
-            const charCode = parseInt(hexByte, 16);
-            serialString += String.fromCharCode(charCode);
-        }
-        
-        console.log('🔍 DEBUG CLIENTE CERT: Número de serie:', serialString);
-        console.log('🔍 DEBUG CLIENTE CERT: Vigencia desde:', cert.validFrom);
-        console.log('🔍 DEBUG CLIENTE CERT: Vigencia hasta:', cert.validTo);
-        
-    } catch (certError) {
-        console.log('❌ DEBUG CLIENTE CERT: Error extrayendo RFC:', certError.message);
-    }
-    
-    // 🚨 DEBUG FORENSE CLIENTE: COMPARACIÓN CRÍTICA
-    console.log('🚨 DEBUG FORENSE CLIENTE: DATOS QUE SE ENVIARÁN:');
-    console.log('  📋 RFC Parámetro:', rfc);
-    console.log('  🔐 RFC en Certificado:', rfcDelCertificadoEnviado || 'NO_EXTRAIDO');
-    console.log('  📏 Password Length:', passwordLlave?.length || 0, 'chars');
-    console.log('  ⚖️ RFC COINCIDE:', rfc === rfcDelCertificadoEnviado ? '✅ SÍ' : '❌ NO');
-    
-    if (rfc !== rfcDelCertificadoEnviado && rfcDelCertificadoEnviado) {
-        console.log('🚨 ALERTA CLIENTE: RFC NO COINCIDE - Servicio externo rechazará');
-        console.log('  - RFC en certificado:', rfcDelCertificadoEnviado);
-        console.log('  - RFC que enviamos:', rfc);
-    }
-
     // Validar parámetros requeridos
     if (!xmlSinSellar || !certificadoBase64 || !llavePrivadaBase64 || !passwordLlave) {
         throw new Error('Faltan parámetros requeridos para el sellado externo');
@@ -360,26 +303,14 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // Agregar llave privada como archivo (SIN MANIPULACIÓN - tal como está almacenada)
-            console.log('🔍 DEBUG KEY: Enviando llave SIN MANIPULACIÓN');
-            console.log('📏 DEBUG KEY: Formato almacenado:', llavePrivadaBase64.includes('-----BEGIN') ? 'PEM' : 'BASE64');
-            console.log('📏 DEBUG KEY: Longitud almacenada:', llavePrivadaBase64.length, 'chars');
-            console.log('🔍 DEBUG KEY: Preview almacenado:', llavePrivadaBase64.substring(0, 50) + '...');
-            
-            // ⚠️ CRÍTICO: Enviar llave EXACTAMENTE como está almacenada
+            // Enviar llave privada tal como está almacenada (sin manipulación)
             let llaveBuffer;
             
             if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Ya está en formato PEM, enviar como texto
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔍 DEBUG KEY: Enviando PEM como texto (utf8)');
             } else {
-                // Es base64 puro, enviar como buffer binario (SIN AGREGAR HEADERS)
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-                console.log('🔍 DEBUG KEY: Enviando base64 como binario (SIN HEADERS)');
             }
-            
-            console.log('📏 DEBUG KEY: Tamaño buffer final:', llaveBuffer.length, 'bytes');
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
