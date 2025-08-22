@@ -287,26 +287,50 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // Procesar certificado (detectar PEM vs base64)
-            let certificadoBuffer;
-            if (certificadoBase64.includes('-----BEGIN')) {
-                certificadoBuffer = Buffer.from(certificadoBase64, 'utf8');
-            } else {
-                certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
+            // 🧪 PRUEBA SISTEMÁTICA DE FORMATOS
+            // Determinar formato actual de los archivos
+            const certEsPem = certificadoBase64.includes('-----BEGIN');
+            const keyEsPem = llavePrivadaBase64.includes('-----BEGIN');
+            
+            console.log('🔍 FORMATO ALMACENADO: Certificado', certEsPem ? 'PEM' : 'BASE64', '| Llave', keyEsPem ? 'PEM' : 'BASE64');
+            
+            // Función para limpiar y convertir a base64 puro
+            function aBase64Puro(contenido) {
+                return contenido
+                    .replace(/-----BEGIN[^-]+-----/g, '')
+                    .replace(/-----END[^-]+-----/g, '')
+                    .replace(/\s/g, '');
             }
+            
+            // Función para convertir a PEM
+            function aPem(contenido, esCertificado = false) {
+                const base64Puro = aBase64Puro(contenido);
+                const lineas = base64Puro.match(/.{1,64}/g) || [base64Puro];
+                
+                if (esCertificado) {
+                    return '-----BEGIN CERTIFICATE-----\n' + lineas.join('\n') + '\n-----END CERTIFICATE-----';
+                } else {
+                    return '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + lineas.join('\n') + '\n-----END ENCRYPTED PRIVATE KEY-----';
+                }
+            }
+            
+            // 🧪 PRUEBA 1: AMBOS COMO PEM (formato estándar)
+            console.log('🧪 PRUEBA 1: Certificado PEM + Llave PEM');
+            
+            const certPem = aPem(certificadoBase64, true);
+            const keyPem = aPem(llavePrivadaBase64, false);
+            
+            const certificadoBuffer = Buffer.from(certPem, 'utf8');
+            const llaveBuffer = Buffer.from(keyPem, 'utf8');
+            
+            console.log('📏 BUFFERS FINALES: Cert', certificadoBuffer.length, 'bytes | Key', llaveBuffer.length, 'bytes');
+            console.log('🔍 PREVIEW CERT:', certPem.substring(0, 80) + '...');
+            console.log('🔍 PREVIEW KEY:', keyPem.substring(0, 80) + '...');
             
             formData.append('certificado', certificadoBuffer, {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
-            
-            // Procesar llave con EXACTAMENTE el mismo método que el certificado
-            let llaveBuffer;
-            if (llavePrivadaBase64.includes('-----BEGIN')) {
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-            } else {
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-            }
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
