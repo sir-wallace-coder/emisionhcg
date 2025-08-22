@@ -342,7 +342,7 @@ async function sellarConServicioExterno({
 /**
  * Valida la configuración del servicio externo
  * @returns {Object} Estado de la configuración
-{{ ... }}
+ */
 function validarConfiguracionServicioExterno() {
     const config = {
         login_url_configurada: !!EXTERNAL_SEALER_CONFIG.loginUrl,
