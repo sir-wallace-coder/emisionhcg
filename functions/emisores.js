@@ -705,7 +705,7 @@ async function createEmisor(userId, data, headers) {
           
           // ✅ ÉXITO: Certificados procesados y validados correctamente
           certificadoInfo = {
-            certificado_cer: certInfo.certificadoPem,  // 🔧 Guardar en formato PEM
+            certificado_cer: certificado_cer,  // 🎯 GUARDAR TAL COMO SE RECIBE (SIN MANIPULACIÓN)
             certificado_key: keyInfo.llavePrivadaOriginal,  // 🔧 Guardar SIN MANIPULACIÓN (CRÍTICO)
             password_key: password_key,
             numero_certificado: certInfo.numeroSerie,

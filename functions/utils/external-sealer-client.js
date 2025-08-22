@@ -133,12 +133,7 @@ async function loginServicioExterno() {
  */
 async function obtenerTokenValido() {
     // 🚨 DEBUG CRÍTICO: Estado inicial del cache
-    console.log('🚨 TOKEN CACHE DEBUG:');
-    console.log('  - Cache token existe:', !!tokenCache.token);
-    console.log('  - Cache expiresAt:', tokenCache.expiresAt);
-    console.log('  - Tiempo actual:', Date.now());
-    console.log('  - Token válido:', tokenCache.token && tokenCache.expiresAt && Date.now() < tokenCache.expiresAt);
-    console.log('  - isRefreshing:', tokenCache.isRefreshing);
+    
     
     // Si hay token válido en cache, usarlo
     if (tokenCache.token && tokenCache.expiresAt && Date.now() < tokenCache.expiresAt) {
@@ -165,20 +160,6 @@ async function obtenerTokenValido() {
     console.log('🔄 TOKEN CACHE: Token expirado o no existe, haciendo login...');
     tokenCache.isRefreshing = true;
     
-    try {
-        console.log('🚨 INICIANDO LOGIN EXTERNO...');
-        const nuevoToken = await loginServicioExterno();
-        console.log('🎉 LOGIN EXITOSO - Token obtenido:');
-        console.log('  - Token existe:', !!nuevoToken);
-        console.log('  - Token length:', nuevoToken?.length || 0);
-        console.log('  - Token primeros 20:', nuevoToken?.substring(0, 20) || 'NULL');
-        return nuevoToken;
-    } catch (error) {
-        console.log('❌ LOGIN FALLIDO:', error.message);
-        console.log('❌ LOGIN STACK:', error.stack);
-        tokenCache.isRefreshing = false;
-        throw error;
-    }
 }
 
 /**
@@ -311,37 +292,31 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // 🎯 ENVÍO SIN MANIPULACIÓN - TAL COMO ESTÁ ALMACENADO
+            // 🎯 CERTIFICADO: Enviar exactamente tal como está almacenado (SIN MANIPULACIÓN)
             console.log('🎯 CERTIFICADO: Enviando tal como está almacenado (sin manipulación)');
             console.log('  - Longitud:', certificadoBase64.length, 'chars');
             console.log('  - Es PEM:', certificadoBase64.includes('-----BEGIN'));
             console.log('  - Primeros 50 chars:', certificadoBase64.substring(0, 50));
             
-            // ENVIAR TAL COMO ESTÁ - SIN CONVERSIONES
+            // ENVIAR TAL COMO ESTÁ ALMACENADO - SIN CONVERSIONES NI MANIPULACIONES
             formData.append('certificado', Buffer.from(certificadoBase64, 'utf8'), {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
             
-            // 🎯 LLAVE: Enviando tal como está almacenada (sin manipulación)
+            // 🎯 LLAVE: Enviar exactamente tal como está almacenada (SIN MANIPULACIÓN)
             console.log('🎯 LLAVE: Enviando tal como está almacenada (sin manipulación)');
             console.log('  - Longitud:', llavePrivadaBase64.length, 'chars');
             console.log('  - Es PEM:', llavePrivadaBase64.includes('-----BEGIN'));
             console.log('  - Primeros 50 chars:', llavePrivadaBase64.substring(0, 50));
             
-            // ENVIAR TAL COMO ESTÁ - SIN CONVERSIONES
+            // ENVIAR TAL COMO ESTÁ ALMACENADA - SIN CONVERSIONES NI MANIPULACIONES
             formData.append('key', Buffer.from(llavePrivadaBase64, 'utf8'), {
                 filename: 'llave.key',
                 contentType: 'application/octet-stream'
             });
             
-            // Password - DIAGNÓSTICO CRÍTICO
-            console.log('🔐 PASSWORD DIAGNÓSTICO CRÍTICO:');
-            console.log('  - Password recibido:', passwordLlave ? 'SÍ' : 'NO');
-            console.log('  - Password length:', passwordLlave?.length || 0);
-            console.log('  - Password tipo:', typeof passwordLlave);
-            console.log('  - Password primeros 3 chars:', passwordLlave?.substring(0, 3) || 'NULL');
-            console.log('  - Password últimos 3 chars:', passwordLlave?.substring(passwordLlave?.length - 3) || 'NULL');
+    
             
             if (!passwordLlave || passwordLlave.trim() === '') {
                 throw new Error('❌ CRÍTICO: Password está vacío o es null');
