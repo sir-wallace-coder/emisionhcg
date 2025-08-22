@@ -311,66 +311,26 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // 🔍 DIAGNÓSTICO CERTIFICADO ANTES DEL ENVÍO
-            console.log('🔍 CERTIFICADO ALMACENADO:');
+            // 🎯 ENVÍO SIN MANIPULACIÓN - TAL COMO ESTÁ ALMACENADO
+            console.log('🎯 CERTIFICADO: Enviando tal como está almacenado (sin manipulación)');
             console.log('  - Longitud:', certificadoBase64.length, 'chars');
             console.log('  - Es PEM:', certificadoBase64.includes('-----BEGIN'));
-            console.log('  - Primeros 100 chars:', certificadoBase64.substring(0, 100));
-            console.log('  - Últimos 100 chars:', certificadoBase64.substring(certificadoBase64.length - 100));
+            console.log('  - Primeros 50 chars:', certificadoBase64.substring(0, 50));
             
-            // 🧪 PRUEBA: Certificado en formato binario DER (no PEM texto)
-            // El servicio externo puede necesitar el certificado en formato binario para extraer el número de serie
-            let certBuffer;
-            
-            if (certificadoBase64.includes('-----BEGIN')) {
-                // Extraer solo el contenido base64 (sin headers PEM) y convertir a binario
-                const base64Content = certificadoBase64
-                    .replace(/-----BEGIN CERTIFICATE-----/g, '')
-                    .replace(/-----END CERTIFICATE-----/g, '')
-                    .replace(/\s/g, '');
-                certBuffer = Buffer.from(base64Content, 'base64');
-                console.log('🔄 CERTIFICADO: Convertido de PEM a binario DER');
-            } else {
-                // Ya está en base64, convertir directamente a binario
-                certBuffer = Buffer.from(certificadoBase64, 'base64');
-                console.log('🔄 CERTIFICADO: Convertido de base64 a binario DER');
-            }
-                
-            console.log('📏 CERTIFICADO BUFFER (BINARIO):');
-            console.log('  - Tamaño buffer:', certBuffer.length, 'bytes');
-            console.log('  - Primeros 20 bytes (hex):', certBuffer.subarray(0, 20).toString('hex'));
-            console.log('  - Últimos 20 bytes (hex):', certBuffer.subarray(certBuffer.length - 20).toString('hex'));
-                
-            formData.append('certificado', certBuffer, {
+            // ENVIAR TAL COMO ESTÁ - SIN CONVERSIONES
+            formData.append('certificado', Buffer.from(certificadoBase64, 'utf8'), {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
             
-            // 🔑 LLAVE: Convertir base64 puro a PEM completo para desencriptación
-            // El servicio externo necesita headers PEM para desencriptar llaves privadas encriptadas
-            let keyContent;
-            let keyBuffer;
+            // 🎯 LLAVE: Enviando tal como está almacenada (sin manipulación)
+            console.log('🎯 LLAVE: Enviando tal como está almacenada (sin manipulación)');
+            console.log('  - Longitud:', llavePrivadaBase64.length, 'chars');
+            console.log('  - Es PEM:', llavePrivadaBase64.includes('-----BEGIN'));
+            console.log('  - Primeros 50 chars:', llavePrivadaBase64.substring(0, 50));
             
-            if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Ya está en formato PEM
-                keyContent = llavePrivadaBase64;
-                keyBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔑 LLAVE: Ya está en formato PEM');
-            } else {
-                // Base64 puro - convertir a PEM completo
-                // Formatear base64 en líneas de 64 caracteres
-                const base64Lines = llavePrivadaBase64.match(/.{1,64}/g).join('\n');
-                keyContent = `-----BEGIN ENCRYPTED PRIVATE KEY-----\n${base64Lines}\n-----END ENCRYPTED PRIVATE KEY-----`;
-                keyBuffer = Buffer.from(keyContent, 'utf8');
-                console.log('🔑 LLAVE: Convertida de base64 puro a PEM completo');
-            }
-                
-            console.log('📏 LLAVE BUFFER:');
-            console.log('  - Tamaño buffer:', keyBuffer.length, 'bytes');
-            console.log('  - Es PEM:', keyContent.includes('-----BEGIN'));
-            console.log('  - Primeros 50 chars:', keyContent.substring(0, 50));
-                
-            formData.append('key', keyBuffer, {
+            // ENVIAR TAL COMO ESTÁ - SIN CONVERSIONES
+            formData.append('key', Buffer.from(llavePrivadaBase64, 'utf8'), {
                 filename: 'llave.key',
                 contentType: 'application/octet-stream'
             });
@@ -389,16 +349,19 @@ async function sellarConServicioExterno({
             
             formData.append('password', passwordLlave);
             
-            // Enviar al servicio - CONFIGURACIÓN CORRECTA FORMDATA
-            console.log('🎆 CONFIGURACIÓN CORRECTA: FormData con headers automáticos');
+            // 🎆 CONFIGURACIÓN EXACTA POSTMAN EXITOSO
+            console.log('🎆 REPLICANDO POSTMAN EXITOSO: FormData + application/x-www-form-urlencoded');
+            console.log('📊 HEADERS ENVIADOS:');
+            console.log('  - Authorization: Bearer [token]');
+            console.log('  - Content-Type: application/x-www-form-urlencoded (FORZADO)');
             
             const fetchFn = await loadFetch();
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    // FormData maneja Content-Type automáticamente
-                    ...formData.getHeaders()
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                    // NO usar formData.getHeaders() - forzar el header del Postman exitoso
                 },
                 body: formData,
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
