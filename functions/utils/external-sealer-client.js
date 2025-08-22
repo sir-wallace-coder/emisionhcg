@@ -373,6 +373,20 @@ async function sellarConServicioExterno({
             console.log('📋 HEADERS ENVIADOS:', headers);
             console.log('🔍 BOUNDARY:', formData.getBoundary());
             
+            // 🔍 DEBUG FORENSE: Capturar payload completo para comparación con Postman
+            console.log('🔍 PAYLOAD DEBUG:');
+            console.log('  - XML length:', Buffer.from(xmlSinSellar, 'utf8').length, 'bytes');
+            console.log('  - Certificado length:', certificadoBuffer.length, 'bytes');
+            console.log('  - Llave length:', llaveBuffer.length, 'bytes');
+            console.log('  - Password length:', passwordLlave ? passwordLlave.length : 0, 'chars');
+            
+            // Capturar primeros bytes de cada archivo para verificación
+            console.log('🔍 PRIMEROS BYTES:');
+            console.log('  - XML primeros 50:', xmlSinSellar.substring(0, 50));
+            console.log('  - Certificado hex primeros 20:', certificadoBuffer.subarray(0, 20).toString('hex'));
+            console.log('  - Llave hex primeros 20:', llaveBuffer.subarray(0, 20).toString('hex'));
+            console.log('  - Password (censurada):', passwordLlave ? '*'.repeat(passwordLlave.length) : 'null');
+            
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
                 headers: headers,
