@@ -59,13 +59,7 @@ let tokenCache = {
 async function loginServicioExterno() {
     console.log('🔐 EXTERNAL LOGIN: Iniciando login en servicio externo');
     
-    // 🔍 DEBUG: Verificar variables de entorno
-    console.log('🔍 DEBUG ENV: EXTERNAL_SEALER_EMAIL existe:', !!process.env.EXTERNAL_SEALER_EMAIL);
-    console.log('🔍 DEBUG ENV: EXTERNAL_SEALER_PASSWORD existe:', !!process.env.EXTERNAL_SEALER_PASSWORD);
-    console.log('🔍 DEBUG CONFIG: email configurado:', !!EXTERNAL_SEALER_CONFIG.email);
-    console.log('🔍 DEBUG CONFIG: password configurado:', !!EXTERNAL_SEALER_CONFIG.password);
-    console.log('🔍 DEBUG CONFIG: email value:', EXTERNAL_SEALER_CONFIG.email ? EXTERNAL_SEALER_CONFIG.email.substring(0, 5) + '***' : 'VACÍO');
-    
+
     // Validar credenciales
     if (!EXTERNAL_SEALER_CONFIG.email || !EXTERNAL_SEALER_CONFIG.password) {
         console.error('❌ CREDENCIALES: Email configurado:', !!EXTERNAL_SEALER_CONFIG.email);
@@ -303,14 +297,8 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // Enviar llave privada tal como está almacenada (sin manipulación)
-            let llaveBuffer;
-            
-            if (llavePrivadaBase64.includes('-----BEGIN')) {
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-            } else {
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-            }
+            // Enviar llave privada usando EXACTAMENTE el mismo método que el certificado
+            const llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
@@ -318,6 +306,8 @@ async function sellarConServicioExterno({
             });
             
             // Agregar contraseña como campo de texto
+            console.log('🔑 DEBUG PASSWORD: Longitud:', passwordLlave?.length || 0, 'chars');
+            console.log('🔑 DEBUG PASSWORD: Valor:', passwordLlave ? '***' + passwordLlave.slice(-3) : 'UNDEFINED');
             formData.append('password', passwordLlave);
             
             // ❌ CAMPOS EXTRAS ELIMINADOS (rfc, version) según especificaciones soporte
