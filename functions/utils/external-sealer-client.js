@@ -59,8 +59,19 @@ let tokenCache = {
 async function loginServicioExterno() {
     console.log('🔐 EXTERNAL LOGIN: Iniciando login en servicio externo');
     
+    // 🔍 DEBUG: Verificar variables de entorno
+    console.log('🔍 DEBUG ENV: EXTERNAL_SEALER_EMAIL existe:', !!process.env.EXTERNAL_SEALER_EMAIL);
+    console.log('🔍 DEBUG ENV: EXTERNAL_SEALER_PASSWORD existe:', !!process.env.EXTERNAL_SEALER_PASSWORD);
+    console.log('🔍 DEBUG CONFIG: email configurado:', !!EXTERNAL_SEALER_CONFIG.email);
+    console.log('🔍 DEBUG CONFIG: password configurado:', !!EXTERNAL_SEALER_CONFIG.password);
+    console.log('🔍 DEBUG CONFIG: email value:', EXTERNAL_SEALER_CONFIG.email ? EXTERNAL_SEALER_CONFIG.email.substring(0, 5) + '***' : 'VACÍO');
+    
     // Validar credenciales
     if (!EXTERNAL_SEALER_CONFIG.email || !EXTERNAL_SEALER_CONFIG.password) {
+        console.error('❌ CREDENCIALES: Email configurado:', !!EXTERNAL_SEALER_CONFIG.email);
+        console.error('❌ CREDENCIALES: Password configurado:', !!EXTERNAL_SEALER_CONFIG.password);
+        console.error('❌ CREDENCIALES: process.env.EXTERNAL_SEALER_EMAIL:', !!process.env.EXTERNAL_SEALER_EMAIL);
+        console.error('❌ CREDENCIALES: process.env.EXTERNAL_SEALER_PASSWORD:', !!process.env.EXTERNAL_SEALER_PASSWORD);
         throw new Error('Credenciales de login no configuradas (EXTERNAL_SEALER_EMAIL/PASSWORD)');
     }
     
