@@ -258,31 +258,15 @@ async function sellarConServicioExterno({
     console.log('🔐 SELLADO EXTERNO: Obteniendo token de autenticación...');
     const token = await obtenerTokenValido();
 
-    // 🚨 DEBUG CRÍTICO DEL TOKEN
-    console.log('🎫 TOKEN DIAGNÓSTICO CRÍTICO:');
-    console.log('  - Token existe:', !!token);
-    console.log('  - Token length:', token?.length || 0);
-    console.log('  - Token tipo:', typeof token);
-    console.log('  - Token primeros 20 chars:', token?.substring(0, 20) || 'NULL');
-    console.log('  - Token últimos 10 chars:', token?.substring(token?.length - 10) || 'NULL');
-    
     if (!token || token.trim() === '') {
-        throw new Error('❌ CRÍTICO: Token de autenticación está vacío o es null');
+        throw new Error('Token de autenticación está vacío o es null');
     }
-
-    console.log('📤 SELLADO EXTERNO: Preparando FormData para el servicio externo');
-    console.log('🔗 SELLADO EXTERNO: URL:', EXTERNAL_SEALER_CONFIG.sellarUrl);
-    console.log('🎫 SELLADO EXTERNO: Token obtenido exitosamente');
 
     let lastError = null;
     
     // Implementar reintentos
     for (let intento = 1; intento <= EXTERNAL_SEALER_CONFIG.retries; intento++) {
         try {
-            console.log(`🔄 SELLADO EXTERNO: Intento ${intento}/${EXTERNAL_SEALER_CONFIG.retries}`);
-            
-            // Crear FormData con archivos (como espera consulta.click)
-            // 🖼️ PROCESO LIMPIO - EXACTAMENTE COMO LA IMAGEN
             const FormData = require('form-data');
             const formData = new FormData();
             
@@ -292,44 +276,23 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // 🎯 CERTIFICADO: Enviar exactamente tal como está almacenado (SIN MANIPULACIÓN)
-            console.log('🎯 CERTIFICADO: Enviando tal como está almacenado (sin manipulación)');
-            console.log('  - Longitud:', certificadoBase64.length, 'chars');
-            console.log('  - Es PEM:', certificadoBase64.includes('-----BEGIN'));
-            console.log('  - Primeros 50 chars:', certificadoBase64.substring(0, 50));
-            
-            // ENVIAR TAL COMO ESTÁ ALMACENADO - SIN CONVERSIONES NI MANIPULACIONES
             formData.append('certificado', Buffer.from(certificadoBase64, 'utf8'), {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
             
-            // 🎯 LLAVE: Enviar exactamente tal como está almacenada (SIN MANIPULACIÓN)
-            console.log('🎯 LLAVE: Enviando tal como está almacenada (sin manipulación)');
-            console.log('  - Longitud:', llavePrivadaBase64.length, 'chars');
-            console.log('  - Es PEM:', llavePrivadaBase64.includes('-----BEGIN'));
-            console.log('  - Primeros 50 chars:', llavePrivadaBase64.substring(0, 50));
-            
-            // ENVIAR TAL COMO ESTÁ ALMACENADA - SIN CONVERSIONES NI MANIPULACIONES
             formData.append('key', Buffer.from(llavePrivadaBase64, 'utf8'), {
                 filename: 'llave.key',
                 contentType: 'application/octet-stream'
             });
             
-    
-            
             if (!passwordLlave || passwordLlave.trim() === '') {
-                throw new Error('❌ CRÍTICO: Password está vacío o es null');
+                throw new Error('Password está vacío o es null');
             }
             
             formData.append('password', passwordLlave);
             
-            // 🔧 CONFIGURACIÓN CORREGIDA: FormData con headers nativos
-            console.log('🔧 HEADERS CORREGIDOS: FormData + headers nativos (multipart/form-data)');
-            console.log('📊 HEADERS ENVIADOS:');
-            console.log('  - Authorization: Bearer [token]');
-            console.log('  - Content-Type: multipart/form-data (AUTOMÁTICO)');
-            
+
             const fetchFn = await loadFetch();
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
@@ -342,30 +305,16 @@ async function sellarConServicioExterno({
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
             });
             
-            // 🔍 DEBUG CRÍTICO: Analizar respuesta completa
-            console.log('📊 RESPUESTA COMPLETA:');
-            console.log('  - Status:', response.status);
-            console.log('  - Status Text:', response.statusText);
-            console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
-            
             const responseText = await response.text();
-            console.log('📄 RESPUESTA TEXTO COMPLETO:');
-            console.log('  - Longitud:', responseText.length);
-            console.log('  - Primeros 500 chars:', responseText.substring(0, 500));
-            console.log('  - Últimos 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)));
             
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: ${responseText}`);
             }
             
-            // Intentar parsear JSON
             let result;
             try {
                 result = JSON.parse(responseText);
-                console.log('✅ JSON parseado exitosamente');
             } catch (jsonError) {
-                console.log('❌ ERROR PARSING JSON:', jsonError.message);
-                console.log('🔍 RESPUESTA NO ES JSON VÁLIDO - PROBABLEMENTE HTML DE ERROR');
                 throw new Error(`Respuesta no es JSON válido. Respuesta: ${responseText.substring(0, 1000)}`);
             }
             return {
@@ -376,30 +325,24 @@ async function sellarConServicioExterno({
                 numeroCertificado: result.numeroCertificado || result.numero_certificado
             };
             
-            // ✅ SISTEMA DE PRUEBAS AUTOMÁTICAS COMPLETADO EXITOSAMENTE
-
         } catch (error) {
             lastError = error;
-            console.error(`❌ SELLADO EXTERNO: Error en intento ${intento}:`, error.message);
             
-            // Si no es el último intento, esperar antes de reintentar
             if (intento < EXTERNAL_SEALER_CONFIG.retries) {
-                const delayMs = 1000 * intento; // Delay incremental
-                console.log(`⏳ SELLADO EXTERNO: Esperando ${delayMs}ms antes del siguiente intento`);
+                const delayMs = 1000 * intento;
                 await new Promise(resolve => setTimeout(resolve, delayMs));
             }
         }
     }
 
     // Si llegamos aquí, todos los intentos fallaron
-    console.error('💥 SELLADO EXTERNO: Todos los intentos de sellado fallaron');
-    throw new Error(`Sellado externo falló después de ${EXTERNAL_SEALER_CONFIG.retries} intentos: ${lastError?.message}`);
+    throw new Error(`Sellado externo falló después de ${EXTERNAL_SEALER_CONFIG.retries} intentos: ${lastError?.message || 'Error desconocido'}`);
 }
 
 /**
  * Valida la configuración del servicio externo
  * @returns {Object} Estado de la configuración
- */
+{{ ... }}
 function validarConfiguracionServicioExterno() {
     const config = {
         login_url_configurada: !!EXTERNAL_SEALER_CONFIG.loginUrl,

@@ -1070,7 +1070,7 @@ async function updateEmisor(userId, emisorId, data, headers) {
         }
         
         // ✅ ÉXITO: Certificados procesados y validados correctamente con procesador profesional
-        updateData.certificado_cer = certInfo.certificadoPem;  // 🔧 Guardar en formato PEM
+        updateData.certificado_cer = certificado_cer;  // 🎯 GUARDAR TAL COMO SE RECIBE (SIN MANIPULACIÓN)
         updateData.certificado_key = keyInfo.llavePrivadaOriginal;  // 🔧 Guardar SIN MANIPULACIÓN (CRÍTICO)
         updateData.password_key = password_key;
         updateData.numero_certificado = certInfo.numeroSerie;
