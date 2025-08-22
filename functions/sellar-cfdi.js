@@ -210,24 +210,56 @@ exports.handler = async (event, context) => {
       console.log('🔍 DEBUG FORENSE CERT: Analizando certificado para extraer RFC...');
       let rfcDelCertificado = null;
       try {
+        console.log('🔍 DEBUG CERT PASO 1: Verificando emisor.certificado_cer...');
+        console.log('🔍 DEBUG CERT: certificado_cer existe:', !!emisor.certificado_cer);
+        console.log('🔍 DEBUG CERT: certificado_cer tipo:', typeof emisor.certificado_cer);
+        
+        if (!emisor.certificado_cer) {
+          throw new Error('certificado_cer es null o undefined');
+        }
+        
+        console.log('📏 DEBUG CERT: Longitud base64:', emisor.certificado_cer.length, 'chars');
+        console.log('🔍 DEBUG CERT: Primeros 50 chars:', emisor.certificado_cer.substring(0, 50));
+        console.log('🔍 DEBUG CERT: Últimos 50 chars:', emisor.certificado_cer.substring(emisor.certificado_cer.length - 50));
+        
+        console.log('🔍 DEBUG CERT PASO 2: Aplicando regex .match(/.{1,64}/g)...');
+        const matchResult = emisor.certificado_cer.match(/.{1,64}/g);
+        console.log('🔍 DEBUG CERT: Match result existe:', !!matchResult);
+        console.log('🔍 DEBUG CERT: Match result length:', matchResult ? matchResult.length : 'NULL');
+        
+        if (!matchResult) {
+          throw new Error('Regex match fallo - certificado vacío o formato inválido');
+        }
+        
+        console.log('🔍 DEBUG CERT PASO 3: Creando PEM con headers...');
         const crypto = require('crypto');
-        // Convertir base64 a PEM válido SOLO para análisis interno (se envía tal cual se guarda)
         const certificadoPemDebug = '-----BEGIN CERTIFICATE-----\n' + 
-                                   emisor.certificado_cer.match(/.{1,64}/g).join('\n') + 
+                                   matchResult.join('\n') + 
                                    '\n-----END CERTIFICATE-----';
+        
+        console.log('🔍 DEBUG CERT: PEM creado, longitud:', certificadoPemDebug.length);
+        console.log('🔍 DEBUG CERT: PEM primeras 100 chars:', certificadoPemDebug.substring(0, 100));
+        
+        console.log('🔍 DEBUG CERT PASO 4: Creando X509Certificate...');
         const cert = new crypto.X509Certificate(certificadoPemDebug);
+        
+        console.log('🔍 DEBUG CERT PASO 5: Extrayendo subject...');
         const subject = cert.subject;
         console.log('🔍 DEBUG CERT: Subject completo:', subject);
         console.log('📋 DEBUG CERT: Certificado se envía tal cual se guarda (base64 string)');
-        console.log('📏 DEBUG CERT: Longitud base64:', emisor.certificado_cer.length, 'chars');
         
         // Buscar RFC en el subject
+        console.log('🔍 DEBUG CERT PASO 6: Buscando RFC en subject...');
         const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
         if (rfcMatch && rfcMatch.length > 0) {
           rfcDelCertificado = rfcMatch[0];
+          console.log('🔍 DEBUG CERT: RFC encontrado en certificado:', rfcDelCertificado);
+        } else {
+          console.log('🔍 DEBUG CERT: No se encontró RFC en el subject');
         }
       } catch (certError) {
         console.log('❌ DEBUG CERT: Error extrayendo RFC:', certError.message);
+        console.log('❌ DEBUG CERT: Error stack:', certError.stack);
       }
       
       // 🚨 DEBUG FORENSE: COMPARACIÓN CRÍTICA (XML vs CERTIFICADO)
@@ -310,10 +342,20 @@ exports.handler = async (event, context) => {
         console.log('  - SOLUCIÓN: Actualizar emisor al RFC', rfcCertificadoPreEnvio, 'o usar certificado del RFC', emisor.rfc);
       }
       
+      // 🔧 CONVERSIÓN PEM → BASE64 PURO PARA SERVICIO EXTERNO
+      console.log('🔧 CONVERSIÓN: Convirtiendo certificado PEM a base64 puro...');
+      const certificadoBase64Puro = emisor.certificado_cer
+        .replace(/-----BEGIN CERTIFICATE-----/g, '')
+        .replace(/-----END CERTIFICATE-----/g, '')
+        .replace(/\s/g, '');
+      
+      console.log('🔧 CONVERSIÓN: Certificado original (PEM):', emisor.certificado_cer.length, 'chars');
+      console.log('🔧 CONVERSIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
+      
       // Usar cliente externo que maneja login automático
       const resultadoExterno = await sellarConServicioExterno({
         xmlSinSellar: xmlContent,
-        certificadoBase64: emisor.certificado_cer,
+        certificadoBase64: certificadoBase64Puro,
         llavePrivadaBase64: emisor.certificado_key,
         passwordLlave: emisor.password_key,
         rfc: emisor.rfc,
