@@ -211,229 +211,65 @@ async function sellarConServicioExterno({
     rfc,
     versionCfdi = '4.0'
 }) {
-    console.log('🌐 SELLADO EXTERNO: Iniciando sellado con servicio externo');
-    console.log('📊 SELLADO EXTERNO: RFC:', rfc);
-    console.log('📊 SELLADO EXTERNO: Versión CFDI:', versionCfdi);
-    console.log('📊 SELLADO EXTERNO: Tamaño XML:', xmlSinSellar.length, 'caracteres');
-    console.log('📊 SELLADO EXTERNO: Certificado base64:', certificadoBase64.length, 'caracteres');
-    console.log('📊 SELLADO EXTERNO: Llave privada base64:', llavePrivadaBase64.length, 'caracteres');
-    
-    // 🚨 DEBUG CRÍTICO: EXTRAER RFC DEL CERTIFICADO ANTES DEL ENVÍO
-    console.log('🚨 DEBUG CRÍTICO: EXTRAYENDO RFC DEL CERTIFICADO...');
-    let rfcCertificadoCritico = 'NO_EXTRAIDO';
-    try {
-        console.log('🚨 DEBUG CRÍTICO: Validando certificado base64...');
-        if (!certificadoBase64 || typeof certificadoBase64 !== 'string') {
-            throw new Error('Certificado base64 inválido o vacío');
-        }
-        
-        const crypto = require('crypto');
-        console.log('🚨 DEBUG CRÍTICO: Formateando certificado a PEM...');
-        
-        // Limpiar el certificado base64 de cualquier formato PEM existente
-        const cleanBase64 = certificadoBase64.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
-        console.log('🚨 DEBUG CRÍTICO: Base64 limpio, longitud:', cleanBase64.length);
-        
-        // Formatear a PEM con líneas de 64 caracteres
-        const certificadoPemCritico = '-----BEGIN CERTIFICATE-----\n' + 
-                                     cleanBase64.match(/.{1,64}/g).join('\n') + 
-                                     '\n-----END CERTIFICATE-----';
-        
-        console.log('🚨 DEBUG CRÍTICO: PEM formateado, creando X509Certificate...');
-        const certCritico = new crypto.X509Certificate(certificadoPemCritico);
-        const subjectCritico = certCritico.subject;
-        
-        console.log('🚨 DEBUG CRÍTICO CERT: Subject completo:', subjectCritico);
-        
-        // Extraer RFC del subject usando regex más robusta
-        const rfcMatchCritico = subjectCritico.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
-        if (rfcMatchCritico && rfcMatchCritico.length > 0) {
-            rfcCertificadoCritico = rfcMatchCritico[0];
-            console.log('🚨 DEBUG CRÍTICO: RFC EXTRAIDO DEL CERTIFICADO:', rfcCertificadoCritico);
-        } else {
-            console.log('🚨 DEBUG CRÍTICO: No se encontró RFC en el subject del certificado');
-        }
-        
-    } catch (certErrorCritico) {
-        console.log('❌ DEBUG CRÍTICO CERT: Error extrayendo RFC:', certErrorCritico.message);
-        console.log('❌ DEBUG CRÍTICO CERT: Stack:', certErrorCritico.stack);
-    }
-    
-    // 🚨 COMPARACIÓN CRÍTICA FINAL
-    console.log('🚨 COMPARACIÓN CRÍTICA FINAL ANTES DEL ENVÍO:');
-    console.log('  📋 RFC Parámetro (del emisor):', rfc);
-    console.log('  🔐 RFC del Certificado CSD:', rfcCertificadoCritico);
-    console.log('  ⚖️ COINCIDEN:', rfc === rfcCertificadoCritico ? '✅ SÍ' : '❌ NO');
-    
-    if (rfc !== rfcCertificadoCritico && rfcCertificadoCritico !== 'NO_EXTRAIDO') {
-        console.log('🚨 PROBLEMA CRÍTICO IDENTIFICADO:');
-        console.log('  - RFC que envíamos (del emisor):', rfc);
-        console.log('  - RFC en el certificado CSD:', rfcCertificadoCritico);
-        console.log('  - EL SERVICIO EXTERNO RECHAZARÁ ESTO CON ERROR 500');
-        console.log('  - SOLUCIÓN: Usar certificado CSD del RFC', rfc, 'o cambiar emisor al RFC', rfcCertificadoCritico);
-    }
-    
     // Validar parámetros requeridos
     if (!xmlSinSellar || !certificadoBase64 || !llavePrivadaBase64 || !passwordLlave) {
         throw new Error('Faltan parámetros requeridos para el sellado externo');
     }
 
-    // Validar configuración del servicio
-    if (!EXTERNAL_SEALER_CONFIG.sellarUrl) {
-        throw new Error('URL del servicio externo no configurada (EXTERNAL_SEALER_URL)');
-    }
-    
-    // Obtener token válido antes de hacer la petición
-    console.log('🔐 SELLADO EXTERNO: Obteniendo token de autenticación...');
+    // Obtener token válido
     const token = await obtenerTokenValido();
-
-    if (!token || token.trim() === '') {
-        throw new Error('Token de autenticación está vacío o es null');
+    if (!token) {
+        throw new Error('No se pudo obtener token de autenticación');
     }
 
-    let lastError = null;
+    // Preparar FormData
+    const FormData = require('form-data');
+    const formData = new FormData();
     
-    // Implementar reintentos
-    for (let intento = 1; intento <= EXTERNAL_SEALER_CONFIG.retries; intento++) {
-        try {
-            const FormData = require('form-data');
-            const formData = new FormData();
-            
-            // XML - filename específico como Postman
-            const rfcEmisor = emisor.rfc || 'CFDI';
-            formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
-                filename: `CFDI-4.0_${rfcEmisor}_${Date.now()}.xml`,
-                contentType: 'application/xml'
-            });
-            
-            // 🎯 CORRECCIÓN CRÍTICA: Enviar como archivo binario real (como Postman desde disco)
-            
-            // CERTIFICADO: Crear como archivo binario real, no conversión
-            let certificadoBuffer;
-            if (certificadoBase64.includes('-----BEGIN CERTIFICATE-----')) {
-                // Si tiene headers PEM, enviarlo como texto tal como está (como archivo .cer de texto)
-                certificadoBuffer = Buffer.from(certificadoBase64, 'utf8');
-                console.log('📜 CERT: Enviado como archivo PEM de texto, tamaño:', certificadoBuffer.length, 'bytes');
-            } else {
-                // Si es base64 puro, crear buffer binario directo (como archivo .cer binario)
-                certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
-                console.log('📜 CERT: Enviado como archivo binario directo, tamaño:', certificadoBuffer.length, 'bytes');
-            }
-            
-            formData.append('certificado', certificadoBuffer, {
-                filename: `${rfcEmisor}.cer`,
-                contentType: 'application/octet-stream'
-            });
-            
-            // 🎯 CORRECCIÓN: Enviar archivos exactamente como Postman (tal cual están en disco)
-            let llaveBuffer;
-            let contentType;
-            
-            if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Si tiene headers PEM, enviar como texto tal como está
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                contentType = 'text/plain';
-                console.log('🔑 KEY: Enviada como archivo .key tal como está en disco, tamaño:', llaveBuffer.length, 'bytes');
-            } else {
-                // Si es base64 puro, enviarlo como binario
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-                contentType = 'application/octet-stream';
-                console.log('🔑 KEY: Enviada como binario base64, tamaño:', llaveBuffer.length, 'bytes');
-            }
-            
-            formData.append('key', llaveBuffer, {
-                filename: `${rfcEmisor}.key`,
-                contentType: contentType  // 🎯 Content-Type dinámico según formato
-            });
-            
-            if (!passwordLlave || passwordLlave.trim() === '') {
-                throw new Error('Password está vacío o es null');
-            }
-            
-            formData.append('password', passwordLlave);
-            
-            // 🔍 LOGS DE PROGRESO: Monitorear el proceso de sellado
-            console.log('🚀 SELLADO EXTERNO: Enviando petición al servicio...');
-            console.log('  - URL:', EXTERNAL_SEALER_CONFIG.sellarUrl);
-            console.log('  - Timeout configurado:', EXTERNAL_SEALER_CONFIG.timeout, 'ms');
-            console.log('  - Certificado binario:', certificadoBuffer.length, 'bytes');
-            console.log('  - Llave PEM:', llaveBuffer.length, 'bytes');
-            console.log('  - XML tamaño:', xmlSinSellar.length, 'caracteres');
-            
-            const startTime = Date.now();
-            const fetchFn = await loadFetch();
-            
-            console.log('⏱️ SELLADO EXTERNO: Iniciando petición HTTP...');
-            // 🎯 CORRECCIÓN CRÍTICA: Headers correctos para form-data + node-fetch
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                ...formData.getHeaders()  // Incluye Content-Type con boundary correcto
-            };
-            
-            console.log('📋 HEADERS ENVIADOS:', headers);
-            console.log('🔍 BOUNDARY:', formData.getBoundary());
-            
-            // 🔍 DEBUG FORENSE: Capturar payload completo para comparación con Postman
-            console.log('🔍 PAYLOAD DEBUG:');
-            console.log('  - XML length:', Buffer.from(xmlSinSellar, 'utf8').length, 'bytes');
-            console.log('  - Certificado length:', certificadoBuffer.length, 'bytes');
-            console.log('  - Llave length:', llaveBuffer.length, 'bytes');
-            console.log('  - Password length:', passwordLlave ? passwordLlave.length : 0, 'chars');
-            
-            // Capturar primeros bytes de cada archivo para verificación
-            console.log('🔍 PRIMEROS BYTES:');
-            console.log('  - XML primeros 50:', xmlSinSellar.substring(0, 50));
-            console.log('  - Certificado hex primeros 20:', certificadoBuffer.subarray(0, 20).toString('hex'));
-            console.log('  - Llave hex primeros 20:', llaveBuffer.subarray(0, 20).toString('hex'));
-            console.log('  - Password (censurada):', passwordLlave ? '*'.repeat(passwordLlave.length) : 'null');
-            
-            const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
-                method: 'POST',
-                headers: headers,
-                body: formData,
-                timeout: EXTERNAL_SEALER_CONFIG.timeout
-            });
-            
-            const responseTime = Date.now() - startTime;
-            console.log('✅ SELLADO EXTERNO: Respuesta recibida');
-            console.log('  - Status:', response.status);
-            console.log('  - Tiempo total:', responseTime, 'ms');
-            console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
-            
-            const responseText = await response.text();
-            console.log('📜 SELLADO EXTERNO: Tamaño respuesta:', responseText.length, 'caracteres');
-            
-            if (!response.ok) {
-                console.error('❌ SELLADO EXTERNO: Error en respuesta:', response.status, responseText);
-                throw new Error(`Error ${response.status}: ${responseText}`);
-            }
-            
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (jsonError) {
-                throw new Error(`Respuesta no es JSON válido. Respuesta: ${responseText.substring(0, 1000)}`);
-            }
-            return {
-                exito: true,
-                xmlSellado: result.xmlSellado || result.xml_sellado,
-                sello: result.sello,
-                cadenaOriginal: result.cadenaOriginal || result.cadena_original,
-                numeroCertificado: result.numeroCertificado || result.numero_certificado
-            };
-            
-        } catch (error) {
-            lastError = error;
-            
-            if (intento < EXTERNAL_SEALER_CONFIG.retries) {
-                const delayMs = 1000 * intento;
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-        }
-    }
+    // Envío directo en bruto como Postman
+    formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
+        filename: `${rfc}.xml`,
+        contentType: 'application/xml'
+    });
+    
+    formData.append('certificado', Buffer.from(certificadoBase64, 'base64'), {
+        filename: `${rfc}.cer`,
+        contentType: 'application/octet-stream'
+    });
+    
+    formData.append('key', Buffer.from(llavePrivadaBase64, 'base64'), {
+        filename: `${rfc}.key`,
+        contentType: 'application/octet-stream'
+    });
+    
+    formData.append('password', passwordLlave);
 
-    // Si llegamos aquí, todos los intentos fallaron
-    throw new Error(`Sellado externo falló después de ${EXTERNAL_SEALER_CONFIG.retries} intentos: ${lastError?.message || 'Error desconocido'}`);
+    // Envío HTTP
+    const fetchFn = await loadFetch();
+    const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            ...formData.getHeaders()
+        },
+        body: formData,
+        timeout: EXTERNAL_SEALER_CONFIG.timeout
+    });
+    
+    const responseText = await response.text();
+    
+    if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${responseText}`);
+    }
+    
+    const result = JSON.parse(responseText);
+    return {
+        exito: true,
+        xmlSellado: result.xmlSellado || result.xml_sellado,
+        sello: result.sello,
+        cadenaOriginal: result.cadenaOriginal || result.cadena_original,
+        numeroCertificado: result.numeroCertificado || result.numero_certificado
+    };
 }
 
 /**
