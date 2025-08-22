@@ -349,14 +349,26 @@ exports.handler = async (event, context) => {
         .replace(/-----END CERTIFICATE-----/g, '')
         .replace(/\s/g, '');
       
+      console.log('🔧 CONVERSIÓN: Convirtiendo llave privada PEM a base64 puro...');
+      const llavePrivadaBase64Pura = emisor.certificado_key
+        .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+        .replace(/-----END PRIVATE KEY-----/g, '')
+        .replace(/-----BEGIN RSA PRIVATE KEY-----/g, '')
+        .replace(/-----END RSA PRIVATE KEY-----/g, '')
+        .replace(/-----BEGIN ENCRYPTED PRIVATE KEY-----/g, '')
+        .replace(/-----END ENCRYPTED PRIVATE KEY-----/g, '')
+        .replace(/\s/g, '');
+      
       console.log('🔧 CONVERSIÓN: Certificado original (PEM):', emisor.certificado_cer.length, 'chars');
       console.log('🔧 CONVERSIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
+      console.log('🔧 CONVERSIÓN: Llave original (PEM):', emisor.certificado_key.length, 'chars');
+      console.log('🔧 CONVERSIÓN: Llave base64 pura:', llavePrivadaBase64Pura.length, 'chars');
       
       // Usar cliente externo que maneja login automático
       const resultadoExterno = await sellarConServicioExterno({
         xmlSinSellar: xmlContent,
         certificadoBase64: certificadoBase64Puro,
-        llavePrivadaBase64: emisor.certificado_key,
+        llavePrivadaBase64: llavePrivadaBase64Pura,
         passwordLlave: emisor.password_key,
         rfc: emisor.rfc,
         versionCfdi: version || '4.0'
