@@ -376,12 +376,32 @@ async function sellarConServicioExterno({
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
             });
             
+            // 🔍 DEBUG CRÍTICO: Analizar respuesta completa
+            console.log('📊 RESPUESTA COMPLETA:');
+            console.log('  - Status:', response.status);
+            console.log('  - Status Text:', response.statusText);
+            console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
+            
+            const responseText = await response.text();
+            console.log('📄 RESPUESTA TEXTO COMPLETO:');
+            console.log('  - Longitud:', responseText.length);
+            console.log('  - Primeros 500 chars:', responseText.substring(0, 500));
+            console.log('  - Últimos 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)));
+            
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error ${response.status}: ${errorText}`);
+                throw new Error(`Error ${response.status}: ${responseText}`);
             }
             
-            const result = await response.json();
+            // Intentar parsear JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                console.log('✅ JSON parseado exitosamente');
+            } catch (jsonError) {
+                console.log('❌ ERROR PARSING JSON:', jsonError.message);
+                console.log('🔍 RESPUESTA NO ES JSON VÁLIDO - PROBABLEMENTE HTML DE ERROR');
+                throw new Error(`Respuesta no es JSON válido. Respuesta: ${responseText.substring(0, 1000)}`);
+            }
             return {
                 exito: true,
                 xmlSellado: result.xmlSellado || result.xml_sellado,
