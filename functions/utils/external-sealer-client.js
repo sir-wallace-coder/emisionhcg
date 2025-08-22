@@ -360,13 +360,17 @@ async function sellarConServicioExterno({
             
             formData.append('password', passwordLlave);
             
-            // Enviar al servicio
+            // Enviar al servicio - PRUEBA HEADER POSTMAN
+            console.log('🧪 PRUEBA CRÍTICA: Usando header application/x-www-form-urlencoded según Postman oficial');
+            
             const fetchFn = await loadFetch();
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    ...formData.getHeaders()
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    // Comentamos formData.getHeaders() para probar
+                    // ...formData.getHeaders()
                 },
                 body: formData,
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
