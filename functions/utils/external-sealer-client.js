@@ -325,21 +325,21 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // 🎯 CORRECCIÓN CRÍTICA: Enviar llave exactamente como está almacenada (SIN MANIPULACIÓN)
+            // 🎯 CORRECCIÓN CRÍTICA: Enviar llave como texto plano UTF-8 (como Postman con archivo .key)
             let llaveBuffer;
             if (llavePrivadaBase64.includes('-----BEGIN')) {
                 // Si tiene headers PEM, enviar como UTF8 tal como está
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔑 KEY: Enviada como PEM tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
+                console.log('🔑 KEY: Enviada como PEM/UTF8 tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
             } else {
-                // 🎯 CORRECCIÓN: Si es base64 puro, enviarlo como base64 (NO agregar headers)
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-                console.log('🔑 KEY: Enviada como base64 binario tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
+                // 🎯 CORRECCIÓN: Si es base64 puro, enviarlo como string UTF8 (no binario)
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
+                console.log('🔑 KEY: Enviada como string UTF8 tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
             }
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
-                contentType: 'application/octet-stream'
+                contentType: 'text/plain'  // 🎯 Cambio crítico: texto plano como Postman
             });
             
             if (!passwordLlave || passwordLlave.trim() === '') {
