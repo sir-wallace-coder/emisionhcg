@@ -360,23 +360,25 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // Agregar llave privada como archivo (tal como está almacenada)
-            console.log('🔍 DEBUG KEY: Enviando llave tal como está almacenada');
-            console.log('📏 DEBUG KEY: Formato:', llavePrivadaBase64.includes('ENCRYPTED') ? 'ENCRYPTED PRIVATE KEY' : 'BASE64');
-            console.log('📏 DEBUG KEY: Longitud:', llavePrivadaBase64.length, 'chars');
+            // Agregar llave privada como archivo (SIN MANIPULACIÓN - tal como está almacenada)
+            console.log('🔍 DEBUG KEY: Enviando llave SIN MANIPULACIÓN');
+            console.log('📏 DEBUG KEY: Formato almacenado:', llavePrivadaBase64.includes('-----BEGIN') ? 'PEM' : 'BASE64');
+            console.log('📏 DEBUG KEY: Longitud almacenada:', llavePrivadaBase64.length, 'chars');
+            console.log('🔍 DEBUG KEY: Preview almacenado:', llavePrivadaBase64.substring(0, 50) + '...');
             
-            // Si la llave ya está en formato PEM, enviarla como texto
-            // Si es base64 puro, convertir a buffer
+            // ⚠️ CRÍTICO: Enviar llave EXACTAMENTE como está almacenada
             let llaveBuffer;
+            
             if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Es formato PEM, enviar como texto
+                // Ya está en formato PEM, enviar como texto
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔍 DEBUG KEY: Enviando como PEM (texto)');
+                console.log('🔍 DEBUG KEY: Enviando PEM como texto (utf8)');
             } else {
-                // Es base64 puro, convertir a buffer binario
+                // Es base64 puro, enviar como buffer binario (SIN AGREGAR HEADERS)
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-                console.log('🔍 DEBUG KEY: Enviando como binario desde base64');
+                console.log('🔍 DEBUG KEY: Enviando base64 como binario (SIN HEADERS)');
             }
+            
             console.log('📏 DEBUG KEY: Tamaño buffer final:', llaveBuffer.length, 'bytes');
             
             formData.append('key', llaveBuffer, {
