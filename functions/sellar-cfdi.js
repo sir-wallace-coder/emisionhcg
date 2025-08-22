@@ -342,34 +342,24 @@ exports.handler = async (event, context) => {
         console.log('  - SOLUCIÓN: Actualizar emisor al RFC', rfcCertificadoPreEnvio, 'o usar certificado del RFC', emisor.rfc);
       }
       
-      // 🔧 CONVERSIÓN PEM → BASE64 PURO PARA SERVICIO EXTERNO
-      console.log('🔧 CONVERSIÓN: Convirtiendo certificado PEM a base64 puro...');
+      // 🔧 PREPARACIÓN PARA SERVICIO EXTERNO - SIN MANIPULACIÓN
+      console.log('🔧 PREPARACIÓN: Enviando certificado y llave tal como están almacenados...');
+      console.log('🔍 DEBUG CERT: Formato almacenado:', emisor.certificado_cer.substring(0, 50) + '...');
+      console.log('🔍 DEBUG LLAVE: Formato almacenado:', emisor.certificado_key.substring(0, 50) + '...');
+      console.log('🔍 DEBUG LLAVE: Longitud original:', emisor.certificado_key.length, 'chars');
+      console.log('🔍 DEBUG LLAVE: ¿Contiene ENCRYPTED PRIVATE KEY?', emisor.certificado_key.includes('ENCRYPTED PRIVATE KEY'));
+      
+      // Usar certificado y llave tal como están almacenados
       const certificadoBase64Puro = emisor.certificado_cer
         .replace(/-----BEGIN CERTIFICATE-----/g, '')
         .replace(/-----END CERTIFICATE-----/g, '')
         .replace(/\s/g, '');
       
-      console.log('🔧 CONVERSIÓN: Convirtiendo llave privada PEM a base64 puro...');
-      console.log('🔍 DEBUG LLAVE: Formato original en BD:', emisor.certificado_key.substring(0, 50) + '...');
-      console.log('🔍 DEBUG LLAVE: ¿Contiene RSA PRIVATE KEY?', emisor.certificado_key.includes('RSA PRIVATE KEY'));
-      console.log('🔍 DEBUG LLAVE: ¿Contiene PRIVATE KEY?', emisor.certificado_key.includes('PRIVATE KEY'));
-      console.log('🔍 DEBUG LLAVE: ¿Contiene ENCRYPTED PRIVATE KEY?', emisor.certificado_key.includes('ENCRYPTED PRIVATE KEY'));
+      // ⚠️ CRÍTICO: Usar llave privada SIN MANIPULACIÓN (tal como se almacenó)
+      const llavePrivadaBase64Pura = emisor.certificado_key;
       
-      const llavePrivadaBase64Pura = emisor.certificado_key
-        .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-        .replace(/-----END PRIVATE KEY-----/g, '')
-        .replace(/-----BEGIN RSA PRIVATE KEY-----/g, '')
-        .replace(/-----END RSA PRIVATE KEY-----/g, '')
-        .replace(/-----BEGIN ENCRYPTED PRIVATE KEY-----/g, '')
-        .replace(/-----END ENCRYPTED PRIVATE KEY-----/g, '')
-        .replace(/\s/g, '');
-      
-      console.log('🔍 DEBUG LLAVE: Base64 puro extraído, primeros 50 chars:', llavePrivadaBase64Pura.substring(0, 50));
-      
-      console.log('🔧 CONVERSIÓN: Certificado original (PEM):', emisor.certificado_cer.length, 'chars');
-      console.log('🔧 CONVERSIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
-      console.log('🔧 CONVERSIÓN: Llave original (PEM):', emisor.certificado_key.length, 'chars');
-      console.log('🔧 CONVERSIÓN: Llave base64 pura:', llavePrivadaBase64Pura.length, 'chars');
+      console.log('🔧 PREPARACIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
+      console.log('🔧 PREPARACIÓN: Llave privada original:', llavePrivadaBase64Pura.length, 'chars');
       
       // Usar cliente externo que maneja login automático
       const resultadoExterno = await sellarConServicioExterno({

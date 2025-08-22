@@ -360,10 +360,24 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // Agregar llave privada como archivo binario (Buffer desde base64)
-            const llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-            console.log('🔍 DEBUG KEY: Enviando llave como archivo binario');
-            console.log('📏 DEBUG KEY: Tamaño buffer:', llaveBuffer.length, 'bytes');
+            // Agregar llave privada como archivo (tal como está almacenada)
+            console.log('🔍 DEBUG KEY: Enviando llave tal como está almacenada');
+            console.log('📏 DEBUG KEY: Formato:', llavePrivadaBase64.includes('ENCRYPTED') ? 'ENCRYPTED PRIVATE KEY' : 'BASE64');
+            console.log('📏 DEBUG KEY: Longitud:', llavePrivadaBase64.length, 'chars');
+            
+            // Si la llave ya está en formato PEM, enviarla como texto
+            // Si es base64 puro, convertir a buffer
+            let llaveBuffer;
+            if (llavePrivadaBase64.includes('-----BEGIN')) {
+                // Es formato PEM, enviar como texto
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
+                console.log('🔍 DEBUG KEY: Enviando como PEM (texto)');
+            } else {
+                // Es base64 puro, convertir a buffer binario
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+                console.log('🔍 DEBUG KEY: Enviando como binario desde base64');
+            }
+            console.log('📏 DEBUG KEY: Tamaño buffer final:', llaveBuffer.length, 'bytes');
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',

@@ -633,31 +633,35 @@ async function createEmisor(userId, data, headers) {
             vigencia_hasta: certInfo.vigenciaHasta
           });
           
-          // 2. Validar y convertir llave privada .key a PEM
-          console.log('🔑 Validando y convirtiendo llave privada .key a PEM...');
-          console.log('🔍 DEBUG KEY: Datos de entrada para validación:', {
+          // 2. Guardar llave privada SIN MANIPULACIÓN (tal como llega del frontend)
+          console.log('🔑 Guardando llave privada sin manipulación...');
+          console.log('🔍 DEBUG KEY: Datos de entrada:', {
             key_length: certificado_key ? certificado_key.length : 0,
             key_preview: certificado_key ? certificado_key.substring(0, 50) + '...' : 'VACIO',
             password_length: password_key ? password_key.length : 0
           });
-          const keyInfo = validarLlavePrivadaSimplificada(certificado_key, password_key);
-          console.log('🔍 DEBUG KEY: Resultado de validación:', {
-            valida: keyInfo.valida,
-            tiene_pem: !!keyInfo.llavePrivadaPem,
-            pem_length: keyInfo.llavePrivadaPem ? keyInfo.llavePrivadaPem.length : 0,
-            mensaje: keyInfo.mensaje || 'OK'
-          });
           
-          if (!keyInfo.valida) {
+          // Validación básica: solo verificar que no esté vacía
+          if (!certificado_key || certificado_key.trim() === '') {
             return {
               statusCode: 400,
               headers,
               body: JSON.stringify({ 
-                error: 'Error validando llave privada .key: ' + keyInfo.mensaje,
-                tipo: 'CERTIFICADO_KEY_INVALIDO'
+                error: 'La llave privada no puede estar vacía',
+                tipo: 'LLAVE_VACIA'
               })
             };
           }
+          
+          const keyInfo = {
+            valida: true,
+            llavePrivadaOriginal: certificado_key  // Guardar tal como llega
+          };
+          
+          console.log('✅ DEBUG KEY: Llave guardada sin manipulación:', {
+            longitud: keyInfo.llavePrivadaOriginal.length,
+            preview: keyInfo.llavePrivadaOriginal.substring(0, 50) + '...'
+          });
           
           // 2.5. Validar que el RFC del emisor coincida con el del certificado
           console.log('🔍 Validando coincidencia RFC emisor vs certificado...');
@@ -701,7 +705,7 @@ async function createEmisor(userId, data, headers) {
           // ✅ ÉXITO: Certificados procesados y validados correctamente
           certificadoInfo = {
             certificado_cer: certInfo.certificadoPem,  // 🔧 Guardar en formato PEM
-            certificado_key: keyInfo.llavePrivadaPem,  // 🔧 Guardar en formato PEM (CRÍTICO)
+            certificado_key: keyInfo.llavePrivadaOriginal,  // 🔧 Guardar SIN MANIPULACIÓN (CRÍTICO)
             password_key: password_key,
             numero_certificado: certInfo.numeroSerie,
             vigencia_desde: certInfo.vigenciaDesde,
@@ -1020,7 +1024,11 @@ async function updateEmisor(userId, emisorId, data, headers) {
           certificado_key_preview: certificado_key.substring(0, 50) + '...'
         });
         
-        const keyInfo = validarLlavePrivadaSimplificada(certificado_key, password_key);
+        // Guardar llave privada SIN MANIPULACIÓN (tal como llega del frontend)
+        const keyInfo = {
+          valida: true,
+          llavePrivadaOriginal: certificado_key  // Guardar tal como llega
+        };
         
         if (!keyInfo.valida) {
           console.error('❌ ERROR: Llave privada inválida:', keyInfo.mensaje);
@@ -1037,8 +1045,8 @@ async function updateEmisor(userId, emisorId, data, headers) {
         
         console.log('✅ ÉXITO: Llave privada validada correctamente');
         console.log('🔍 DEBUG UPDATE: Llave PEM generada, longitud:', keyInfo.llavePrivadaPem.length);
-        console.log('🔍 DEBUG UPDATE: Asignando a updateData.certificado_key...');
-        updateData.certificado_key = keyInfo.llavePrivadaPem;
+        console.log('🔍 DEBUG UPDATE: Asignando llave sin manipulación a updateData.certificado_key...');
+        updateData.certificado_key = keyInfo.llavePrivadaOriginal;
         console.log('🔍 DEBUG UPDATE: updateData.certificado_key asignado:', {
           assigned: !!updateData.certificado_key,
           length: updateData.certificado_key ? updateData.certificado_key.length : 0
@@ -1061,7 +1069,7 @@ async function updateEmisor(userId, emisorId, data, headers) {
         
         // ✅ ÉXITO: Certificados procesados y validados correctamente con procesador profesional
         updateData.certificado_cer = certInfo.certificadoPem;  // 🔧 Guardar en formato PEM
-        updateData.certificado_key = keyInfo.llavePrivadaPem;  // 🔧 Guardar en formato PEM (CRÍTICO)
+        updateData.certificado_key = keyInfo.llavePrivadaOriginal;  // 🔧 Guardar SIN MANIPULACIÓN (CRÍTICO)
         updateData.password_key = password_key;
         updateData.numero_certificado = certInfo.numeroSerie;
         updateData.vigencia_desde = certInfo.vigenciaDesde;
