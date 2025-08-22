@@ -50,7 +50,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('🚨🚨🚨 DEBUG ULTRA TEMPRANO: HANDLER INICIADO - COMMIT 36eb561');
+    console.log('🔥🔥🔥 SELLADO HANDLER EJECUTANDOSE - DEPLOY FORZADO - COMMIT NUEVO 🔥🔥🔥');
     console.log('🚀 SELLADO ENDPOINT: Iniciando handler...');
     
     // Verificar autenticación
