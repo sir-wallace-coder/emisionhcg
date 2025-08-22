@@ -346,7 +346,18 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // Password
+            // Password - DIAGNÓSTICO CRÍTICO
+            console.log('🔐 PASSWORD DIAGNÓSTICO CRÍTICO:');
+            console.log('  - Password recibido:', passwordLlave ? 'SÍ' : 'NO');
+            console.log('  - Password length:', passwordLlave?.length || 0);
+            console.log('  - Password tipo:', typeof passwordLlave);
+            console.log('  - Password primeros 3 chars:', passwordLlave?.substring(0, 3) || 'NULL');
+            console.log('  - Password últimos 3 chars:', passwordLlave?.substring(passwordLlave?.length - 3) || 'NULL');
+            
+            if (!passwordLlave || passwordLlave.trim() === '') {
+                throw new Error('❌ CRÍTICO: Password está vacío o es null');
+            }
+            
             formData.append('password', passwordLlave);
             
             // Enviar al servicio
