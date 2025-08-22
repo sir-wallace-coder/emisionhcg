@@ -346,11 +346,39 @@ async function sellarConServicioExternoWrapper(xmlContent, certificadoCer, llave
         console.log('📋 EXTERNAL SEALER: Versión CFDI:', version);
         console.log('📋 EXTERNAL SEALER: Número de certificado:', numeroSerie);
         
+        // 🔧 CONVERSIÓN PEM → BASE64 PURO PARA SERVICIO EXTERNO
+        console.log('🔧 NODECFDI CONVERSIÓN: Convirtiendo certificado PEM a base64 puro...');
+        const certificadoBase64Puro = certificadoCer
+            .replace(/-----BEGIN CERTIFICATE-----/g, '')
+            .replace(/-----END CERTIFICATE-----/g, '')
+            .replace(/\s/g, '');
+        
+        console.log('🔧 NODECFDI CONVERSIÓN: Convirtiendo llave privada PEM a base64 puro...');
+        console.log('🔍 NODECFDI DEBUG LLAVE: Formato original en BD:', llavePrivadaKey.substring(0, 50) + '...');
+        console.log('🔍 NODECFDI DEBUG LLAVE: ¿Contiene RSA PRIVATE KEY?', llavePrivadaKey.includes('RSA PRIVATE KEY'));
+        console.log('🔍 NODECFDI DEBUG LLAVE: ¿Contiene PRIVATE KEY?', llavePrivadaKey.includes('PRIVATE KEY'));
+        console.log('🔍 NODECFDI DEBUG LLAVE: ¿Contiene ENCRYPTED PRIVATE KEY?', llavePrivadaKey.includes('ENCRYPTED PRIVATE KEY'));
+        
+        const llavePrivadaBase64Pura = llavePrivadaKey
+            .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+            .replace(/-----END PRIVATE KEY-----/g, '')
+            .replace(/-----BEGIN RSA PRIVATE KEY-----/g, '')
+            .replace(/-----END RSA PRIVATE KEY-----/g, '')
+            .replace(/-----BEGIN ENCRYPTED PRIVATE KEY-----/g, '')
+            .replace(/-----END ENCRYPTED PRIVATE KEY-----/g, '')
+            .replace(/\s/g, '');
+        
+        console.log('🔍 NODECFDI DEBUG LLAVE: Base64 puro extraído, primeros 50 chars:', llavePrivadaBase64Pura.substring(0, 50));
+        console.log('🔧 NODECFDI CONVERSIÓN: Certificado original (PEM):', certificadoCer.length, 'chars');
+        console.log('🔧 NODECFDI CONVERSIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
+        console.log('🔧 NODECFDI CONVERSIÓN: Llave original (PEM):', llavePrivadaKey.length, 'chars');
+        console.log('🔧 NODECFDI CONVERSIÓN: Llave base64 pura:', llavePrivadaBase64Pura.length, 'chars');
+        
         // Llamar al servicio externo
         const resultadoExterno = await sellarConServicioExterno({
             xmlSinSellar: xmlContent,
-            certificadoBase64: certificadoCer,
-            llavePrivadaBase64: llavePrivadaKey,
+            certificadoBase64: certificadoBase64Puro,
+            llavePrivadaBase64: llavePrivadaBase64Pura,
             passwordLlave: passwordLlave,
             rfc: rfc,
             versionCfdi: version
