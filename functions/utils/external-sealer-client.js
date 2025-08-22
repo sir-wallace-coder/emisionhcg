@@ -305,12 +305,42 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            formData.append('certificado', Buffer.from(certificadoBase64, 'utf8'), {
+            // 🎯 CORRECCIÓN CRÍTICA: Enviar como archivos binarios reales (como Postman)
+            
+            // CERTIFICADO: Convertir a buffer binario real
+            let certificadoBuffer;
+            if (certificadoBase64.includes('-----BEGIN CERTIFICATE-----')) {
+                // Si tiene headers PEM, extraer base64 y convertir a DER binario
+                const cleanBase64 = certificadoBase64.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+                certificadoBuffer = Buffer.from(cleanBase64, 'base64');
+                console.log('📜 CERT: Convertido de PEM a DER binario, tamaño:', certificadoBuffer.length, 'bytes');
+            } else {
+                // Si es base64 puro, convertir directamente a binario
+                certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
+                console.log('📜 CERT: Convertido de base64 a binario, tamaño:', certificadoBuffer.length, 'bytes');
+            }
+            
+            formData.append('certificado', certificadoBuffer, {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
             
-            formData.append('key', Buffer.from(llavePrivadaBase64, 'utf8'), {
+            // LLAVE: Convertir a buffer binario real
+            let llaveBuffer;
+            if (llavePrivadaBase64.includes('-----BEGIN')) {
+                // Si tiene headers PEM, mantener como UTF8 (llaves privadas se envían como texto)
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
+                console.log('🔑 KEY: Mantenida como PEM/UTF8, tamaño:', llaveBuffer.length, 'bytes');
+            } else {
+                // Si es base64 puro, agregar headers PEM y enviar como UTF8
+                const llaveConHeaders = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
+                                       llavePrivadaBase64.match(/.{1,64}/g).join('\n') + 
+                                       '\n-----END ENCRYPTED PRIVATE KEY-----';
+                llaveBuffer = Buffer.from(llaveConHeaders, 'utf8');
+                console.log('🔑 KEY: Convertida a PEM con headers, tamaño:', llaveBuffer.length, 'bytes');
+            }
+            
+            formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
                 contentType: 'application/octet-stream'
             });
