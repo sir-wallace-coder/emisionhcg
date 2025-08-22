@@ -592,6 +592,27 @@ async function createEmisor(userId, data, headers) {
           };
           }
           
+          // 1.5. Procesar certificado .cer
+          console.log('📜 Procesando certificado .cer...');
+          const certInfo = procesarCertificadoSimplificado(certificado_cer);
+          
+          if (!certInfo.valido) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: 'Error procesando certificado .cer: ' + certInfo.mensaje,
+                tipo: 'CERTIFICADO_CER_INVALIDO'
+              })
+            };
+          }
+          
+          console.log('✅ Certificado procesado:', {
+            numero_serie: certInfo.numeroSerie,
+            vigencia_desde: certInfo.vigenciaDesde,
+            vigencia_hasta: certInfo.vigenciaHasta
+          });
+          
           // 2. Validar y convertir llave privada .key a PEM
           console.log('🔑 Validando y convirtiendo llave privada .key a PEM...');
           console.log('🔍 DEBUG KEY: Datos de entrada para validación:', {
