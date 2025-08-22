@@ -325,21 +325,25 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // 🎯 CORRECCIÓN CRÍTICA: Enviar llave como texto plano UTF-8 (como Postman con archivo .key)
+            // 🎯 CORRECCIÓN CRÍTICA: Enviar llave exactamente como está almacenada (SIN CORRUPCIÓN)
             let llaveBuffer;
+            let contentType;
+            
             if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Si tiene headers PEM, enviar como UTF8 tal como está
+                // Si tiene headers PEM, es texto plano - enviar como UTF8
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔑 KEY: Enviada como PEM/UTF8 tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
+                contentType = 'text/plain';
+                console.log('🔑 KEY: Enviada como PEM texto plano, tamaño:', llaveBuffer.length, 'bytes');
             } else {
-                // 🎯 CORRECCIÓN: Si es base64 puro, enviarlo como string UTF8 (no binario)
-                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔑 KEY: Enviada como string UTF8 tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
+                // 🎯 CORRECCIÓN CRÍTICA: Si es base64 puro, enviarlo como binario (NO corromper con UTF8)
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+                contentType = 'application/octet-stream';
+                console.log('🔑 KEY: Enviada como binario base64, tamaño:', llaveBuffer.length, 'bytes');
             }
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
-                contentType: 'text/plain'  // 🎯 Cambio crítico: texto plano como Postman
+                contentType: contentType  // 🎯 Content-Type dinámico según formato
             });
             
             if (!passwordLlave || passwordLlave.trim() === '') {
@@ -360,13 +364,18 @@ async function sellarConServicioExterno({
             const fetchFn = await loadFetch();
             
             console.log('⏱️ SELLADO EXTERNO: Iniciando petición HTTP...');
+            // 🎯 CORRECCIÓN CRÍTICA: Headers correctos para form-data + node-fetch
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                ...formData.getHeaders()  // Incluye Content-Type con boundary correcto
+            };
+            
+            console.log('📋 HEADERS ENVIADOS:', headers);
+            console.log('🔍 BOUNDARY:', formData.getBoundary());
+            
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    // FormData maneja Content-Type automáticamente
-                    ...formData.getHeaders()
-                },
+                headers: headers,
                 body: formData,
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
             });
