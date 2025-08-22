@@ -350,6 +350,11 @@ exports.handler = async (event, context) => {
         .replace(/\s/g, '');
       
       console.log('🔧 CONVERSIÓN: Convirtiendo llave privada PEM a base64 puro...');
+      console.log('🔍 DEBUG LLAVE: Formato original en BD:', emisor.certificado_key.substring(0, 50) + '...');
+      console.log('🔍 DEBUG LLAVE: ¿Contiene RSA PRIVATE KEY?', emisor.certificado_key.includes('RSA PRIVATE KEY'));
+      console.log('🔍 DEBUG LLAVE: ¿Contiene PRIVATE KEY?', emisor.certificado_key.includes('PRIVATE KEY'));
+      console.log('🔍 DEBUG LLAVE: ¿Contiene ENCRYPTED PRIVATE KEY?', emisor.certificado_key.includes('ENCRYPTED PRIVATE KEY'));
+      
       const llavePrivadaBase64Pura = emisor.certificado_key
         .replace(/-----BEGIN PRIVATE KEY-----/g, '')
         .replace(/-----END PRIVATE KEY-----/g, '')
@@ -358,6 +363,8 @@ exports.handler = async (event, context) => {
         .replace(/-----BEGIN ENCRYPTED PRIVATE KEY-----/g, '')
         .replace(/-----END ENCRYPTED PRIVATE KEY-----/g, '')
         .replace(/\s/g, '');
+      
+      console.log('🔍 DEBUG LLAVE: Base64 puro extraído, primeros 50 chars:', llavePrivadaBase64Pura.substring(0, 50));
       
       console.log('🔧 CONVERSIÓN: Certificado original (PEM):', emisor.certificado_cer.length, 'chars');
       console.log('🔧 CONVERSIÓN: Certificado base64 puro:', certificadoBase64Puro.length, 'chars');
