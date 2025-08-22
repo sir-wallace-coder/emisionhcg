@@ -260,6 +260,18 @@ async function sellarConServicioExterno({
     console.log('🔐 SELLADO EXTERNO: Obteniendo token de autenticación...');
     const token = await obtenerTokenValido();
 
+    // 🚨 DEBUG CRÍTICO DEL TOKEN
+    console.log('🎫 TOKEN DIAGNÓSTICO CRÍTICO:');
+    console.log('  - Token existe:', !!token);
+    console.log('  - Token length:', token?.length || 0);
+    console.log('  - Token tipo:', typeof token);
+    console.log('  - Token primeros 20 chars:', token?.substring(0, 20) || 'NULL');
+    console.log('  - Token últimos 10 chars:', token?.substring(token?.length - 10) || 'NULL');
+    
+    if (!token || token.trim() === '') {
+        throw new Error('❌ CRÍTICO: Token de autenticación está vacío o es null');
+    }
+
     console.log('📤 SELLADO EXTERNO: Preparando FormData para el servicio externo');
     console.log('🔗 SELLADO EXTERNO: URL:', EXTERNAL_SEALER_CONFIG.sellarUrl);
     console.log('🎫 SELLADO EXTERNO: Token obtenido exitosamente');
