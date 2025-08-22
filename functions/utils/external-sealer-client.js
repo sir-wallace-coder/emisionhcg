@@ -103,6 +103,10 @@ async function loginServicioExterno() {
         const loginResult = await response.json();
         console.log('✅ EXTERNAL LOGIN: Autenticación exitosa');
         
+        // 🔍 DEBUG CRÍTICO: Ver respuesta completa del login
+        console.log('🔍 LOGIN DEBUG: Respuesta completa del servicio:', JSON.stringify(loginResult, null, 2));
+        console.log('🔍 LOGIN DEBUG: Claves disponibles:', Object.keys(loginResult));
+        
         // Extraer token y tiempo de expiración (formato consulta.click)
         const token = loginResult.access_token || loginResult.token;
         const tokenType = loginResult.token_type || 'Bearer';
