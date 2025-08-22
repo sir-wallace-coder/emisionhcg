@@ -273,6 +273,7 @@ async function sellarConServicioExterno({
             
             // Crear FormData con archivos (como espera consulta.click)
             // 🖼️ PROCESO LIMPIO - EXACTAMENTE COMO LA IMAGEN
+            const FormData = require('form-data');
             const formData = new FormData();
             
             // XML
