@@ -251,6 +251,64 @@ exports.handler = async (event, context) => {
         console.log('✅ VALIDACIÓN OK: RFC XML y CERTIFICADO COINCIDEN:', rfcDelXML);
       }
       
+      // 🚨 DEBUG CRÍTICO: VALIDAR CERTIFICADO ANTES DEL ENVÍO
+      console.log('🚨 DEBUG CRÍTICO PRE-ENVÍO: Validando certificado desde BD...');
+      console.log('🚨 DEBUG CRÍTICO: Certificado CER length:', emisor.certificado_cer?.length || 'NULL');
+      console.log('🚨 DEBUG CRÍTICO: Certificado KEY length:', emisor.certificado_key?.length || 'NULL');
+      console.log('🚨 DEBUG CRÍTICO: Password length:', emisor.password_key?.length || 'NULL');
+      
+      // Intentar extraer RFC del certificado ANTES del envío
+      let rfcCertificadoPreEnvio = 'ERROR_EXTRACCION';
+      try {
+        if (emisor.certificado_cer) {
+          console.log('🚨 DEBUG CRÍTICO: Intentando extraer RFC del certificado...');
+          const crypto = require('crypto');
+          
+          // Limpiar y formatear certificado
+          const cleanCert = emisor.certificado_cer.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+          console.log('🚨 DEBUG CRÍTICO: Certificado limpio length:', cleanCert.length);
+          
+          if (cleanCert.length > 0) {
+            const pemCert = '-----BEGIN CERTIFICATE-----\n' + cleanCert.match(/.{1,64}/g).join('\n') + '\n-----END CERTIFICATE-----';
+            console.log('🚨 DEBUG CRÍTICO: PEM formateado, intentando crear X509Certificate...');
+            
+            const cert = new crypto.X509Certificate(pemCert);
+            const subject = cert.subject;
+            
+            console.log('🚨 DEBUG CRÍTICO CERT: Subject completo:', subject);
+            
+            const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
+            if (rfcMatch && rfcMatch.length > 0) {
+              rfcCertificadoPreEnvio = rfcMatch[0];
+              console.log('🚨 DEBUG CRÍTICO: RFC EXTRAÍDO DEL CERTIFICADO:', rfcCertificadoPreEnvio);
+            } else {
+              console.log('🚨 DEBUG CRÍTICO: No se encontró RFC en el subject');
+            }
+          } else {
+            console.log('❌ DEBUG CRÍTICO: Certificado vacío después de limpiar');
+          }
+        } else {
+          console.log('❌ DEBUG CRÍTICO: Certificado CER es null/undefined');
+        }
+      } catch (certError) {
+        console.log('❌ DEBUG CRÍTICO CERT: Error extrayendo RFC:', certError.message);
+        console.log('❌ DEBUG CRÍTICO CERT: Stack:', certError.stack);
+      }
+      
+      // 🚨 COMPARACIÓN FINAL CRÍTICA
+      console.log('🚨 COMPARACIÓN FINAL CRÍTICA PRE-ENVÍO:');
+      console.log('  📋 RFC Emisor (BD):', emisor.rfc);
+      console.log('  🔐 RFC del Certificado:', rfcCertificadoPreEnvio);
+      console.log('  ⚖️ COINCIDEN:', emisor.rfc === rfcCertificadoPreEnvio ? '✅ SÍ' : '❌ NO');
+      
+      if (emisor.rfc !== rfcCertificadoPreEnvio && rfcCertificadoPreEnvio !== 'ERROR_EXTRACCION') {
+        console.log('🚨 PROBLEMA CRÍTICO CONFIRMADO:');
+        console.log('  - RFC que enviaremos (emisor):', emisor.rfc);
+        console.log('  - RFC en el certificado CSD:', rfcCertificadoPreEnvio);
+        console.log('  - EL SERVICIO EXTERNO RECHAZARÁ ESTO CON ERROR 500');
+        console.log('  - SOLUCIÓN: Actualizar emisor al RFC', rfcCertificadoPreEnvio, 'o usar certificado del RFC', emisor.rfc);
+      }
+      
       // Usar cliente externo que maneja login automático
       const resultadoExterno = await sellarConServicioExterno({
         xmlSinSellar: xmlContent,
