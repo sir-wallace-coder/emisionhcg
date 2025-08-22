@@ -167,9 +167,10 @@ async function obtenerTokenValido() {
     try {
         const loginResult = await loginServicioExterno();
         
-        if (loginResult && loginResult.token) {
+        // 🎯 CORRECCIÓN CRÍTICA: loginServicioExterno() retorna string directo, no objeto
+        if (loginResult && typeof loginResult === 'string' && loginResult.trim() !== '') {
             // Actualizar cache con nuevo token
-            tokenCache.token = loginResult.token;
+            tokenCache.token = loginResult;
             tokenCache.expiresAt = Date.now() + (55 * 60 * 1000); // 55 minutos
             tokenCache.isRefreshing = false;
             
@@ -180,6 +181,7 @@ async function obtenerTokenValido() {
             return tokenCache.token;
         } else {
             tokenCache.isRefreshing = false;
+            console.error('❌ TOKEN CACHE: loginResult no es string válido:', typeof loginResult, loginResult);
             throw new Error('Login exitoso pero token vacío en respuesta');
         }
     } catch (error) {
