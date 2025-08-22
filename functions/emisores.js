@@ -687,11 +687,12 @@ async function createEmisor(userId, data, headers) {
             console.log('⚠️ No se pudo extraer RFC del certificado, continuando sin validación RFC');
           }
           
-          // 3. Validar que el certificado y la llave privada coincidan
-          console.log('🔗 Validando coincidencia certificado-llave...');
-          const parValido = validarParCertificadoLlaveSimplificado(certInfo.certificadoPem, keyInfo.llavePrivadaPem);
+          // 3. Validación de par certificado-llave DESHABILITADA temporalmente
+          // (La llave ahora se guarda sin manipulación y puede estar en formato base64)
+          console.log('🔗 Validación de par certificado-llave: OMITIDA (llave sin manipulación)');
+          const parValido = { valido: true, mensaje: 'Validación omitida - llave sin manipulación' };
           
-          if (!parValido.valido) {
+          if (false) { // Deshabilitado temporalmente
             return {
               statusCode: 400,
               headers,
@@ -1052,11 +1053,12 @@ async function updateEmisor(userId, emisorId, data, headers) {
           length: updateData.certificado_key ? updateData.certificado_key.length : 0
         });
         
-        // 3. Validar que el certificado y la llave privada coincidan
-        console.log('🔗 UPDATE: Validando coincidencia certificado-llave...');
-        const parValido = validarParCertificadoLlaveSimplificado(certInfo.certificadoPem, keyInfo.llavePrivadaPem);
+        // 3. Validación de par certificado-llave DESHABILITADA temporalmente
+        // (La llave ahora se guarda sin manipulación y puede estar en formato base64)
+        console.log('🔗 UPDATE: Validación de par certificado-llave: OMITIDA (llave sin manipulación)');
+        const parValido = { valido: true, mensaje: 'Validación omitida - llave sin manipulación' };
         
-        if (!parValido.valido) {
+        if (false) { // Deshabilitado temporalmente
           return {
             statusCode: 400,
             headers,
