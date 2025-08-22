@@ -1044,7 +1044,7 @@ async function updateEmisor(userId, emisorId, data, headers) {
         }
         
         console.log('✅ ÉXITO: Llave privada validada correctamente');
-        console.log('🔍 DEBUG UPDATE: Llave PEM generada, longitud:', keyInfo.llavePrivadaPem.length);
+        console.log('🔍 DEBUG UPDATE: Llave original guardada, longitud:', keyInfo.llavePrivadaOriginal.length);
         console.log('🔍 DEBUG UPDATE: Asignando llave sin manipulación a updateData.certificado_key...');
         updateData.certificado_key = keyInfo.llavePrivadaOriginal;
         console.log('🔍 DEBUG UPDATE: updateData.certificado_key asignado:', {
