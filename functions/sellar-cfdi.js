@@ -391,7 +391,7 @@ exports.handler = async (event, context) => {
         longitudSello: resultado.sello ? resultado.sello.length : 0,
         longitudCadenaOriginal: resultado.cadenaOriginal ? resultado.cadenaOriginal.length : 0,
         implementacion: resultado.implementacion || 'NodeCFDI oficial (compatible llaves SAT)',
-        metodoSellado: usarSelladorExterno ? 'Servicio externo' : 'NodeCFDI local'
+        metodoSellado: 'Servicio externo consulta.click'
       },
       emisor: {
         rfc: emisor.rfc,
