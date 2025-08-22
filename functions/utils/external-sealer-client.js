@@ -160,6 +160,29 @@ async function obtenerTokenValido() {
     console.log('🔄 TOKEN CACHE: Token expirado o no existe, haciendo login...');
     tokenCache.isRefreshing = true;
     
+    try {
+        const loginResult = await loginServicioExterno();
+        
+        if (loginResult && loginResult.token) {
+            // Actualizar cache con nuevo token
+            tokenCache.token = loginResult.token;
+            tokenCache.expiresAt = Date.now() + (55 * 60 * 1000); // 55 minutos
+            tokenCache.isRefreshing = false;
+            
+            console.log('✅ TOKEN CACHE: Nuevo token obtenido y guardado');
+            console.log('  - Token length:', tokenCache.token.length);
+            console.log('  - Token primeros 20:', tokenCache.token.substring(0, 20));
+            
+            return tokenCache.token;
+        } else {
+            tokenCache.isRefreshing = false;
+            throw new Error('Login exitoso pero token vacío en respuesta');
+        }
+    } catch (error) {
+        tokenCache.isRefreshing = false;
+        console.error('❌ TOKEN CACHE: Error en login:', error.message);
+        throw new Error('Error obteniendo token: ' + error.message);
+    }
 }
 
 /**
