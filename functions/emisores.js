@@ -727,7 +727,9 @@ async function createEmisor(userId, data, headers) {
       nombre: nombre.trim(),
       codigo_postal: codigo_postal,
       regimen_fiscal: regimen_fiscal,
-      activo: true
+      activo: true,
+      // Asignar estado CSD según si tiene certificados completos
+      estado_csd: 'pendiente' // Default, se actualiza abajo si tiene certificados
       // created_at y updated_at se manejan automáticamente por la BD
     };
 
@@ -740,6 +742,14 @@ async function createEmisor(userId, data, headers) {
       // Convertir fechas ISO a formato DATE para PostgreSQL
       emisorData.vigencia_desde = certificadoInfo.vigencia_desde; // Ya convertido a formato YYYY-MM-DD
       emisorData.vigencia_hasta = certificadoInfo.vigencia_hasta; // Ya convertido a formato YYYY-MM-DD
+      
+      // ✅ CORREGIR ESTADO: Si tiene certificados completos, marcar como activo
+      if (certificadoInfo.certificado_cer && certificadoInfo.certificado_key && certificadoInfo.numero_certificado) {
+        emisorData.estado_csd = 'activo';
+        console.log('✅ EMISOR: Estado CSD asignado como ACTIVO (certificados completos)');
+      } else {
+        console.log('⚠️ EMISOR: Estado CSD permanece PENDIENTE (certificados incompletos)');
+      }
       
       console.log('🔍 DEBUG EMISOR_DATA: Datos preparados para inserción:', {
         tiene_cer: !!emisorData.certificado_cer,
