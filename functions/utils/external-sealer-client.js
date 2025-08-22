@@ -289,15 +289,28 @@ async function sellarConServicioExterno({
             console.log('  - Primeros 100 chars:', certificadoBase64.substring(0, 100));
             console.log('  - Últimos 100 chars:', certificadoBase64.substring(certificadoBase64.length - 100));
             
-            // Certificado (tal como está almacenado)
-            const certBuffer = certificadoBase64.includes('-----BEGIN') 
-                ? Buffer.from(certificadoBase64, 'utf8')
-                : Buffer.from(certificadoBase64, 'base64');
+            // 🧪 PRUEBA: Certificado en formato binario DER (no PEM texto)
+            // El servicio externo puede necesitar el certificado en formato binario para extraer el número de serie
+            let certBuffer;
+            
+            if (certificadoBase64.includes('-----BEGIN')) {
+                // Extraer solo el contenido base64 (sin headers PEM) y convertir a binario
+                const base64Content = certificadoBase64
+                    .replace(/-----BEGIN CERTIFICATE-----/g, '')
+                    .replace(/-----END CERTIFICATE-----/g, '')
+                    .replace(/\s/g, '');
+                certBuffer = Buffer.from(base64Content, 'base64');
+                console.log('🔄 CERTIFICADO: Convertido de PEM a binario DER');
+            } else {
+                // Ya está en base64, convertir directamente a binario
+                certBuffer = Buffer.from(certificadoBase64, 'base64');
+                console.log('🔄 CERTIFICADO: Convertido de base64 a binario DER');
+            }
                 
-            console.log('📏 CERTIFICADO BUFFER:');
+            console.log('📏 CERTIFICADO BUFFER (BINARIO):');
             console.log('  - Tamaño buffer:', certBuffer.length, 'bytes');
-            console.log('  - Primeros 50 bytes como string:', certBuffer.toString('utf8', 0, 50));
-            console.log('  - Últimos 50 bytes como string:', certBuffer.toString('utf8', certBuffer.length - 50));
+            console.log('  - Primeros 20 bytes (hex):', certBuffer.subarray(0, 20).toString('hex'));
+            console.log('  - Últimos 20 bytes (hex):', certBuffer.subarray(certBuffer.length - 20).toString('hex'));
                 
             formData.append('certificado', certBuffer, {
                 filename: 'certificado.cer',
