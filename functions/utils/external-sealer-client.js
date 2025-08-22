@@ -295,16 +295,24 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // Agregar certificado como archivo (tal cual se guarda)
-            formData.append('certificado', certificadoBase64, {
+            // Agregar certificado como archivo binario (Buffer desde base64)
+            const certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
+            console.log('🔍 DEBUG CERT: Enviando certificado como archivo binario');
+            console.log('📏 DEBUG CERT: Tamaño buffer:', certificadoBuffer.length, 'bytes');
+            
+            formData.append('certificado', certificadoBuffer, {
                 filename: 'certificado.cer',
-                contentType: 'text/plain'
+                contentType: 'application/octet-stream'
             });
             
-            // Agregar llave privada como archivo (tal cual se guarda)
-            formData.append('key', llavePrivadaBase64, {
+            // Agregar llave privada como archivo binario (Buffer desde base64)
+            const llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+            console.log('🔍 DEBUG KEY: Enviando llave como archivo binario');
+            console.log('📏 DEBUG KEY: Tamaño buffer:', llaveBuffer.length, 'bytes');
+            
+            formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
-                contentType: 'text/plain'
+                contentType: 'application/octet-stream'
             });
             
             // Agregar contraseña como campo de texto
