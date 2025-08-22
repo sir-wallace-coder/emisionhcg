@@ -203,6 +203,44 @@ async function sellarConServicioExterno({
     console.log('📊 SELLADO EXTERNO: Certificado base64:', certificadoBase64.length, 'caracteres');
     console.log('📊 SELLADO EXTERNO: Llave privada base64:', llavePrivadaBase64.length, 'caracteres');
     
+    // 🚨 DEBUG CRÍTICO: EXTRAER RFC DEL CERTIFICADO ANTES DEL ENVÍO
+    console.log('🚨 DEBUG CRÍTICO: EXTRAYENDO RFC DEL CERTIFICADO...');
+    let rfcCertificadoCritico = 'NO_EXTRAIDO';
+    try {
+        const crypto = require('crypto');
+        const certificadoPemCritico = '-----BEGIN CERTIFICATE-----\n' + 
+                                     certificadoBase64.match(/.{1,64}/g).join('\n') + 
+                                     '\n-----END CERTIFICATE-----';
+        const certCritico = new crypto.X509Certificate(certificadoPemCritico);
+        const subjectCritico = certCritico.subject;
+        
+        console.log('🚨 DEBUG CRÍTICO CERT: Subject completo:', subjectCritico);
+        
+        const rfcMatchCritico = subjectCritico.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
+        if (rfcMatchCritico && rfcMatchCritico.length > 0) {
+            rfcCertificadoCritico = rfcMatchCritico[0];
+        }
+        
+        console.log('🚨 DEBUG CRÍTICO: RFC EXTRAIDO DEL CERTIFICADO:', rfcCertificadoCritico);
+        
+    } catch (certErrorCritico) {
+        console.log('❌ DEBUG CRÍTICO CERT: Error extrayendo RFC:', certErrorCritico.message);
+    }
+    
+    // 🚨 COMPARACIÓN CRÍTICA FINAL
+    console.log('🚨 COMPARACIÓN CRÍTICA FINAL ANTES DEL ENVÍO:');
+    console.log('  📋 RFC Parámetro (del emisor):', rfc);
+    console.log('  🔐 RFC del Certificado CSD:', rfcCertificadoCritico);
+    console.log('  ⚖️ COINCIDEN:', rfc === rfcCertificadoCritico ? '✅ SÍ' : '❌ NO');
+    
+    if (rfc !== rfcCertificadoCritico && rfcCertificadoCritico !== 'NO_EXTRAIDO') {
+        console.log('🚨 PROBLEMA CRÍTICO IDENTIFICADO:');
+        console.log('  - RFC que envíamos (del emisor):', rfc);
+        console.log('  - RFC en el certificado CSD:', rfcCertificadoCritico);
+        console.log('  - EL SERVICIO EXTERNO RECHAZARÁ ESTO CON ERROR 500');
+        console.log('  - SOLUCIÓN: Usar certificado CSD del RFC', rfc, 'o cambiar emisor al RFC', rfcCertificadoCritico);
+    }
+    
     // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación (solo para análisis interno)
     console.log('🔍 DEBUG FORENSE CLIENTE: Analizando certificado enviado...');
     let rfcDelCertificadoEnviado = null;
