@@ -313,13 +313,8 @@ exports.handler = async (event, context) => {
       console.log('🔧 PREPARACIÓN: Enviando certificado y llave tal como están almacenados...');
 
       
-      // Usar certificado y llave tal como están almacenados
-      const certificadoBase64Puro = emisor.certificado_cer
-        .replace(/-----BEGIN CERTIFICATE-----/g, '')
-        .replace(/-----END CERTIFICATE-----/g, '')
-        .replace(/\s/g, '');
-      
-      // ⚠️ CRÍTICO: Usar llave privada SIN MANIPULACIÓN (tal como se almacenó)
+      // ⚠️ CRÍTICO: Usar certificado y llave SIN MANIPULACIÓN (tal como están almacenados)
+      const certificadoBase64Puro = emisor.certificado_cer;
       const llavePrivadaBase64Pura = emisor.certificado_key;
       
 

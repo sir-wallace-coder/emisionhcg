@@ -287,18 +287,26 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // Agregar certificado como archivo binario (Buffer desde base64)
-            const certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
-            console.log('🔍 DEBUG CERT: Enviando certificado como archivo binario');
-            console.log('📏 DEBUG CERT: Tamaño buffer:', certificadoBuffer.length, 'bytes');
+            // Procesar certificado (detectar PEM vs base64)
+            let certificadoBuffer;
+            if (certificadoBase64.includes('-----BEGIN')) {
+                certificadoBuffer = Buffer.from(certificadoBase64, 'utf8');
+            } else {
+                certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
+            }
             
             formData.append('certificado', certificadoBuffer, {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
             
-            // Enviar llave privada usando EXACTAMENTE el mismo método que el certificado
-            const llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+            // Procesar llave con EXACTAMENTE el mismo método que el certificado
+            let llaveBuffer;
+            if (llavePrivadaBase64.includes('-----BEGIN')) {
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
+            } else {
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+            }
             
             formData.append('key', llaveBuffer, {
                 filename: 'llave.key',
