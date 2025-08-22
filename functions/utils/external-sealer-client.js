@@ -299,29 +299,29 @@ async function sellarConServicioExterno({
             const FormData = require('form-data');
             const formData = new FormData();
             
-            // XML
+            // XML - filename específico como Postman
+            const rfcEmisor = emisor.rfc || 'CFDI';
             formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
-                filename: 'cfdi.xml',
+                filename: `CFDI-4.0_${rfcEmisor}_${Date.now()}.xml`,
                 contentType: 'application/xml'
             });
             
-            // 🎯 CORRECCIÓN CRÍTICA: Enviar como archivos binarios reales (como Postman)
+            // 🎯 CORRECCIÓN CRÍTICA: Enviar como archivo binario real (como Postman desde disco)
             
-            // CERTIFICADO: Convertir a buffer binario real
+            // CERTIFICADO: Crear como archivo binario real, no conversión
             let certificadoBuffer;
             if (certificadoBase64.includes('-----BEGIN CERTIFICATE-----')) {
-                // Si tiene headers PEM, extraer base64 y convertir a DER binario
-                const cleanBase64 = certificadoBase64.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
-                certificadoBuffer = Buffer.from(cleanBase64, 'base64');
-                console.log('📜 CERT: Convertido de PEM a DER binario, tamaño:', certificadoBuffer.length, 'bytes');
+                // Si tiene headers PEM, enviarlo como texto tal como está (como archivo .cer de texto)
+                certificadoBuffer = Buffer.from(certificadoBase64, 'utf8');
+                console.log('📜 CERT: Enviado como archivo PEM de texto, tamaño:', certificadoBuffer.length, 'bytes');
             } else {
-                // Si es base64 puro, convertir directamente a binario
+                // Si es base64 puro, crear buffer binario directo (como archivo .cer binario)
                 certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
-                console.log('📜 CERT: Convertido de base64 a binario, tamaño:', certificadoBuffer.length, 'bytes');
+                console.log('📜 CERT: Enviado como archivo binario directo, tamaño:', certificadoBuffer.length, 'bytes');
             }
             
             formData.append('certificado', certificadoBuffer, {
-                filename: 'certificado.cer',
+                filename: `${rfcEmisor}.cer`,
                 contentType: 'application/octet-stream'
             });
             
@@ -342,7 +342,7 @@ async function sellarConServicioExterno({
             }
             
             formData.append('key', llaveBuffer, {
-                filename: 'llave.key',
+                filename: `${rfcEmisor}.key`,
                 contentType: contentType  // 🎯 Content-Type dinámico según formato
             });
             
