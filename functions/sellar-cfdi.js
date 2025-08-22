@@ -155,15 +155,37 @@ exports.handler = async (event, context) => {
     try {
       console.log('🔐 SELLADO EXTERNO: Iniciando sellado con autenticación automática...');
       
-      // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación
-      console.log('🔍 DEBUG FORENSE: Analizando certificado para extraer RFC...');
+      // 🔍 DEBUG FORENSE: Extraer RFC del XML (lo que realmente usa el servicio externo)
+      console.log('🔍 DEBUG FORENSE XML: Analizando XML para extraer RFC del emisor...');
+      let rfcDelXML = null;
+      try {
+        // Buscar RFC en el XML usando regex (atributo Rfc en cfdi:Emisor)
+        const rfcXmlMatch = xmlContent.match(/Rfc="([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})"/g);
+        if (rfcXmlMatch && rfcXmlMatch.length > 0) {
+          // Extraer solo el RFC del primer match (emisor)
+          const rfcValue = rfcXmlMatch[0].match(/Rfc="([^"]+)"/)[1];
+          rfcDelXML = rfcValue;
+        }
+        console.log('🔍 DEBUG XML: RFC encontrado en XML:', rfcDelXML || 'NO_ENCONTRADO');
+        console.log('🔍 DEBUG XML: Matches RFC completos:', rfcXmlMatch || 'NINGUNO');
+      } catch (xmlError) {
+        console.log('❌ DEBUG XML: Error extrayendo RFC del XML:', xmlError.message);
+      }
+      
+      // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación (solo análisis interno)
+      console.log('🔍 DEBUG FORENSE CERT: Analizando certificado para extraer RFC...');
       let rfcDelCertificado = null;
       try {
         const crypto = require('crypto');
-        const cerBuffer = Buffer.from(emisor.certificado_cer, 'base64');
-        const cert = new crypto.X509Certificate(cerBuffer);
+        // Convertir base64 a PEM válido SOLO para análisis interno (se envía tal cual se guarda)
+        const certificadoPemDebug = '-----BEGIN CERTIFICATE-----\n' + 
+                                   emisor.certificado_cer.match(/.{1,64}/g).join('\n') + 
+                                   '\n-----END CERTIFICATE-----';
+        const cert = new crypto.X509Certificate(certificadoPemDebug);
         const subject = cert.subject;
         console.log('🔍 DEBUG CERT: Subject completo:', subject);
+        console.log('📋 DEBUG CERT: Certificado se envía tal cual se guarda (base64 string)');
+        console.log('📏 DEBUG CERT: Longitud base64:', emisor.certificado_cer.length, 'chars');
         
         // Buscar RFC en el subject
         const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
@@ -174,20 +196,26 @@ exports.handler = async (event, context) => {
         console.log('❌ DEBUG CERT: Error extrayendo RFC:', certError.message);
       }
       
-      // 🚨 DEBUG FORENSE: COMPARACIÓN CRÍTICA
+      // 🚨 DEBUG FORENSE: COMPARACIÓN CRÍTICA (XML vs CERTIFICADO)
       console.log('🚨 DEBUG FORENSE: COMPARACIÓN RFC CRÍTICA:');
       console.log('  📋 RFC Emisor (BD):', emisor.rfc);
+      console.log('  📜 RFC en XML (lo que usa servicio):', rfcDelXML || 'NO_EXTRAIDO');
       console.log('  🔐 RFC Certificado:', rfcDelCertificado || 'NO_EXTRAIDO');
       console.log('  🔢 Número Certificado:', emisor.numero_certificado);
       console.log('  📏 Longitud Certificado:', emisor.certificado_cer?.length || 0, 'chars');
       console.log('  📏 Longitud Llave:', emisor.certificado_key?.length || 0, 'chars');
       console.log('  🔑 Password Length:', emisor.password_key?.length || 0, 'chars');
-      console.log('  ⚖️ RFC COINCIDE:', emisor.rfc === rfcDelCertificado ? '✅ SÍ' : '❌ NO');
+      console.log('  ⚖️ XML vs CERT COINCIDE:', rfcDelXML === rfcDelCertificado ? '✅ SÍ' : '❌ NO');
+      console.log('  ⚖️ BD vs XML COINCIDE:', emisor.rfc === rfcDelXML ? '✅ SÍ' : '❌ NO');
       
-      if (emisor.rfc !== rfcDelCertificado && rfcDelCertificado) {
-        console.log('🚨 ALERTA: RFC NO COINCIDE - Esto causará error en servicio externo');
-        console.log('  - Esperado por servicio:', rfcDelCertificado);
-        console.log('  - Enviado por nosotros:', emisor.rfc);
+      // 🚨 ALERTA CRÍTICA: El servicio externo compara RFC del XML vs RFC del certificado
+      if (rfcDelXML !== rfcDelCertificado && rfcDelXML && rfcDelCertificado) {
+        console.log('🚨 ALERTA CRÍTICA: RFC XML vs CERTIFICADO NO COINCIDEN');
+        console.log('  - RFC en XML (que usará servicio):', rfcDelXML);
+        console.log('  - RFC en Certificado:', rfcDelCertificado);
+        console.log('  - ESTO CAUSARÁ ERROR 500 en servicio externo');
+      } else if (rfcDelXML === rfcDelCertificado && rfcDelXML) {
+        console.log('✅ VALIDACIÓN OK: RFC XML y CERTIFICADO COINCIDEN:', rfcDelXML);
       }
       
       // Usar cliente externo que maneja login automático

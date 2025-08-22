@@ -203,15 +203,20 @@ async function sellarConServicioExterno({
     console.log('📊 SELLADO EXTERNO: Certificado base64:', certificadoBase64.length, 'caracteres');
     console.log('📊 SELLADO EXTERNO: Llave privada base64:', llavePrivadaBase64.length, 'caracteres');
     
-    // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación
+    // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación (solo para análisis interno)
     console.log('🔍 DEBUG FORENSE CLIENTE: Analizando certificado enviado...');
     let rfcDelCertificadoEnviado = null;
     try {
         const crypto = require('crypto');
-        const cerBuffer = Buffer.from(certificadoBase64, 'base64');
-        const cert = new crypto.X509Certificate(cerBuffer);
+        // Convertir base64 a PEM válido SOLO para análisis interno (no se envía así)
+        const certificadoPemDebug = '-----BEGIN CERTIFICATE-----\n' + 
+                                   certificadoBase64.match(/.{1,64}/g).join('\n') + 
+                                   '\n-----END CERTIFICATE-----';
+        const cert = new crypto.X509Certificate(certificadoPemDebug);
         const subject = cert.subject;
         console.log('🔍 DEBUG CLIENTE CERT: Subject completo:', subject);
+        console.log('📋 DEBUG CLIENTE: Certificado enviado tal cual se guarda (base64 string)');
+        console.log('📏 DEBUG CLIENTE: Longitud base64:', certificadoBase64.length, 'chars');
         
         // Buscar RFC en el subject
         const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
@@ -290,10 +295,10 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // Agregar certificado como archivo
-            formData.append('certificado', Buffer.from(certificadoBase64, 'base64'), {
+            // Agregar certificado como archivo (tal cual se guarda)
+            formData.append('certificado', certificadoBase64, {
                 filename: 'certificado.cer',
-                contentType: 'application/octet-stream'
+                contentType: 'text/plain'
             });
             
             // Agregar llave privada como archivo (tal cual se guarda)
