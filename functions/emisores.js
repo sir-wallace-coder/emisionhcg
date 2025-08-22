@@ -1115,13 +1115,14 @@ async function updateEmisor(userId, emisorId, data, headers) {
       estado_csd: updateData.estado_csd
     });
     
-    // Actualizar emisor en base de datos
-    console.log('🔍 DEBUG BD: Ejecutando supabase.update...');
+    // Actualizar emisor en base de datos (acceso global - sin validación usuario_id)
+    console.log('🔍 DEBUG BD: Ejecutando supabase.update con acceso global...');
+    console.log('🔍 DEBUG BD: Emisor ID:', emisorId);
+    
     const { data: emisor, error } = await supabase
       .from('emisores')
       .update(updateData)
       .eq('id', emisorId)
-      .eq('usuario_id', userId)
       .select()
       .single();
     
