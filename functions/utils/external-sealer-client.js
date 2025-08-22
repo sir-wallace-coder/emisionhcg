@@ -317,27 +317,17 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // 🧪 LLAVE: Aplicar misma estrategia binaria que funcionó con el certificado
-            let keyBuffer;
-            
-            if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Extraer solo el contenido base64 (sin headers PEM) y convertir a binario
-                const base64Content = llavePrivadaBase64
-                    .replace(/-----BEGIN[^-]*-----/g, '')
-                    .replace(/-----END[^-]*-----/g, '')
-                    .replace(/\s/g, '');
-                keyBuffer = Buffer.from(base64Content, 'base64');
-                console.log('🔄 LLAVE: Convertida de PEM a binario DER');
-            } else {
-                // Ya está en base64, convertir directamente a binario
-                keyBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-                console.log('🔄 LLAVE: Convertida de base64 a binario DER');
-            }
-            
-            console.log('📏 LLAVE BUFFER (BINARIO):');
+            // 🔑 LLAVE: Mantener en PEM para desencriptación (diferente estrategia que certificado)
+            // La llave encriptada necesita headers PEM para que el servicio pueda desencriptarla
+            const keyBuffer = llavePrivadaBase64.includes('-----BEGIN')
+                ? Buffer.from(llavePrivadaBase64, 'utf8')
+                : Buffer.from(llavePrivadaBase64, 'base64');
+                
+            console.log('🔑 LLAVE: Mantenida en formato original para desencriptación');
+            console.log('📏 LLAVE BUFFER:');
             console.log('  - Tamaño buffer:', keyBuffer.length, 'bytes');
-            console.log('  - Primeros 20 bytes (hex):', keyBuffer.subarray(0, 20).toString('hex'));
-            console.log('  - Últimos 20 bytes (hex):', keyBuffer.subarray(keyBuffer.length - 20).toString('hex'));
+            console.log('  - Es PEM:', llavePrivadaBase64.includes('-----BEGIN'));
+            console.log('  - Primeros 50 chars:', llavePrivadaBase64.substring(0, 50));
                 
             formData.append('key', keyBuffer, {
                 filename: 'llave.key',
