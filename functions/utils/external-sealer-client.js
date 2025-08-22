@@ -317,17 +317,29 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // 🔑 LLAVE: Mantener en PEM para desencriptación (diferente estrategia que certificado)
-            // La llave encriptada necesita headers PEM para que el servicio pueda desencriptarla
-            const keyBuffer = llavePrivadaBase64.includes('-----BEGIN')
-                ? Buffer.from(llavePrivadaBase64, 'utf8')
-                : Buffer.from(llavePrivadaBase64, 'base64');
+            // 🔑 LLAVE: Convertir base64 puro a PEM completo para desencriptación
+            // El servicio externo necesita headers PEM para desencriptar llaves privadas encriptadas
+            let keyContent;
+            let keyBuffer;
+            
+            if (llavePrivadaBase64.includes('-----BEGIN')) {
+                // Ya está en formato PEM
+                keyContent = llavePrivadaBase64;
+                keyBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
+                console.log('🔑 LLAVE: Ya está en formato PEM');
+            } else {
+                // Base64 puro - convertir a PEM completo
+                // Formatear base64 en líneas de 64 caracteres
+                const base64Lines = llavePrivadaBase64.match(/.{1,64}/g).join('\n');
+                keyContent = `-----BEGIN ENCRYPTED PRIVATE KEY-----\n${base64Lines}\n-----END ENCRYPTED PRIVATE KEY-----`;
+                keyBuffer = Buffer.from(keyContent, 'utf8');
+                console.log('🔑 LLAVE: Convertida de base64 puro a PEM completo');
+            }
                 
-            console.log('🔑 LLAVE: Mantenida en formato original para desencriptación');
             console.log('📏 LLAVE BUFFER:');
             console.log('  - Tamaño buffer:', keyBuffer.length, 'bytes');
-            console.log('  - Es PEM:', llavePrivadaBase64.includes('-----BEGIN'));
-            console.log('  - Primeros 50 chars:', llavePrivadaBase64.substring(0, 50));
+            console.log('  - Es PEM:', keyContent.includes('-----BEGIN'));
+            console.log('  - Primeros 50 chars:', keyContent.substring(0, 50));
                 
             formData.append('key', keyBuffer, {
                 filename: 'llave.key',
