@@ -202,6 +202,52 @@ async function sellarConServicioExterno({
     console.log('📊 SELLADO EXTERNO: Tamaño XML:', xmlSinSellar.length, 'caracteres');
     console.log('📊 SELLADO EXTERNO: Certificado base64:', certificadoBase64.length, 'caracteres');
     console.log('📊 SELLADO EXTERNO: Llave privada base64:', llavePrivadaBase64.length, 'caracteres');
+    
+    // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación
+    console.log('🔍 DEBUG FORENSE CLIENTE: Analizando certificado enviado...');
+    let rfcDelCertificadoEnviado = null;
+    try {
+        const crypto = require('crypto');
+        const cerBuffer = Buffer.from(certificadoBase64, 'base64');
+        const cert = new crypto.X509Certificate(cerBuffer);
+        const subject = cert.subject;
+        console.log('🔍 DEBUG CLIENTE CERT: Subject completo:', subject);
+        
+        // Buscar RFC en el subject
+        const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
+        if (rfcMatch && rfcMatch.length > 0) {
+            rfcDelCertificadoEnviado = rfcMatch[0];
+        }
+        
+        // Extraer número de serie
+        const serialHex = cert.serialNumber;
+        let serialString = '';
+        for (let i = 0; i < serialHex.length; i += 2) {
+            const hexByte = serialHex.substr(i, 2);
+            const charCode = parseInt(hexByte, 16);
+            serialString += String.fromCharCode(charCode);
+        }
+        
+        console.log('🔍 DEBUG CLIENTE CERT: Número de serie:', serialString);
+        console.log('🔍 DEBUG CLIENTE CERT: Vigencia desde:', cert.validFrom);
+        console.log('🔍 DEBUG CLIENTE CERT: Vigencia hasta:', cert.validTo);
+        
+    } catch (certError) {
+        console.log('❌ DEBUG CLIENTE CERT: Error extrayendo RFC:', certError.message);
+    }
+    
+    // 🚨 DEBUG FORENSE CLIENTE: COMPARACIÓN CRÍTICA
+    console.log('🚨 DEBUG FORENSE CLIENTE: DATOS QUE SE ENVIARÁN:');
+    console.log('  📋 RFC Parámetro:', rfc);
+    console.log('  🔐 RFC en Certificado:', rfcDelCertificadoEnviado || 'NO_EXTRAIDO');
+    console.log('  📏 Password Length:', passwordLlave?.length || 0, 'chars');
+    console.log('  ⚖️ RFC COINCIDE:', rfc === rfcDelCertificadoEnviado ? '✅ SÍ' : '❌ NO');
+    
+    if (rfc !== rfcDelCertificadoEnviado && rfcDelCertificadoEnviado) {
+        console.log('🚨 ALERTA CLIENTE: RFC NO COINCIDE - Servicio externo rechazará');
+        console.log('  - RFC en certificado:', rfcDelCertificadoEnviado);
+        console.log('  - RFC que enviamos:', rfc);
+    }
 
     // Validar parámetros requeridos
     if (!xmlSinSellar || !certificadoBase64 || !llavePrivadaBase64 || !passwordLlave) {

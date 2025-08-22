@@ -155,6 +155,41 @@ exports.handler = async (event, context) => {
     try {
       console.log('🔐 SELLADO EXTERNO: Iniciando sellado con autenticación automática...');
       
+      // 🔍 DEBUG FORENSE: Extraer RFC del certificado para comparación
+      console.log('🔍 DEBUG FORENSE: Analizando certificado para extraer RFC...');
+      let rfcDelCertificado = null;
+      try {
+        const crypto = require('crypto');
+        const cerBuffer = Buffer.from(emisor.certificado_cer, 'base64');
+        const cert = new crypto.X509Certificate(cerBuffer);
+        const subject = cert.subject;
+        console.log('🔍 DEBUG CERT: Subject completo:', subject);
+        
+        // Buscar RFC en el subject
+        const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
+        if (rfcMatch && rfcMatch.length > 0) {
+          rfcDelCertificado = rfcMatch[0];
+        }
+      } catch (certError) {
+        console.log('❌ DEBUG CERT: Error extrayendo RFC:', certError.message);
+      }
+      
+      // 🚨 DEBUG FORENSE: COMPARACIÓN CRÍTICA
+      console.log('🚨 DEBUG FORENSE: COMPARACIÓN RFC CRÍTICA:');
+      console.log('  📋 RFC Emisor (BD):', emisor.rfc);
+      console.log('  🔐 RFC Certificado:', rfcDelCertificado || 'NO_EXTRAIDO');
+      console.log('  🔢 Número Certificado:', emisor.numero_certificado);
+      console.log('  📏 Longitud Certificado:', emisor.certificado_cer?.length || 0, 'chars');
+      console.log('  📏 Longitud Llave:', emisor.certificado_key?.length || 0, 'chars');
+      console.log('  🔑 Password Length:', emisor.password_key?.length || 0, 'chars');
+      console.log('  ⚖️ RFC COINCIDE:', emisor.rfc === rfcDelCertificado ? '✅ SÍ' : '❌ NO');
+      
+      if (emisor.rfc !== rfcDelCertificado && rfcDelCertificado) {
+        console.log('🚨 ALERTA: RFC NO COINCIDE - Esto causará error en servicio externo');
+        console.log('  - Esperado por servicio:', rfcDelCertificado);
+        console.log('  - Enviado por nosotros:', emisor.rfc);
+      }
+      
       // Usar cliente externo que maneja login automático
       const resultadoExterno = await sellarConServicioExterno({
         xmlSinSellar: xmlContent,
