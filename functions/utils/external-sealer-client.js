@@ -287,14 +287,13 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
-            // 🧪 PRUEBA SISTEMÁTICA DE FORMATOS
-            // Determinar formato actual de los archivos
+            // 🧪 SISTEMA DE PRUEBAS AUTOMÁTICAS - TODAS LAS COMBINACIONES
             const certEsPem = certificadoBase64.includes('-----BEGIN');
             const keyEsPem = llavePrivadaBase64.includes('-----BEGIN');
             
             console.log('🔍 FORMATO ALMACENADO: Certificado', certEsPem ? 'PEM' : 'BASE64', '| Llave', keyEsPem ? 'PEM' : 'BASE64');
             
-            // Función para limpiar y convertir a base64 puro
+            // Funciones de conversión
             function aBase64Puro(contenido) {
                 return contenido
                     .replace(/-----BEGIN[^-]+-----/g, '')
@@ -302,7 +301,6 @@ async function sellarConServicioExterno({
                     .replace(/\s/g, '');
             }
             
-            // Función para convertir a PEM
             function aPem(contenido, esCertificado = false) {
                 const base64Puro = aBase64Puro(contenido);
                 const lineas = base64Puro.match(/.{1,64}/g) || [base64Puro];
@@ -314,93 +312,148 @@ async function sellarConServicioExterno({
                 }
             }
             
-            // 🧪 PRUEBA 1: AMBOS COMO PEM (formato estándar)
-            console.log('🧪 PRUEBA 1: Certificado PEM + Llave PEM');
-            
-            const certPem = aPem(certificadoBase64, true);
-            const keyPem = aPem(llavePrivadaBase64, false);
-            
-            const certificadoBuffer = Buffer.from(certPem, 'utf8');
-            const llaveBuffer = Buffer.from(keyPem, 'utf8');
-            
-            console.log('📏 BUFFERS FINALES: Cert', certificadoBuffer.length, 'bytes | Key', llaveBuffer.length, 'bytes');
-            console.log('🔍 PREVIEW CERT:', certPem.substring(0, 80) + '...');
-            console.log('🔍 PREVIEW KEY:', keyPem.substring(0, 80) + '...');
-            
-            formData.append('certificado', certificadoBuffer, {
-                filename: 'certificado.cer',
-                contentType: 'application/octet-stream'
-            });
-            
-            formData.append('key', llaveBuffer, {
-                filename: 'llave.key',
-                contentType: 'application/octet-stream'
-            });
-            
-            // Agregar contraseña como campo de texto
-            console.log('🔑 DEBUG PASSWORD: Longitud:', passwordLlave?.length || 0, 'chars');
-            console.log('🔑 DEBUG PASSWORD: Valor:', passwordLlave ? '***' + passwordLlave.slice(-3) : 'UNDEFINED');
-            formData.append('password', passwordLlave);
-            
-            // ❌ CAMPOS EXTRAS ELIMINADOS (rfc, version) según especificaciones soporte
-            
-            console.log('📦 SELLADO EXTERNO: FormData preparado con archivos y datos');
-            
-            // Preparar headers con token de autenticación (FormData agrega Content-Type automáticamente)
-            const headers = {
-                'User-Agent': 'CFDI-Sistema-Completo/1.0.0',
-                'Authorization': `Bearer ${token}`,
-                ...formData.getHeaders()  // Incluye boundary para multipart/form-data
-            };
-
-            // Realizar request al servicio externo
-            const fetchFn = await loadFetch();
-            const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
-                method: 'POST',
-                headers: headers,
-                body: formData,
-                timeout: EXTERNAL_SEALER_CONFIG.timeout
-            });
-
-            console.log('📥 SELLADO EXTERNO: Response status:', response.status);
-            console.log('📥 SELLADO EXTERNO: Response headers:', Object.fromEntries(response.headers));
-
-            // Verificar si la respuesta es exitosa
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Servicio externo respondió con error ${response.status}: ${errorText}`);
-            }
-
-            // Parsear respuesta JSON
-            const resultado = await response.json();
-            console.log('✅ SELLADO EXTERNO: Sellado completado exitosamente');
-            console.log('📊 SELLADO EXTERNO: XML sellado recibido:', resultado.xml_sellado?.length || 0, 'caracteres');
-
-            // Validar estructura de respuesta
-            if (!resultado.success || !resultado.xml_sellado) {
-                throw new Error(`Respuesta inválida del servicio externo: ${JSON.stringify(resultado)}`);
-            }
-
-            // Extraer información adicional si está disponible
-            const resultadoCompleto = {
-                success: true,
-                xmlSellado: resultado.xml_sellado,
-                sello: resultado.sello || null,
-                numeroCertificado: resultado.numero_certificado || null,
-                fechaSellado: resultado.fecha_sellado || new Date().toISOString(),
-                servicioExterno: {
-                    proveedor: resultado.proveedor || 'Servicio Externo',
-                    version: resultado.version || '1.0',
-                    tiempo_procesamiento: resultado.tiempo_procesamiento || null
+            // 📋 DEFINIR TODAS LAS COMBINACIONES A PROBAR
+            const combinaciones = [
+                { 
+                    id: 1, 
+                    desc: 'Certificado PEM + Llave PEM', 
+                    cert: () => aPem(certificadoBase64, true), 
+                    key: () => aPem(llavePrivadaBase64, false),
+                    encoding: 'utf8'
                 },
-                logs: resultado.logs || []
+                { 
+                    id: 2, 
+                    desc: 'Certificado BASE64 + Llave BASE64', 
+                    cert: () => aBase64Puro(certificadoBase64), 
+                    key: () => aBase64Puro(llavePrivadaBase64),
+                    encoding: 'base64'
+                },
+                { 
+                    id: 3, 
+                    desc: 'Certificado PEM + Llave BASE64', 
+                    cert: () => aPem(certificadoBase64, true), 
+                    key: () => aBase64Puro(llavePrivadaBase64),
+                    encoding: 'mixed'
+                },
+                { 
+                    id: 4, 
+                    desc: 'Certificado BASE64 + Llave PEM', 
+                    cert: () => aBase64Puro(certificadoBase64), 
+                    key: () => aPem(llavePrivadaBase64, false),
+                    encoding: 'mixed'
+                }
+            ];
+            
+            // 🎯 PROBAR TODAS LAS COMBINACIONES AUTOMÁTICAMENTE
+            let resultadoExitoso = null;
+            
+            for (const combo of combinaciones) {
+                console.log(`\n🧪 PROBANDO COMBINACIÓN ${combo.id}: ${combo.desc}`);
+                
+                try {
+                    // Preparar archivos según la combinación
+                    const certContent = combo.cert();
+                    const keyContent = combo.key();
+                    
+                    // Crear buffers apropiados
+                    let certBuffer, keyBuffer;
+                    
+                    if (combo.encoding === 'utf8') {
+                        certBuffer = Buffer.from(certContent, 'utf8');
+                        keyBuffer = Buffer.from(keyContent, 'utf8');
+                    } else if (combo.encoding === 'base64') {
+                        certBuffer = Buffer.from(certContent, 'base64');
+                        keyBuffer = Buffer.from(keyContent, 'base64');
+                    } else { // mixed
+                        certBuffer = certContent.includes('-----BEGIN') ? Buffer.from(certContent, 'utf8') : Buffer.from(certContent, 'base64');
+                        keyBuffer = keyContent.includes('-----BEGIN') ? Buffer.from(keyContent, 'utf8') : Buffer.from(keyContent, 'base64');
+                    }
+                    
+                    console.log(`📏 BUFFERS: Cert ${certBuffer.length} bytes | Key ${keyBuffer.length} bytes`);
+                    console.log(`🔍 PREVIEW CERT: ${certContent.substring(0, 50)}...`);
+                    console.log(`🔍 PREVIEW KEY: ${keyContent.substring(0, 50)}...`);
+                    
+                    // Crear FormData para esta combinación
+                    const testFormData = new FormData();
+                    
+                    // Agregar XML
+                    testFormData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
+                        filename: 'cfdi.xml',
+                        contentType: 'application/xml'
+                    });
+                    
+                    // Agregar certificado y llave con esta combinación
+                    testFormData.append('certificado', certBuffer, {
+                        filename: 'certificado.cer',
+                        contentType: 'application/octet-stream'
+                    });
+                    
+                    testFormData.append('key', keyBuffer, {
+                        filename: 'llave.key',
+                        contentType: 'application/octet-stream'
+                    });
+                    
+                    // Agregar contraseña
+                    testFormData.append('password', passwordLlave);
+                    
+                    // Intentar con esta combinación
+                    const testResponse = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
+                        method: 'POST',
+                        headers: {
+                            'User-Agent': 'CFDI-Sistema-Completo/1.0.0',
+                            'Authorization': `Bearer ${token}`,
+                            ...testFormData.getHeaders()
+                        },
+                        body: testFormData,
+                        timeout: EXTERNAL_SEALER_CONFIG.timeout
+                    });
+                    
+                    console.log(`📊 RESULTADO COMBINACIÓN ${combo.id}: Status ${testResponse.status}`);
+                    
+                    if (testResponse.ok) {
+                        // ¡ÉXITO! Esta combinación funciona
+                        console.log(`✅ ¡COMBINACIÓN ${combo.id} EXITOSA! ${combo.desc}`);
+                        resultadoExitoso = {
+                            combo: combo,
+                            response: testResponse
+                        };
+                        break; // Salir del loop, ya encontramos la que funciona
+                    } else {
+                        const errorText = await testResponse.text();
+                        console.log(`❌ COMBINACIÓN ${combo.id} FALLÓ: ${errorText.substring(0, 200)}`);
+                    }
+                    
+                } catch (error) {
+                    console.log(`❌ COMBINACIÓN ${combo.id} ERROR: ${error.message}`);
+                }
+            }
+            
+            // Verificar si encontramos una combinación exitosa
+            if (!resultadoExitoso) {
+                throw new Error('Ninguna de las 4 combinaciones de formato funcionó');
+            }
+            
+            console.log(`\n🎉 FORMATO CORRECTO IDENTIFICADO: ${resultadoExitoso.combo.desc}`);
+            
+            // ✅ USAR LA COMBINACIÓN EXITOSA PARA EL RESULTADO FINAL
+            const responseExitosa = resultadoExitoso.response;
+            
+            console.log('✅ SELLADO EXITOSO: Procesando respuesta de la combinación que funcionó...');
+            
+            // Procesar la respuesta exitosa directamente
+            const resultData = await responseExitosa.json();
+            
+            return {
+                exito: true,
+                xmlSellado: resultData.xmlSellado || resultData.xml_sellado,
+                sello: resultData.sello,
+                cadenaOriginal: resultData.cadenaOriginal || resultData.cadena_original,
+                numeroCertificado: resultData.numeroCertificado || resultData.numero_certificado,
+                formatoExitoso: resultadoExitoso.combo.desc,
+                combinacionId: resultadoExitoso.combo.id
             };
-
-            console.log('🎉 SELLADO EXTERNO: Sellado exitoso completado');
-            console.log('📋 SELLADO EXTERNO: Sello generado:', resultadoCompleto.sello ? 'SÍ' : 'NO');
-            console.log('📋 SELLADO EXTERNO: Número certificado:', resultadoCompleto.numeroCertificado || 'N/A');
-
-            return resultadoCompleto;
+            
+            // ✅ SISTEMA DE PRUEBAS AUTOMÁTICAS COMPLETADO EXITOSAMENTE
 
         } catch (error) {
             lastError = error;
