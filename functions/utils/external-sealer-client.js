@@ -232,6 +232,12 @@ async function sellarConServicioExterno({
             const FormData = require('form-data');
             const formData = new FormData();
             
+            // 📋 SOLO CAMPOS REQUERIDOS POR SOPORTE consulta.click:
+            // - xml como file
+            // - certificado como file  
+            // - key como file
+            // - password como text
+            
             // Agregar XML como archivo
             formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
                 filename: 'cfdi.xml',
@@ -244,18 +250,16 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // Agregar llave privada como archivo
-            formData.append('key', Buffer.from(llavePrivadaBase64, 'base64'), {
+            // Agregar llave privada como archivo (tal cual se guarda)
+            formData.append('key', llavePrivadaBase64, {
                 filename: 'llave.key',
-                contentType: 'application/octet-stream'
+                contentType: 'text/plain'
             });
             
             // Agregar contraseña como campo de texto
             formData.append('password', passwordLlave);
             
-            // Agregar RFC y versión como campos adicionales
-            formData.append('rfc', rfc);
-            formData.append('version', versionCfdi);
+            // ❌ CAMPOS EXTRAS ELIMINADOS (rfc, version) según especificaciones soporte
             
             console.log('📦 SELLADO EXTERNO: FormData preparado con archivos y datos');
             

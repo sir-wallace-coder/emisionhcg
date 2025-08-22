@@ -21,6 +21,25 @@ function procesarCertificadoSimplificado(cerBase64) {
     const vigenciaDesde = new Date(cert.validFrom).toISOString().split('T')[0];
     const vigenciaHasta = new Date(cert.validTo).toISOString().split('T')[0];
     
+    // 🔍 EXTRAER RFC DEL CERTIFICADO
+    let rfcCertificado = null;
+    try {
+      // El RFC está en el subject del certificado, buscar en diferentes campos
+      const subject = cert.subject;
+      console.log('🔍 DEBUG CERT: Subject completo:', subject);
+      
+      // Buscar RFC en el subject (puede estar en diferentes formatos)
+      const rfcMatch = subject.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
+      if (rfcMatch && rfcMatch.length > 0) {
+        rfcCertificado = rfcMatch[0];
+        console.log('✅ RFC extraído del certificado:', rfcCertificado);
+      } else {
+        console.log('⚠️ No se pudo extraer RFC del certificado subject');
+      }
+    } catch (rfcError) {
+      console.log('❌ Error extrayendo RFC del certificado:', rfcError.message);
+    }
+    
     // Convertir a PEM
     const certificadoPem = '-----BEGIN CERTIFICATE-----\n' + 
                           cerBase64.match(/.{1,64}/g).join('\n') + 
@@ -31,7 +50,8 @@ function procesarCertificadoSimplificado(cerBase64) {
       numeroSerie: serialString,
       vigenciaDesde: vigenciaDesde,
       vigenciaHasta: vigenciaHasta,
-      certificadoPem: certificadoPem
+      certificadoPem: certificadoPem,
+      rfcCertificado: rfcCertificado // 🆕 RFC extraído del certificado
     };
   } catch (error) {
     return {
@@ -637,6 +657,30 @@ async function createEmisor(userId, data, headers) {
                 tipo: 'CERTIFICADO_KEY_INVALIDO'
               })
             };
+          }
+          
+          // 2.5. Validar que el RFC del emisor coincida con el del certificado
+          console.log('🔍 Validando coincidencia RFC emisor vs certificado...');
+          if (certInfo.rfcCertificado) {
+            if (certInfo.rfcCertificado !== rfcClean) {
+              console.log('❌ RFC NO COINCIDE:');
+              console.log('  - RFC Emisor:', rfcClean);
+              console.log('  - RFC Certificado:', certInfo.rfcCertificado);
+              return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                  error: `El RFC del emisor (${rfcClean}) no coincide con el RFC del certificado (${certInfo.rfcCertificado})`,
+                  tipo: 'RFC_NO_COINCIDE',
+                  rfc_emisor: rfcClean,
+                  rfc_certificado: certInfo.rfcCertificado
+                })
+              };
+            } else {
+              console.log('✅ RFC COINCIDE:', rfcClean, '=', certInfo.rfcCertificado);
+            }
+          } else {
+            console.log('⚠️ No se pudo extraer RFC del certificado, continuando sin validación RFC');
           }
           
           // 3. Validar que el certificado y la llave privada coincidan
