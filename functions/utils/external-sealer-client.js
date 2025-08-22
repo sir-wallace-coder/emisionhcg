@@ -282,10 +282,22 @@ async function sellarConServicioExterno({
                 contentType: 'application/xml'
             });
             
+            // 🔍 DIAGNÓSTICO CERTIFICADO ANTES DEL ENVÍO
+            console.log('🔍 CERTIFICADO ALMACENADO:');
+            console.log('  - Longitud:', certificadoBase64.length, 'chars');
+            console.log('  - Es PEM:', certificadoBase64.includes('-----BEGIN'));
+            console.log('  - Primeros 100 chars:', certificadoBase64.substring(0, 100));
+            console.log('  - Últimos 100 chars:', certificadoBase64.substring(certificadoBase64.length - 100));
+            
             // Certificado (tal como está almacenado)
             const certBuffer = certificadoBase64.includes('-----BEGIN') 
                 ? Buffer.from(certificadoBase64, 'utf8')
                 : Buffer.from(certificadoBase64, 'base64');
+                
+            console.log('📏 CERTIFICADO BUFFER:');
+            console.log('  - Tamaño buffer:', certBuffer.length, 'bytes');
+            console.log('  - Primeros 50 bytes como string:', certBuffer.toString('utf8', 0, 50));
+            console.log('  - Últimos 50 bytes como string:', certBuffer.toString('utf8', certBuffer.length - 50));
                 
             formData.append('certificado', certBuffer, {
                 filename: 'certificado.cer',
