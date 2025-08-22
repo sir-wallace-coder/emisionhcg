@@ -35,8 +35,8 @@ const EXTERNAL_SEALER_CONFIG = {
     email: process.env.EXTERNAL_SEALER_EMAIL || '',
     password: process.env.EXTERNAL_SEALER_PASSWORD || '',
     
-    // Timeout en milisegundos
-    timeout: parseInt(process.env.EXTERNAL_SEALER_TIMEOUT) || 30000,
+    // Timeout en milisegundos (aumentado para sellado complejo)
+    timeout: parseInt(process.env.EXTERNAL_SEALER_TIMEOUT) || 90000,  // 90 segundos
     
     // Reintentos en caso de error
     retries: parseInt(process.env.EXTERNAL_SEALER_RETRIES) || 3
@@ -351,8 +351,18 @@ async function sellarConServicioExterno({
             
             formData.append('password', passwordLlave);
             
-
+            // 🔍 LOGS DE PROGRESO: Monitorear el proceso de sellado
+            console.log('🚀 SELLADO EXTERNO: Enviando petición al servicio...');
+            console.log('  - URL:', EXTERNAL_SEALER_CONFIG.sellarUrl);
+            console.log('  - Timeout configurado:', EXTERNAL_SEALER_CONFIG.timeout, 'ms');
+            console.log('  - Certificado binario:', certificadoBuffer.length, 'bytes');
+            console.log('  - Llave PEM:', llaveBuffer.length, 'bytes');
+            console.log('  - XML tamaño:', xmlSinSellar.length, 'caracteres');
+            
+            const startTime = Date.now();
             const fetchFn = await loadFetch();
+            
+            console.log('⏱️ SELLADO EXTERNO: Iniciando petición HTTP...');
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
                 headers: {
@@ -364,9 +374,17 @@ async function sellarConServicioExterno({
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
             });
             
+            const responseTime = Date.now() - startTime;
+            console.log('✅ SELLADO EXTERNO: Respuesta recibida');
+            console.log('  - Status:', response.status);
+            console.log('  - Tiempo total:', responseTime, 'ms');
+            console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
+            
             const responseText = await response.text();
+            console.log('📜 SELLADO EXTERNO: Tamaño respuesta:', responseText.length, 'caracteres');
             
             if (!response.ok) {
+                console.error('❌ SELLADO EXTERNO: Error en respuesta:', response.status, responseText);
                 throw new Error(`Error ${response.status}: ${responseText}`);
             }
             
