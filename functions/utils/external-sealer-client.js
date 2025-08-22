@@ -272,106 +272,62 @@ async function sellarConServicioExterno({
             console.log(`🔄 SELLADO EXTERNO: Intento ${intento}/${EXTERNAL_SEALER_CONFIG.retries}`);
             
             // Crear FormData con archivos (como espera consulta.click)
-            const FormData = require('form-data');
+            // 🖼️ PROCESO LIMPIO - EXACTAMENTE COMO LA IMAGEN
             const formData = new FormData();
             
-            // 📋 SOLO CAMPOS REQUERIDOS POR SOPORTE consulta.click:
-            // - xml como file
-            // - certificado como file  
-            // - key como file
-            // - password como text
-            
-            // Agregar XML como archivo
+            // XML
             formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
                 filename: 'cfdi.xml',
                 contentType: 'application/xml'
             });
             
-            // 🖼️ BASADO EN LA IMAGEN: El servicio espera archivos tal como están almacenados
-            const certEsPem = certificadoBase64.includes('-----BEGIN');
-            const keyEsPem = llavePrivadaBase64.includes('-----BEGIN');
-            
-            console.log('🔍 FORMATO ALMACENADO: Certificado', certEsPem ? 'PEM' : 'BASE64', '| Llave', keyEsPem ? 'PEM' : 'BASE64');
-            console.log('🖼️ ESTRATEGIA: Enviar archivos tal como están almacenados (sin conversiones)');
-            
-            // 🎯 ENVIAR ARCHIVOS TAL COMO ESTÁN ALMACENADOS
-            // Determinar encoding apropiado para cada archivo
-            let certBuffer, keyBuffer;
-            
-            if (certEsPem) {
-                // Certificado ya está en formato PEM, enviar como texto
-                certBuffer = Buffer.from(certificadoBase64, 'utf8');
-                console.log('📋 CERTIFICADO: Enviando como PEM (texto UTF-8)');
-            } else {
-                // Certificado está en base64, enviar como binario
-                certBuffer = Buffer.from(certificadoBase64, 'base64');
-                console.log('📋 CERTIFICADO: Enviando como binario (base64 decodificado)');
-            }
-            
-            if (keyEsPem) {
-                // Llave ya está en formato PEM, enviar como texto
-                keyBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔑 LLAVE: Enviando como PEM (texto UTF-8)');
-            } else {
-                // Llave está en base64, enviar como binario
-                keyBuffer = Buffer.from(llavePrivadaBase64, 'base64');
-                console.log('🔑 LLAVE: Enviando como binario (base64 decodificado)');
-            }
-            
-            console.log(`📏 TAMAÑOS FINALES: Cert ${certBuffer.length} bytes | Key ${keyBuffer.length} bytes`);
-            
-            // Agregar archivos al FormData exactamente como el servicio los espera
+            // Certificado (tal como está almacenado)
+            const certBuffer = certificadoBase64.includes('-----BEGIN') 
+                ? Buffer.from(certificadoBase64, 'utf8')
+                : Buffer.from(certificadoBase64, 'base64');
+                
             formData.append('certificado', certBuffer, {
                 filename: 'certificado.cer',
                 contentType: 'application/octet-stream'
             });
             
+            // Llave (tal como está almacenada)
+            const keyBuffer = llavePrivadaBase64.includes('-----BEGIN')
+                ? Buffer.from(llavePrivadaBase64, 'utf8')
+                : Buffer.from(llavePrivadaBase64, 'base64');
+                
             formData.append('key', keyBuffer, {
-                filename: 'llave.key', 
+                filename: 'llave.key',
                 contentType: 'application/octet-stream'
             });
             
-            // Agregar contraseña como texto plano
-            console.log('🔑 PASSWORD: Longitud:', passwordLlave?.length || 0, 'chars');
+            // Password
             formData.append('password', passwordLlave);
             
-            console.log('📦 FORMDATA PREPARADO: XML + Certificado + Llave + Password');
-            
-            // Preparar headers
-            const headers = {
-                'User-Agent': 'CFDI-Sistema-Completo/1.0.0',
-                'Authorization': `Bearer ${token}`,
-                ...formData.getHeaders()
-            };
-            
-            // Enviar al servicio externo
+            // Enviar al servicio
             const fetchFn = await loadFetch();
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
-                headers: headers,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    ...formData.getHeaders()
+                },
                 body: formData,
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
             });
             
-            console.log('📊 RESULTADO: Status', response.status);
-            
             if (!response.ok) {
                 const errorText = await response.text();
-                console.log('❌ ERROR RESPUESTA:', errorText.substring(0, 300));
-                throw new Error(`Servicio externo respondió con error ${response.status}: ${errorText}`);
+                throw new Error(`Error ${response.status}: ${errorText}`);
             }
             
-            // Procesar respuesta exitosa
-            const resultData = await response.json();
-            console.log('✅ SELLADO EXITOSO: Respuesta procesada correctamente');
-            
+            const result = await response.json();
             return {
                 exito: true,
-                xmlSellado: resultData.xmlSellado || resultData.xml_sellado,
-                sello: resultData.sello,
-                cadenaOriginal: resultData.cadenaOriginal || resultData.cadena_original,
-                numeroCertificado: resultData.numeroCertificado || resultData.numero_certificado,
-                formatoUsado: `Cert: ${certEsPem ? 'PEM' : 'BASE64'} | Key: ${keyEsPem ? 'PEM' : 'BASE64'}`
+                xmlSellado: result.xmlSellado || result.xml_sellado,
+                sello: result.sello,
+                cadenaOriginal: result.cadenaOriginal || result.cadena_original,
+                numeroCertificado: result.numeroCertificado || result.numero_certificado
             };
             
             // ✅ SISTEMA DE PRUEBAS AUTOMÁTICAS COMPLETADO EXITOSAMENTE
