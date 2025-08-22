@@ -207,24 +207,41 @@ async function sellarConServicioExterno({
     console.log('🚨 DEBUG CRÍTICO: EXTRAYENDO RFC DEL CERTIFICADO...');
     let rfcCertificadoCritico = 'NO_EXTRAIDO';
     try {
+        console.log('🚨 DEBUG CRÍTICO: Validando certificado base64...');
+        if (!certificadoBase64 || typeof certificadoBase64 !== 'string') {
+            throw new Error('Certificado base64 inválido o vacío');
+        }
+        
         const crypto = require('crypto');
+        console.log('🚨 DEBUG CRÍTICO: Formateando certificado a PEM...');
+        
+        // Limpiar el certificado base64 de cualquier formato PEM existente
+        const cleanBase64 = certificadoBase64.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+        console.log('🚨 DEBUG CRÍTICO: Base64 limpio, longitud:', cleanBase64.length);
+        
+        // Formatear a PEM con líneas de 64 caracteres
         const certificadoPemCritico = '-----BEGIN CERTIFICATE-----\n' + 
-                                     certificadoBase64.match(/.{1,64}/g).join('\n') + 
+                                     cleanBase64.match(/.{1,64}/g).join('\n') + 
                                      '\n-----END CERTIFICATE-----';
+        
+        console.log('🚨 DEBUG CRÍTICO: PEM formateado, creando X509Certificate...');
         const certCritico = new crypto.X509Certificate(certificadoPemCritico);
         const subjectCritico = certCritico.subject;
         
         console.log('🚨 DEBUG CRÍTICO CERT: Subject completo:', subjectCritico);
         
+        // Extraer RFC del subject usando regex más robusta
         const rfcMatchCritico = subjectCritico.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
         if (rfcMatchCritico && rfcMatchCritico.length > 0) {
             rfcCertificadoCritico = rfcMatchCritico[0];
+            console.log('🚨 DEBUG CRÍTICO: RFC EXTRAIDO DEL CERTIFICADO:', rfcCertificadoCritico);
+        } else {
+            console.log('🚨 DEBUG CRÍTICO: No se encontró RFC en el subject del certificado');
         }
-        
-        console.log('🚨 DEBUG CRÍTICO: RFC EXTRAIDO DEL CERTIFICADO:', rfcCertificadoCritico);
         
     } catch (certErrorCritico) {
         console.log('❌ DEBUG CRÍTICO CERT: Error extrayendo RFC:', certErrorCritico.message);
+        console.log('❌ DEBUG CRÍTICO CERT: Stack:', certErrorCritico.stack);
     }
     
     // 🚨 COMPARACIÓN CRÍTICA FINAL
