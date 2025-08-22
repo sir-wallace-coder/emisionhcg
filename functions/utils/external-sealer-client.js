@@ -217,18 +217,7 @@ async function sellarConServicioExterno({
     console.log('🔐 SELLADO EXTERNO: Obteniendo token de autenticación...');
     const token = await obtenerTokenValido();
 
-    // Preparar payload para el servicio externo
-    const payload = {
-        xml_sin_sellar: xmlSinSellar,
-        certificado_base64: certificadoBase64,
-        llave_privada_base64: llavePrivadaBase64,
-        password_llave: passwordLlave,
-        rfc: rfc,
-        version_cfdi: versionCfdi,
-        timestamp: new Date().toISOString()
-    };
-
-    console.log('📤 SELLADO EXTERNO: Preparando request al servicio externo');
+    console.log('📤 SELLADO EXTERNO: Preparando FormData para el servicio externo');
     console.log('🔗 SELLADO EXTERNO: URL:', EXTERNAL_SEALER_CONFIG.sellarUrl);
     console.log('🎫 SELLADO EXTERNO: Token obtenido exitosamente');
 
@@ -239,11 +228,42 @@ async function sellarConServicioExterno({
         try {
             console.log(`🔄 SELLADO EXTERNO: Intento ${intento}/${EXTERNAL_SEALER_CONFIG.retries}`);
             
-            // Preparar headers con token de autenticación
+            // Crear FormData con archivos (como espera consulta.click)
+            const FormData = require('form-data');
+            const formData = new FormData();
+            
+            // Agregar XML como archivo
+            formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
+                filename: 'cfdi.xml',
+                contentType: 'application/xml'
+            });
+            
+            // Agregar certificado como archivo
+            formData.append('certificado', Buffer.from(certificadoBase64, 'base64'), {
+                filename: 'certificado.cer',
+                contentType: 'application/octet-stream'
+            });
+            
+            // Agregar llave privada como archivo
+            formData.append('key', Buffer.from(llavePrivadaBase64, 'base64'), {
+                filename: 'llave.key',
+                contentType: 'application/octet-stream'
+            });
+            
+            // Agregar contraseña como campo de texto
+            formData.append('password', passwordLlave);
+            
+            // Agregar RFC y versión como campos adicionales
+            formData.append('rfc', rfc);
+            formData.append('version', versionCfdi);
+            
+            console.log('📦 SELLADO EXTERNO: FormData preparado con archivos y datos');
+            
+            // Preparar headers con token de autenticación (FormData agrega Content-Type automáticamente)
             const headers = {
-                'Content-Type': 'application/json',
                 'User-Agent': 'CFDI-Sistema-Completo/1.0.0',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                ...formData.getHeaders()  // Incluye boundary para multipart/form-data
             };
 
             // Realizar request al servicio externo
@@ -251,7 +271,7 @@ async function sellarConServicioExterno({
             const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify(payload),
+                body: formData,
                 timeout: EXTERNAL_SEALER_CONFIG.timeout
             });
 
