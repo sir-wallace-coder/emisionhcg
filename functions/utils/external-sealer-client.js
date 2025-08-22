@@ -325,19 +325,16 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // LLAVE: Convertir a buffer binario real
+            // 🎯 CORRECCIÓN CRÍTICA: Enviar llave exactamente como está almacenada (SIN MANIPULACIÓN)
             let llaveBuffer;
             if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Si tiene headers PEM, mantener como UTF8 (llaves privadas se envían como texto)
+                // Si tiene headers PEM, enviar como UTF8 tal como está
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
-                console.log('🔑 KEY: Mantenida como PEM/UTF8, tamaño:', llaveBuffer.length, 'bytes');
+                console.log('🔑 KEY: Enviada como PEM tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
             } else {
-                // Si es base64 puro, agregar headers PEM y enviar como UTF8
-                const llaveConHeaders = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
-                                       llavePrivadaBase64.match(/.{1,64}/g).join('\n') + 
-                                       '\n-----END ENCRYPTED PRIVATE KEY-----';
-                llaveBuffer = Buffer.from(llaveConHeaders, 'utf8');
-                console.log('🔑 KEY: Convertida a PEM con headers, tamaño:', llaveBuffer.length, 'bytes');
+                // 🎯 CORRECCIÓN: Si es base64 puro, enviarlo como base64 (NO agregar headers)
+                llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+                console.log('🔑 KEY: Enviada como base64 binario tal como está almacenada, tamaño:', llaveBuffer.length, 'bytes');
             }
             
             formData.append('key', llaveBuffer, {
