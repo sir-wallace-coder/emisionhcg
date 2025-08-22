@@ -3039,8 +3039,8 @@
                 btnGuardar.disabled = true;
                 
                 // 🔍 DIAGNÓSTICO: Log completo de datos enviados al backend
-                console.log('🔧 FRONTEND: Enviando datos de actualización al backend:', {
-                    emisorId: emisorId,
+                console.log('🔧 FRONTEND: Enviando datos de creación al backend:', {
+                    operacion: 'CREAR_EMISOR',
                     datos_enviados: {
                         rfc: emisorData.rfc,
                         nombre: emisorData.nombre,
@@ -3057,9 +3057,9 @@
                 // Enviar al backend
                 // Buscar token en ambas claves para compatibilidad
                 const token = localStorage.getItem('cfdi_token');
-                console.log('🌐 FRONTEND: Realizando petición PUT a /.netlify/functions/emisores...');
-                const response = await fetch('/.netlify/functions/emisores?id=' + emisorId, {
-                    method: 'PUT',
+                console.log('🌐 FRONTEND: Realizando petición POST a /.netlify/functions/emisores...');
+                const response = await fetch('/.netlify/functions/emisores', {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
