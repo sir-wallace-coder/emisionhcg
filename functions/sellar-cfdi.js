@@ -133,6 +133,39 @@ exports.handler = async (event, context) => {
       nombre: emisor.nombre,
       numero_certificado: emisor.numero_certificado
     });
+    
+    // 🚨 DEBUG FORENSE TEMPRANO: Extraer RFC del certificado ANTES del sellado
+    console.log('🚨 DEBUG FORENSE TEMPRANO: Analizando discrepancia RFC...');
+    let rfcDelCertificadoTemprano = null;
+    try {
+      const crypto = require('crypto');
+      const certificadoPemTemprano = '-----BEGIN CERTIFICATE-----\n' + 
+                                    emisor.certificado_cer.match(/.{1,64}/g).join('\n') + 
+                                    '\n-----END CERTIFICATE-----';
+      const certTemprano = new crypto.X509Certificate(certificadoPemTemprano);
+      const subjectTemprano = certTemprano.subject;
+      console.log('🔍 DEBUG TEMPRANO CERT: Subject completo:', subjectTemprano);
+      
+      const rfcMatchTemprano = subjectTemprano.match(/([A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3})/g);
+      if (rfcMatchTemprano && rfcMatchTemprano.length > 0) {
+        rfcDelCertificadoTemprano = rfcMatchTemprano[0];
+      }
+    } catch (certErrorTemprano) {
+      console.log('❌ DEBUG TEMPRANO CERT: Error:', certErrorTemprano.message);
+    }
+    
+    // 🚨 COMPARACIÓN CRÍTICA TEMPRANA
+    console.log('🚨 COMPARACIÓN RFC CRÍTICA TEMPRANA:');
+    console.log('  📋 RFC Emisor (BD):', emisor.rfc);
+    console.log('  🔐 RFC Certificado:', rfcDelCertificadoTemprano || 'NO_EXTRAIDO');
+    console.log('  ⚖️ COINCIDEN:', emisor.rfc === rfcDelCertificadoTemprano ? '✅ SÍ' : '❌ NO');
+    
+    if (emisor.rfc !== rfcDelCertificadoTemprano && rfcDelCertificadoTemprano) {
+      console.log('🚨 PROBLEMA IDENTIFICADO:');
+      console.log('  - RFC en BD/XML:', emisor.rfc);
+      console.log('  - RFC en Certificado:', rfcDelCertificadoTemprano);
+      console.log('  - ESTO CAUSARÁ ERROR 500 en servicio externo');
+    }
 
     // Verificar que el emisor tenga certificados
     if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.password_key) {
