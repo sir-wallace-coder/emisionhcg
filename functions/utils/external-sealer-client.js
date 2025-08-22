@@ -325,17 +325,17 @@ async function sellarConServicioExterno({
                 contentType: 'application/octet-stream'
             });
             
-            // 🎯 CORRECCIÓN CRÍTICA: Enviar llave exactamente como está almacenada (SIN CORRUPCIÓN)
+            // 🎯 CORRECCIÓN: Enviar archivos exactamente como Postman (tal cual están en disco)
             let llaveBuffer;
             let contentType;
             
             if (llavePrivadaBase64.includes('-----BEGIN')) {
-                // Si tiene headers PEM, es texto plano - enviar como UTF8
+                // Si tiene headers PEM, enviar como texto tal como está
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'utf8');
                 contentType = 'text/plain';
-                console.log('🔑 KEY: Enviada como PEM texto plano, tamaño:', llaveBuffer.length, 'bytes');
+                console.log('🔑 KEY: Enviada como archivo .key tal como está en disco, tamaño:', llaveBuffer.length, 'bytes');
             } else {
-                // 🎯 CORRECCIÓN CRÍTICA: Si es base64 puro, enviarlo como binario (NO corromper con UTF8)
+                // Si es base64 puro, enviarlo como binario
                 llaveBuffer = Buffer.from(llavePrivadaBase64, 'base64');
                 contentType = 'application/octet-stream';
                 console.log('🔑 KEY: Enviada como binario base64, tamaño:', llaveBuffer.length, 'bytes');
