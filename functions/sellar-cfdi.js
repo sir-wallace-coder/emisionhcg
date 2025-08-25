@@ -136,9 +136,18 @@ exports.handler = async (event, context) => {
       // Llamar directamente al servicio externo
 
       
+      // 🔍 DEBUG COMPLETO DEL OBJETO EMISOR
+      console.log('🔍 SELLADO DIRECTO: Objeto emisor completo:', JSON.stringify(emisor, null, 2));
+      console.log('🔍 SELLADO DIRECTO: Campos disponibles en emisor:', Object.keys(emisor));
+      console.log('🔍 SELLADO DIRECTO: emisor.certificado_cer:', emisor.certificado_cer ? 'EXISTE' : 'UNDEFINED');
+      console.log('🔍 SELLADO DIRECTO: emisor.certificado_key:', emisor.certificado_key ? 'EXISTE' : 'UNDEFINED');
+      
       // ⚠️ CRÍTICO: Usar certificado y llave SIN MANIPULACIÓN (tal como están almacenados)
       const certificadoBase64Puro = emisor.certificado_cer;
       const llavePrivadaBase64Pura = emisor.certificado_key;
+      
+      console.log('🔍 SELLADO DIRECTO: certificadoBase64Puro:', certificadoBase64Puro ? 'EXISTE' : 'UNDEFINED');
+      console.log('🔍 SELLADO DIRECTO: llavePrivadaBase64Pura:', llavePrivadaBase64Pura ? 'EXISTE' : 'UNDEFINED');
       
 
       
