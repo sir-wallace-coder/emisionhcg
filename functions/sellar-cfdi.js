@@ -154,13 +154,18 @@ exports.handler = async (event, context) => {
       });
       
       // 1. LOGIN al servicio externo
+      const email = process.env.EXTERNAL_SEALER_EMAIL || 'admin@cfdi.test';
+      const password = process.env.EXTERNAL_SEALER_PASSWORD || 'password123';
+      
       console.log('🔐 SELLADO DIRECTO: Haciendo login a consulta.click...');
+      console.log('🔐 SELLADO DIRECTO: Email:', email);
+      
       const loginResponse = await fetch('https://consulta.click/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'admin@cfdi.test',
-          password: 'password123'
+          email: email,
+          password: password
         })
       });
       
