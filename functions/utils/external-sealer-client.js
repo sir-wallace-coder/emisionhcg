@@ -232,40 +232,28 @@ async function sellarConServicioExterno({
         throw new Error('No se pudo obtener token de autenticación');
     }
 
-    // Preparar FormData (import ya está al inicio del archivo)
-    const formData = new FormData();
+    // Crear URLSearchParams para application/x-www-form-urlencoded (como Postman oficial)
+    const formData = new URLSearchParams();
     
-    // Envío directo en bruto como Postman
-    formData.append('xml', Buffer.from(xmlSinSellar, 'utf8'), {
-        filename: `${rfc}.xml`,
-        contentType: 'application/xml'
-    });
-    
-    formData.append('certificado', Buffer.from(certificadoBase64, 'base64'), {
-        filename: `${rfc}.cer`,
-        contentType: 'application/octet-stream'
-    });
-    
-    formData.append('key', Buffer.from(llavePrivadaBase64, 'base64'), {
-        filename: `${rfc}.key`,
-        contentType: 'application/octet-stream'
-    });
-    
+    formData.append('xml', xmlSinSellar);
+    formData.append('certificado', certificadoBase64);
+    formData.append('key', llavePrivadaBase64);
     formData.append('password', passwordLlave);
 
     // 🔍 DEBUG: Verificar token y headers antes del envío
     console.log('🔐 EXTERNAL SEALER: Token para Authorization:', token ? `${token.substring(0, 20)}...` : 'TOKEN VACIO');
     console.log('🔐 EXTERNAL SEALER: URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
+    console.log('🔄 EXTERNAL SEALER: Usando URLSearchParams (application/x-www-form-urlencoded) como Postman oficial');
     
     const headers = {
         'Authorization': `Bearer ${token}`,
-        ...formData.getHeaders()
+        'Content-Type': 'application/x-www-form-urlencoded'
     };
     
     console.log('🔐 EXTERNAL SEALER: Headers completos:', {
         Authorization: headers.Authorization ? `Bearer ${token.substring(0, 20)}...` : 'MISSING',
-        'Content-Type': headers['content-type'] || 'MISSING',
-        'Content-Length': headers['content-length'] || 'MISSING'
+        'Content-Type': headers['Content-Type'],
+        'Content-Length': 'AUTO'
     });
     
     // Envío HTTP
