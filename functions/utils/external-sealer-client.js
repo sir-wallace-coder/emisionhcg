@@ -291,6 +291,16 @@ async function sellarConServicioExterno({
         throw new Error(`Error ${response.status}: ${responseText}`);
     }
     
+    // Detectar si la respuesta es HTML (redirección a login)
+    if (responseText.trim().startsWith('<!DOCTYPE html>') || responseText.includes('<title>Acceso -')) {
+        console.error('🚨 EXTERNAL SEALER: Servicio redirigió a página de login - Token inválido/expirado');
+        console.error('🚨 EXTERNAL SEALER: Headers enviados:', {
+            'Authorization': headers['Authorization'] ? 'Bearer [PRESENTE]' : '[AUSENTE]',
+            'Content-Type': headers['Content-Type']
+        });
+        throw new Error('ERROR DE AUTENTICACIÓN: El servicio externo redirigió a la página de login. El token de autorización es inválido, ha expirado, o no se envió correctamente. Verifica las credenciales del servicio externo.');
+    }
+    
     // Intentar parsear JSON con manejo de errores
     let result;
     try {
@@ -298,8 +308,8 @@ async function sellarConServicioExterno({
         console.log('✅ EXTERNAL SEALER: JSON parseado exitosamente');
     } catch (parseError) {
         console.error('❌ EXTERNAL SEALER: Error parseando JSON:', parseError.message);
-        console.error('❌ EXTERNAL SEALER: Response que causó error:', responseText);
-        throw new Error(`Error parseando respuesta JSON: ${parseError.message}. Respuesta: ${responseText.substring(0, 500)}`);
+        console.error('❌ EXTERNAL SEALER: Response que causó error:', responseText.substring(0, 200));
+        throw new Error(`Error parseando respuesta JSON: ${parseError.message}. Respuesta: ${responseText.substring(0, 200)}`);
     }
     return {
         exito: true,
