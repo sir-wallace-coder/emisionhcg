@@ -11,6 +11,9 @@
 // node-fetch es ES module, se carga dinámicamente
 let fetch;
 
+// form-data import estático para compatibilidad serverless
+const FormData = require('form-data');
+
 /**
  * Carga dinámicamente node-fetch (ES module)
  * @returns {Promise<Function>} fetch function
@@ -242,8 +245,7 @@ async function sellarConServicioExterno({
         throw new Error('No se pudo obtener token de autenticación');
     }
 
-    // Preparar FormData
-    const FormData = require('form-data');
+    // Preparar FormData (import ya está al inicio del archivo)
     const formData = new FormData();
     
     // Envío directo en bruto como Postman
