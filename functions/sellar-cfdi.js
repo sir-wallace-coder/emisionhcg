@@ -281,15 +281,40 @@ exports.handler = async (event, context) => {
       console.log('📝 SELLADO DIRECTO: Response status:', selladoResponse.status);
       const responseText = await selladoResponse.text();
       console.log('📝 SELLADO DIRECTO: Response length:', responseText.length);
-      console.log('📝 SELLADO DIRECTO: Response preview:', responseText.substring(0, 200));
+      console.log('📝 SELLADO DIRECTO: Response preview:', responseText.substring(0, 500));
       
-      // Detectar si es HTML (redirección a login)
+      // 🔍 ANALIZAR RESPUESTA CORRECTAMENTE
+      console.log('🔍 SELLADO DIRECTO: Analizando tipo de respuesta...');
+      
+      let resultadoExterno;
+      
       if (responseText.trim().startsWith('<!DOCTYPE html>')) {
-        throw new Error('ERROR DE AUTENTICACIÓN: El servicio externo redirigió a la página de login');
+        console.log('🔍 SELLADO DIRECTO: Respuesta es HTML - buscando XML sellado dentro...');
+        
+        // Buscar XML dentro del HTML
+        const xmlMatch = responseText.match(/<\?xml[^>]*>.*?<\/[^>]+>/s);
+        if (xmlMatch) {
+          console.log('✅ SELLADO DIRECTO: XML encontrado dentro del HTML!');
+          resultadoExterno = {
+            success: true,
+            xml_sellado: xmlMatch[0],
+            message: 'XML extraído del HTML'
+          };
+        } else {
+          console.log('❌ SELLADO DIRECTO: No se encontró XML en el HTML');
+          console.log('📝 SELLADO DIRECTO: HTML completo:', responseText);
+          throw new Error('No se encontró XML sellado en la respuesta HTML');
+        }
+      } else {
+        console.log('🔍 SELLADO DIRECTO: Respuesta es JSON - parseando...');
+        try {
+          resultadoExterno = JSON.parse(responseText);
+        } catch (error) {
+          console.log('❌ SELLADO DIRECTO: Error parseando JSON:', error.message);
+          console.log('📝 SELLADO DIRECTO: Respuesta raw:', responseText);
+          throw new Error(`Error parseando respuesta: ${error.message}`);
+        }
       }
-      
-      // Parsear respuesta JSON
-      const resultadoExterno = JSON.parse(responseText);
       console.log('✅ SELLADO DIRECTO: Sellado completado exitosamente');
       
       // Adaptar respuesta del servicio externo al formato esperado
