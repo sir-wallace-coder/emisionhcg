@@ -181,32 +181,58 @@ exports.handler = async (event, context) => {
       
       // 2. SELLADO con el servicio externo
       console.log('🚀 SELLADO DIRECTO: Enviando datos para sellado...');
-      const formData = new URLSearchParams();
+      
+      // 🔧 CONVERTIR ARCHIVOS A BINARIOS
+      let certificadoBuffer, llaveBuffer;
+      
+      // Procesar certificado
+      if (certificadoBase64Puro.includes('-----BEGIN')) {
+        // Es PEM, convertir a buffer UTF-8
+        certificadoBuffer = Buffer.from(certificadoBase64Puro, 'utf8');
+        console.log('📄 SELLADO DIRECTO: Certificado procesado como PEM');
+      } else {
+        // Es base64, convertir a buffer binario
+        certificadoBuffer = Buffer.from(certificadoBase64Puro, 'base64');
+        console.log('📄 SELLADO DIRECTO: Certificado procesado como base64');
+      }
+      
+      // Procesar llave privada
+      if (llavePrivadaBase64Pura.includes('-----BEGIN')) {
+        // Es PEM, convertir a buffer UTF-8
+        llaveBuffer = Buffer.from(llavePrivadaBase64Pura, 'utf8');
+        console.log('🔑 SELLADO DIRECTO: Llave procesada como PEM');
+      } else {
+        // Es base64, convertir a buffer binario
+        llaveBuffer = Buffer.from(llavePrivadaBase64Pura, 'base64');
+        console.log('🔑 SELLADO DIRECTO: Llave procesada como base64');
+      }
+      
+      // Crear FormData con archivos binarios
+      const FormData = require('form-data');
+      const formData = new FormData();
       formData.append('xml', xmlContent);
-      formData.append('certificado', certificadoBase64Puro);
-      formData.append('key', llavePrivadaBase64Pura);
+      formData.append('certificado', certificadoBuffer, { filename: 'certificado.cer', contentType: 'application/octet-stream' });
+      formData.append('key', llaveBuffer, { filename: 'llave.key', contentType: 'application/octet-stream' });
       formData.append('password', emisor.password_key);
       
       console.log('📊 SELLADO DIRECTO: Datos enviados:');
       console.log('  - XML length:', xmlContent.length);
       console.log('  - XML preview:', xmlContent.substring(0, 100));
-      console.log('  - Certificado length:', certificadoBase64Puro.length);
-      console.log('  - Certificado preview:', certificadoBase64Puro.substring(0, 100));
-      console.log('  - Key length:', llavePrivadaBase64Pura.length);
-      console.log('  - Key preview:', llavePrivadaBase64Pura.substring(0, 100));
+      console.log('  - Certificado buffer length:', certificadoBuffer.length);
+      console.log('  - Key buffer length:', llaveBuffer.length);
       console.log('  - Password length:', emisor.password_key.length);
       console.log('  - Password:', emisor.password_key);
       
-      // 🔍 VERIFICAR FORMATO DE ARCHIVOS
-      console.log('🔍 SELLADO DIRECTO: Verificando formato de archivos:');
+      // 🔍 VERIFICAR FORMATO DE ARCHIVOS ORIGINALES
+      console.log('🔍 SELLADO DIRECTO: Verificando formato de archivos originales:');
+      console.log('  - Certificado original length:', certificadoBase64Puro.length);
+      console.log('  - Key original length:', llavePrivadaBase64Pura.length);
       console.log('  - Certificado empieza con PEM?', certificadoBase64Puro.startsWith('-----BEGIN'));
       console.log('  - Key empieza con PEM?', llavePrivadaBase64Pura.startsWith('-----BEGIN'));
-      console.log('  - Certificado es base64 puro?', /^[A-Za-z0-9+/=]+$/.test(certificadoBase64Puro));
-      console.log('  - Key es base64 puro?', /^[A-Za-z0-9+/=]+$/.test(llavePrivadaBase64Pura));
       
       console.log('🔐 SELLADO DIRECTO: Headers que se envían:', {
         'Authorization': `Bearer ${token.substring(0, 20)}...`,
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'multipart/form-data (automático)'
       });
       console.log('🕐 SELLADO DIRECTO: Tiempo entre login y sellado: inmediato');
       
@@ -214,7 +240,8 @@ exports.handler = async (event, context) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
+          // FormData maneja automáticamente Content-Type con boundary
+          ...formData.getHeaders()
         },
         body: formData
       });
