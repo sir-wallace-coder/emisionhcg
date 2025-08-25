@@ -13,7 +13,7 @@ const { DOMParser } = require('@xmldom/xmldom');
 const { XMLSerializer } = require('@xmldom/xmldom');
 const crypto = require('crypto');
 const { generarCadenaOriginalXSLTServerless } = require('./xslt-processor-serverless');
-const { limpiarCadenaOriginalChatGPT, removerAtributoSelloCompletamente } = require('./cfdi-sealer');
+const { removerAtributoSelloCompletamente } = require('./cfdi-sealer');
 const { sellarConServicioExterno } = require('./external-sealer-client');
 
 /**
@@ -189,7 +189,7 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         
         // 6. Limpiar cadena original (eliminar caracteres invisibles)
         console.log('🧹 NODECFDI: Limpiando cadena original...');
-        const cadenaOriginal = limpiarCadenaOriginalChatGPT(cadenaOriginalRaw);
+        const cadenaOriginal = cadenaOriginalRaw; // Sin limpieza - servicio externo maneja todo
         
         console.log('✅ NODECFDI: Cadena original lista para firmado');
         console.log('📏 NODECFDI: Longitud cadena original:', cadenaOriginal.length);
