@@ -155,7 +155,7 @@ exports.handler = async (event, context) => {
       
       // 1. LOGIN al servicio externo
       const email = process.env.EXTERNAL_SEALER_EMAIL || 'admin@cfdi.test';
-      const password = process.env.EXTERNAL_SEALER_PASSWORD || 'password123';
+      const password = process.env.EXTERNAL_SEALER_PASSWORD || '12345678';
       
       console.log('🔐 SELLADO DIRECTO: Haciendo login a consulta.click...');
       console.log('🔐 SELLADO DIRECTO: Email:', email);
