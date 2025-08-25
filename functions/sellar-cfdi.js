@@ -182,52 +182,21 @@ exports.handler = async (event, context) => {
       // 2. SELLADO con el servicio externo
       console.log('🚀 SELLADO DIRECTO: Enviando datos para sellado...');
       
-      // 🔧 CONVERTIR ARCHIVOS A BINARIOS
-      let certificadoBuffer, llaveBuffer;
+      // 🎯 SIMPLIFICACIÓN TOTAL: Archivos tal como están guardados
+      console.log('🎯 SELLADO DIRECTO: Enviando archivos SIN PROCESAMIENTO (tal como están guardados)');
       
-      // Procesar certificado
-      if (certificadoBase64Puro.includes('-----BEGIN')) {
-        // Es PEM, convertir a buffer UTF-8
-        certificadoBuffer = Buffer.from(certificadoBase64Puro, 'utf8');
-        console.log('📄 SELLADO DIRECTO: Certificado procesado como PEM');
-      } else {
-        // Es base64, convertir a buffer binario
-        certificadoBuffer = Buffer.from(certificadoBase64Puro, 'base64');
-        console.log('📄 SELLADO DIRECTO: Certificado procesado como base64');
-      }
+      const formData = new URLSearchParams();
       
-      // Procesar llave privada
-      if (llavePrivadaBase64Pura.includes('-----BEGIN')) {
-        // Es PEM, convertir a buffer UTF-8
-        llaveBuffer = Buffer.from(llavePrivadaBase64Pura, 'utf8');
-        console.log('🔑 SELLADO DIRECTO: Llave procesada como PEM');
-      } else {
-        // Es base64, convertir a buffer binario
-        llaveBuffer = Buffer.from(llavePrivadaBase64Pura, 'base64');
-        console.log('🔑 SELLADO DIRECTO: Llave procesada como base64');
-      }
-      
-      // Crear FormData con archivos binarios
-      const FormData = require('form-data');
-      const formData = new FormData();
-      
-      // 🔍 VERIFICAR NOMBRES DE CAMPOS EXACTOS
-      console.log('🔍 SELLADO DIRECTO: Agregando campos al FormData...');
+      console.log('🔍 SELLADO DIRECTO: Agregando campos tal como están...');
       
       formData.append('xml', xmlContent);
       console.log('  ✓ Campo xml agregado');
       
-      formData.append('certificado', certificadoBuffer, { 
-        filename: 'certificado.cer', 
-        contentType: 'application/octet-stream' 
-      });
-      console.log('  ✓ Campo certificado agregado como archivo binario');
+      formData.append('certificado', certificadoBase64Puro);
+      console.log('  ✓ Campo certificado agregado TAL COMO ESTÁ GUARDADO');
       
-      formData.append('key', llaveBuffer, { 
-        filename: 'llave.key', 
-        contentType: 'application/octet-stream' 
-      });
-      console.log('  ✓ Campo key agregado como archivo binario');
+      formData.append('key', llavePrivadaBase64Pura);
+      console.log('  ✓ Campo key agregado TAL COMO ESTÁ GUARDADO');
       
       formData.append('password', emisor.password_key);
       console.log('  ✓ Campo password agregado:', emisor.password_key);
@@ -252,14 +221,13 @@ exports.handler = async (event, context) => {
       console.log('🔍 SELLADO DIRECTO: Token length:', token.length);
       console.log('🔍 SELLADO DIRECTO: Token válido?', token && token.length > 0);
       
-      // 🔍 DEBUG HEADERS FORMDATA
-      const formDataHeaders = formData.getHeaders();
-      console.log('🔍 SELLADO DIRECTO: FormData headers:', formDataHeaders);
-      
+      // 🔍 HEADERS CORRECTOS PARA URLSearchParams
       const finalHeaders = {
         'Authorization': `Bearer ${token}`,
-        ...formDataHeaders
+        'Content-Type': 'application/x-www-form-urlencoded'
       };
+      
+      console.log('🔍 SELLADO DIRECTO: Headers URLSearchParams:', finalHeaders);
       
       console.log('🔐 SELLADO DIRECTO: Headers finales que se envían:', finalHeaders);
       
