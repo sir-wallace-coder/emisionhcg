@@ -210,10 +210,27 @@ exports.handler = async (event, context) => {
       // Crear FormData con archivos binarios
       const FormData = require('form-data');
       const formData = new FormData();
+      
+      // 🔍 VERIFICAR NOMBRES DE CAMPOS EXACTOS
+      console.log('🔍 SELLADO DIRECTO: Agregando campos al FormData...');
+      
       formData.append('xml', xmlContent);
-      formData.append('certificado', certificadoBuffer, { filename: 'certificado.cer', contentType: 'application/octet-stream' });
-      formData.append('key', llaveBuffer, { filename: 'llave.key', contentType: 'application/octet-stream' });
+      console.log('  ✓ Campo xml agregado');
+      
+      formData.append('certificado', certificadoBuffer, { 
+        filename: 'certificado.cer', 
+        contentType: 'application/octet-stream' 
+      });
+      console.log('  ✓ Campo certificado agregado como archivo binario');
+      
+      formData.append('key', llaveBuffer, { 
+        filename: 'llave.key', 
+        contentType: 'application/octet-stream' 
+      });
+      console.log('  ✓ Campo key agregado como archivo binario');
+      
       formData.append('password', emisor.password_key);
+      console.log('  ✓ Campo password agregado:', emisor.password_key);
       
       console.log('📊 SELLADO DIRECTO: Datos enviados:');
       console.log('  - XML length:', xmlContent.length);
@@ -245,6 +262,18 @@ exports.handler = async (event, context) => {
       };
       
       console.log('🔐 SELLADO DIRECTO: Headers finales que se envían:', finalHeaders);
+      
+      // 🔍 DEBUG FORMDATA SERIALIZADO
+      console.log('🔍 SELLADO DIRECTO: FormData fields:');
+      console.log('  - xml field length:', xmlContent.length);
+      console.log('  - certificado field type:', typeof certificadoBuffer);
+      console.log('  - key field type:', typeof llaveBuffer);
+      console.log('  - password field:', emisor.password_key);
+      
+      // 🔍 VERIFICAR FORMDATA COMPLETO
+      const formDataString = formData.getBuffer ? 'Buffer available' : 'No buffer method';
+      console.log('🔍 SELLADO DIRECTO: FormData status:', formDataString);
+      
       console.log('🕐 SELLADO DIRECTO: Tiempo entre login y sellado: inmediato');
       
       const selladoResponse = await fetch('https://consulta.click/api/v1/sellado', {
