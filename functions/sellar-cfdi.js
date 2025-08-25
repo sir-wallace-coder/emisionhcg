@@ -198,15 +198,25 @@ exports.handler = async (event, context) => {
       
       console.log('🔍 SELLADO DIRECTO: Agregando campos tal como están...');
       
+      // XML
+      console.log('🔍 PRE-APPEND: xmlContent type:', typeof xmlContent, 'length:', xmlContent?.length);
       formData.append('xml', xmlContent);
       console.log('  ✓ Campo xml agregado');
       
+      // CERTIFICADO
+      console.log('🔍 PRE-APPEND: certificadoBase64Puro type:', typeof certificadoBase64Puro, 'length:', certificadoBase64Puro?.length);
+      console.log('🔍 PRE-APPEND: certificadoBase64Puro value:', certificadoBase64Puro ? 'TIENE CONTENIDO' : 'UNDEFINED/NULL');
       formData.append('certificado', certificadoBase64Puro);
       console.log('  ✓ Campo certificado agregado TAL COMO ESTÁ GUARDADO');
       
+      // KEY
+      console.log('🔍 PRE-APPEND: llavePrivadaBase64Pura type:', typeof llavePrivadaBase64Pura, 'length:', llavePrivadaBase64Pura?.length);
+      console.log('🔍 PRE-APPEND: llavePrivadaBase64Pura value:', llavePrivadaBase64Pura ? 'TIENE CONTENIDO' : 'UNDEFINED/NULL');
       formData.append('key', llavePrivadaBase64Pura);
       console.log('  ✓ Campo key agregado TAL COMO ESTÁ GUARDADO');
       
+      // PASSWORD
+      console.log('🔍 PRE-APPEND: password type:', typeof emisor.password_key, 'length:', emisor.password_key?.length);
       formData.append('password', emisor.password_key);
       console.log('  ✓ Campo password agregado:', emisor.password_key);
       
