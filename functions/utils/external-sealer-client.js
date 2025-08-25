@@ -266,11 +266,28 @@ async function sellarConServicioExterno({
     
     const responseText = await response.text();
     
+    // 🔍 DEBUG: Capturar respuesta antes de JSON.parse
+    console.log('📥 EXTERNAL SEALER: Response status:', response.status);
+    console.log('📥 EXTERNAL SEALER: Response headers:', Object.fromEntries(response.headers.entries()));
+    console.log('📥 EXTERNAL SEALER: Response text length:', responseText.length);
+    console.log('📥 EXTERNAL SEALER: Response text preview (primeros 200 chars):', responseText.substring(0, 200));
+    
     if (!response.ok) {
+        console.error('❌ EXTERNAL SEALER: Response no exitosa:', response.status);
+        console.error('❌ EXTERNAL SEALER: Response completa:', responseText);
         throw new Error(`Error ${response.status}: ${responseText}`);
     }
     
-    const result = JSON.parse(responseText);
+    // Intentar parsear JSON con manejo de errores
+    let result;
+    try {
+        result = JSON.parse(responseText);
+        console.log('✅ EXTERNAL SEALER: JSON parseado exitosamente');
+    } catch (parseError) {
+        console.error('❌ EXTERNAL SEALER: Error parseando JSON:', parseError.message);
+        console.error('❌ EXTERNAL SEALER: Response que causó error:', responseText);
+        throw new Error(`Error parseando respuesta JSON: ${parseError.message}. Respuesta: ${responseText.substring(0, 500)}`);
+    }
     return {
         exito: true,
         xmlSellado: result.xmlSellado || result.xml_sellado,
