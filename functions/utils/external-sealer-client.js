@@ -202,6 +202,7 @@ async function sellarConServicioExterno({
     versionCfdi = '4.0'
 }) {
     console.log('🔥🔥🔥 EXTERNAL SEALER: FUNCIÓN INICIADA - DEBUG ULTRA TEMPRANO 🔥🔥🔥');
+    console.log('🆕🆕🆕 CÓDIGO NUEVO EJECUTÁNDOSE - COMMIT 6ac272c - DEBUG DETALLADO ACTIVO 🆕🆕🆕');
     console.log('📋 EXTERNAL SEALER: Parámetros recibidos:', {
         xmlLength: xmlSinSellar?.length || 0,
         certificadoLength: certificadoBase64?.length || 0,
