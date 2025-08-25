@@ -154,24 +154,9 @@ async function validateXMLWithNodeCFDI(xmlContent) {
     const sello = comprobanteNode.getAttribute('Sello');
     
     if (certificado && noCertificado && sello) {
-      // XML sellado - validar integridad del sello
-      try {
-        const { validarSelloDigital } = require('./cfdi-sealer');
-        const selloValido = await validarSelloDigital(xmlContent);
-        if (!selloValido) {
-          errors.push({
-            code: 'SELLO_INVALID',
-            message: 'El sello digital no es válido',
-            level: 'error'
-          });
-        }
-      } catch (selloError) {
-        warnings.push({
-          code: 'SELLO_VALIDATION_ERROR',
-          message: 'No se pudo validar el sello digital: ' + selloError.message,
-          level: 'warning'
-        });
-      }
+      // XML sellado - validación de sello eliminada (servicio externo valida)
+      // La validación del sello ahora la maneja el servicio externo
+      console.log('ℹ️ VALIDADOR: Validación de sello delegada al servicio externo');
     }
     
     // 7. Validaciones específicas por versión
