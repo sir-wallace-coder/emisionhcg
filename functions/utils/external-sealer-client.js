@@ -240,10 +240,26 @@ async function sellarConServicioExterno({
     formData.append('key', llavePrivadaBase64);
     formData.append('password', passwordLlave);
 
+    // 🔍 DEBUG: Verificar datos exactos enviados
+    console.log('📊 EXTERNAL SEALER: Datos enviados:');
+    console.log('  - XML length:', xmlSinSellar.length);
+    console.log('  - XML preview:', xmlSinSellar.substring(0, 100) + '...');
+    console.log('  - Certificado length:', certificadoBase64.length);
+    console.log('  - Certificado preview:', certificadoBase64.substring(0, 50) + '...');
+    console.log('  - Key length:', llavePrivadaBase64.length);
+    console.log('  - Key preview:', llavePrivadaBase64.substring(0, 50) + '...');
+    console.log('  - Password length:', passwordLlave.length);
+    console.log('  - RFC:', rfc);
+
     // 🔍 DEBUG: Verificar token y headers antes del envío
     console.log('🔐 EXTERNAL SEALER: Token para Authorization:', token ? `${token.substring(0, 20)}...` : 'TOKEN VACIO');
     console.log('🔐 EXTERNAL SEALER: URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
     console.log('🔄 EXTERNAL SEALER: Usando URLSearchParams (application/x-www-form-urlencoded) como Postman oficial');
+    
+    // 🔍 DEBUG: Verificar FormData serializado
+    const formDataString = formData.toString();
+    console.log('📋 EXTERNAL SEALER: FormData serializado length:', formDataString.length);
+    console.log('📋 EXTERNAL SEALER: FormData preview (primeros 200 chars):', formDataString.substring(0, 200));
     
     const headers = {
         'Authorization': `Bearer ${token}`,
