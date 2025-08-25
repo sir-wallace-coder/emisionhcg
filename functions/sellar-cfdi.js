@@ -1,7 +1,6 @@
 // 🚀 SELLADO CFDI - SOLO SERVICIO EXTERNO
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-const { sellarConServicioExterno } = require('./utils/external-sealer-client');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -143,9 +142,9 @@ exports.handler = async (event, context) => {
       
 
       
-      // 🔍 DEBUG: Verificar parámetros antes de llamar servicio externo
-      console.log('🚀 SELLAR-CFDI: Preparando llamada a servicio externo...');
-      console.log('🚀 SELLAR-CFDI: Parámetros para servicio externo:', {
+      // 🚀 SELLADO DIRECTO CON SERVICIO EXTERNO consulta.click
+      console.log('🚀 SELLADO DIRECTO: Iniciando proceso de sellado externo');
+      console.log('🚀 SELLADO DIRECTO: Parámetros:', {
         xmlLength: xmlContent?.length || 0,
         certificadoLength: certificadoBase64Puro?.length || 0,
         llaveLength: llavePrivadaBase64Pura?.length || 0,
@@ -154,23 +153,65 @@ exports.handler = async (event, context) => {
         version: version || '4.0'
       });
       
-      // Usar cliente externo que maneja login automático
-      console.log('🚀 SELLAR-CFDI: Llamando a sellarConServicioExterno...');
-      const resultadoExterno = await sellarConServicioExterno({
-        xmlSinSellar: xmlContent,
-        certificadoBase64: certificadoBase64Puro,
-        llavePrivadaBase64: llavePrivadaBase64Pura,
-        passwordLlave: emisor.password_key,
-        rfc: emisor.rfc,
-        versionCfdi: version || '4.0'
+      // 1. LOGIN al servicio externo
+      console.log('🔐 SELLADO DIRECTO: Haciendo login a consulta.click...');
+      const loginResponse = await fetch('https://consulta.click/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'admin@cfdi.test',
+          password: 'password123'
+        })
       });
-      console.log('🚀 SELLAR-CFDI: Respuesta del servicio externo recibida');
       
-
+      if (!loginResponse.ok) {
+        throw new Error(`Login fallido: ${loginResponse.status}`);
+      }
       
-      // Adaptar respuesta del cliente externo al formato esperado
+      const loginData = await loginResponse.json();
+      const token = loginData.access_token;
+      console.log('✅ SELLADO DIRECTO: Token obtenido:', token ? `${token.substring(0, 20)}...` : 'VACIO');
+      
+      // 2. SELLADO con el servicio externo
+      console.log('🚀 SELLADO DIRECTO: Enviando datos para sellado...');
+      const formData = new URLSearchParams();
+      formData.append('xml', xmlContent);
+      formData.append('certificado', certificadoBase64Puro);
+      formData.append('key', llavePrivadaBase64Pura);
+      formData.append('password', emisor.password_key);
+      
+      console.log('📊 SELLADO DIRECTO: Datos enviados:');
+      console.log('  - XML length:', xmlContent.length);
+      console.log('  - Certificado length:', certificadoBase64Puro.length);
+      console.log('  - Key length:', llavePrivadaBase64Pura.length);
+      console.log('  - Password length:', emisor.password_key.length);
+      
+      const selladoResponse = await fetch('https://consulta.click/api/v1/sellado', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData
+      });
+      
+      console.log('📝 SELLADO DIRECTO: Response status:', selladoResponse.status);
+      const responseText = await selladoResponse.text();
+      console.log('📝 SELLADO DIRECTO: Response length:', responseText.length);
+      console.log('📝 SELLADO DIRECTO: Response preview:', responseText.substring(0, 200));
+      
+      // Detectar si es HTML (redirección a login)
+      if (responseText.trim().startsWith('<!DOCTYPE html>')) {
+        throw new Error('ERROR DE AUTENTICACIÓN: El servicio externo redirigió a la página de login');
+      }
+      
+      // Parsear respuesta JSON
+      const resultadoExterno = JSON.parse(responseText);
+      console.log('✅ SELLADO DIRECTO: Sellado completado exitosamente');
+      
+      // Adaptar respuesta del servicio externo al formato esperado
       resultado = {
-        exito: resultadoExterno.exito,
+        exito: true,
         xmlSellado: resultadoExterno.xmlSellado,
         sello: resultadoExterno.sello,
         cadenaOriginal: resultadoExterno.cadenaOriginal,
