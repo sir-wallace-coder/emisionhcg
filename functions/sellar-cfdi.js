@@ -143,7 +143,19 @@ exports.handler = async (event, context) => {
       
 
       
+      // 🔍 DEBUG: Verificar parámetros antes de llamar servicio externo
+      console.log('🚀 SELLAR-CFDI: Preparando llamada a servicio externo...');
+      console.log('🚀 SELLAR-CFDI: Parámetros para servicio externo:', {
+        xmlLength: xmlContent?.length || 0,
+        certificadoLength: certificadoBase64Puro?.length || 0,
+        llaveLength: llavePrivadaBase64Pura?.length || 0,
+        passwordLength: emisor.password_key?.length || 0,
+        rfc: emisor.rfc,
+        version: version || '4.0'
+      });
+      
       // Usar cliente externo que maneja login automático
+      console.log('🚀 SELLAR-CFDI: Llamando a sellarConServicioExterno...');
       const resultadoExterno = await sellarConServicioExterno({
         xmlSinSellar: xmlContent,
         certificadoBase64: certificadoBase64Puro,
@@ -152,6 +164,7 @@ exports.handler = async (event, context) => {
         rfc: emisor.rfc,
         versionCfdi: version || '4.0'
       });
+      console.log('🚀 SELLAR-CFDI: Respuesta del servicio externo recibida');
       
 
       
