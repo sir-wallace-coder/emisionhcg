@@ -253,13 +253,26 @@ async function sellarConServicioExterno({
     
     formData.append('password', passwordLlave);
 
+    // 🔍 DEBUG: Verificar token y headers antes del envío
+    console.log('🔐 EXTERNAL SEALER: Token para Authorization:', token ? `${token.substring(0, 20)}...` : 'TOKEN VACIO');
+    console.log('🔐 EXTERNAL SEALER: URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
+    
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        ...formData.getHeaders()
+    };
+    
+    console.log('🔐 EXTERNAL SEALER: Headers completos:', {
+        Authorization: headers.Authorization ? `Bearer ${token.substring(0, 20)}...` : 'MISSING',
+        'Content-Type': headers['content-type'] || 'MISSING',
+        'Content-Length': headers['content-length'] || 'MISSING'
+    });
+    
     // Envío HTTP
+    console.log('🚀 EXTERNAL SEALER: Enviando request de sellado...');
     const response = await fetch(EXTERNAL_SEALER_CONFIG.sellarUrl, {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            ...formData.getHeaders()
-        },
+        headers,
         body: formData,
         timeout: EXTERNAL_SEALER_CONFIG.timeout
     });
