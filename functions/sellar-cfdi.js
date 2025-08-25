@@ -230,19 +230,26 @@ exports.handler = async (event, context) => {
       console.log('  - Certificado empieza con PEM?', certificadoBase64Puro.startsWith('-----BEGIN'));
       console.log('  - Key empieza con PEM?', llavePrivadaBase64Pura.startsWith('-----BEGIN'));
       
-      console.log('🔐 SELLADO DIRECTO: Headers que se envían:', {
-        'Authorization': `Bearer ${token.substring(0, 20)}...`,
-        'Content-Type': 'multipart/form-data (automático)'
-      });
+      // 🔍 DEBUG COMPLETO DEL TOKEN
+      console.log('🔍 SELLADO DIRECTO: Token completo para debug:', token);
+      console.log('🔍 SELLADO DIRECTO: Token length:', token.length);
+      console.log('🔍 SELLADO DIRECTO: Token válido?', token && token.length > 0);
+      
+      // 🔍 DEBUG HEADERS FORMDATA
+      const formDataHeaders = formData.getHeaders();
+      console.log('🔍 SELLADO DIRECTO: FormData headers:', formDataHeaders);
+      
+      const finalHeaders = {
+        'Authorization': `Bearer ${token}`,
+        ...formDataHeaders
+      };
+      
+      console.log('🔐 SELLADO DIRECTO: Headers finales que se envían:', finalHeaders);
       console.log('🕐 SELLADO DIRECTO: Tiempo entre login y sellado: inmediato');
       
       const selladoResponse = await fetch('https://consulta.click/api/v1/sellado', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // FormData maneja automáticamente Content-Type con boundary
-          ...formData.getHeaders()
-        },
+        headers: finalHeaders,
         body: formData
       });
       
