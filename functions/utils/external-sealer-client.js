@@ -8,23 +8,11 @@
  * @version 1.0.0
  */
 
-// node-fetch es ES module, se carga dinámicamente
-let fetch;
-
 // form-data import estático para compatibilidad serverless
 const FormData = require('form-data');
 
-/**
- * Carga dinámicamente node-fetch (ES module)
- * @returns {Promise<Function>} fetch function
- */
-async function loadFetch() {
-    if (!fetch) {
-        const { default: nodeFetch } = await import('node-fetch');
-        fetch = nodeFetch;
-    }
-    return fetch;
-}
+// Usar fetch nativo de Node.js 18+ (disponible en Netlify)
+// No necesitamos importar node-fetch, usamos el fetch global
 
 /**
  * Configuración del servicio externo de sellado
@@ -85,8 +73,7 @@ async function loginServicioExterno() {
     console.log('👤 EXTERNAL LOGIN: Email:', EXTERNAL_SEALER_CONFIG.email);
     
     try {
-        const fetchFn = await loadFetch();
-        const response = await fetchFn(EXTERNAL_SEALER_CONFIG.loginUrl, {
+        const response = await fetch(EXTERNAL_SEALER_CONFIG.loginUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -267,8 +254,7 @@ async function sellarConServicioExterno({
     formData.append('password', passwordLlave);
 
     // Envío HTTP
-    const fetchFn = await loadFetch();
-    const response = await fetchFn(EXTERNAL_SEALER_CONFIG.sellarUrl, {
+    const response = await fetch(EXTERNAL_SEALER_CONFIG.sellarUrl, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -338,8 +324,7 @@ async function probarConectividadServicioExterno() {
         
         console.log('🔍 Probando URL de login:', EXTERNAL_SEALER_CONFIG.loginUrl);
         try {
-            const fetchFn = await loadFetch();
-            const loginResponse = await fetchFn(EXTERNAL_SEALER_CONFIG.loginUrl, {
+            const loginResponse = await fetch(EXTERNAL_SEALER_CONFIG.loginUrl, {
                 method: 'HEAD',
                 timeout: 5000
             });
@@ -364,8 +349,7 @@ async function probarConectividadServicioExterno() {
         
         console.log('🔍 Probando URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
         try {
-            const fetchFn2 = await loadFetch();
-            const sellarResponse = await fetchFn2(EXTERNAL_SEALER_CONFIG.sellarUrl, {
+            const sellarResponse = await fetch(EXTERNAL_SEALER_CONFIG.sellarUrl, {
                 method: 'HEAD',
                 timeout: 5000
             });
