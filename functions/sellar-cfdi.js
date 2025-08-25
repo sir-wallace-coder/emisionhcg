@@ -176,6 +176,8 @@ exports.handler = async (event, context) => {
       const loginData = await loginResponse.json();
       const token = loginData.access_token;
       console.log('✅ SELLADO DIRECTO: Token obtenido:', token ? `${token.substring(0, 20)}...` : 'VACIO');
+      console.log('🔍 SELLADO DIRECTO: Login response completo:', JSON.stringify(loginData, null, 2));
+      console.log('🔍 SELLADO DIRECTO: Token completo length:', token ? token.length : 0);
       
       // 2. SELLADO con el servicio externo
       console.log('🚀 SELLADO DIRECTO: Enviando datos para sellado...');
@@ -190,6 +192,12 @@ exports.handler = async (event, context) => {
       console.log('  - Certificado length:', certificadoBase64Puro.length);
       console.log('  - Key length:', llavePrivadaBase64Pura.length);
       console.log('  - Password length:', emisor.password_key.length);
+      
+      console.log('🔐 SELLADO DIRECTO: Headers que se envían:', {
+        'Authorization': `Bearer ${token.substring(0, 20)}...`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      });
+      console.log('🕐 SELLADO DIRECTO: Tiempo entre login y sellado: inmediato');
       
       const selladoResponse = await fetch('https://consulta.click/api/v1/sellado', {
         method: 'POST',
