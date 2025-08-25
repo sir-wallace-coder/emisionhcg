@@ -776,6 +776,7 @@ async function createEmisor(userId, data, headers) {
       nombre: nombre.trim(),
       codigo_postal: codigo_postal,
       regimen_fiscal: regimen_fiscal,
+      logo: data.logo || null, // Logo del emisor en base64
       activo: true,
       // Asignar estado CSD según si tiene certificados completos
       estado_csd: 'pendiente' // Default, se actualiza abajo si tiene certificados
@@ -970,6 +971,7 @@ async function updateEmisor(userId, emisorId, data, headers) {
       nombre,
       codigo_postal,
       regimen_fiscal,
+      logo,
       certificado_cer,
       certificado_key,
       password_key
@@ -985,6 +987,7 @@ async function updateEmisor(userId, emisorId, data, headers) {
     if (nombre) updateData.nombre = nombre.trim();
     if (codigo_postal) updateData.codigo_postal = codigo_postal;
     if (regimen_fiscal) updateData.regimen_fiscal = regimen_fiscal;
+    if (logo !== undefined) updateData.logo = logo; // Permitir null para eliminar logo
 
     // === PROCESAMIENTO DE CERTIFICADOS CSD ===
     console.log('🔍 UPDATE DIAGNÓSTICO: Verificando certificados recibidos:', {

@@ -743,6 +743,25 @@
                             </div>
                         </div>
                         
+                        <!-- Campo de Logo -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="emisorLogo" class="form-label">
+                                        <i class="fas fa-image"></i> Logo del Emisor
+                                    </label>
+                                    <input type="file" class="form-control" id="emisorLogo" accept="image/*">
+                                    <div class="form-text">Formatos soportados: PNG, JPG, JPEG, GIF (máximo 2MB)</div>
+                                    <div id="logoPreview" class="mt-2" style="display: none;">
+                                        <img id="logoPreviewImg" src="" alt="Vista previa del logo" style="max-width: 200px; max-height: 100px; border-radius: 8px; border: 1px solid #ddd;">
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearLogoPreview()">
+                                            <i class="fas fa-times"></i> Quitar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-12">
                                 <h6 class="mb-3"><i class="fas fa-certificate"></i> Certificados de Sello Digital (CSD)</h6>
@@ -916,6 +935,29 @@
                                         <option value="625">625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
                                         <option value="626">626 - Régimen Simplificado de Confianza</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campo de Logo para Edición -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="editEmisorLogo" class="form-label">
+                                        <i class="fas fa-image"></i> Logo del Emisor
+                                    </label>
+                                    <input type="file" class="form-control" id="editEmisorLogo" accept="image/*">
+                                    <div class="form-text">Formatos soportados: PNG, JPG, JPEG, GIF (máximo 2MB)</div>
+                                    <div id="editLogoPreview" class="mt-2" style="display: none;">
+                                        <img id="editLogoPreviewImg" src="" alt="Vista previa del logo" style="max-width: 200px; max-height: 100px; border-radius: 8px; border: 1px solid #ddd;">
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearEditLogoPreview()">
+                                            <i class="fas fa-times"></i> Quitar
+                                        </button>
+                                    </div>
+                                    <div id="editLogoActual" class="mt-2" style="display: none;">
+                                        <small class="text-muted">Logo actual:</small><br>
+                                        <img id="editLogoActualImg" src="" alt="Logo actual" style="max-width: 150px; max-height: 75px; border-radius: 8px; border: 1px solid #ddd;">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2999,6 +3041,19 @@
                     password_key: document.getElementById('passwordKey').value
                 };
                 
+                // Procesar logo si se seleccionó
+                const logoFile = document.getElementById('emisorLogo').files[0];
+                if (logoFile) {
+                    try {
+                        emisorData.logo = await fileToBase64(logoFile);
+                        console.log('🖼️ Logo procesado correctamente');
+                    } catch (error) {
+                        console.error('❌ Error procesando logo:', error);
+                        alert('Error procesando el logo. Por favor, intenta con otro archivo.');
+                        return;
+                    }
+                }
+                
                 // Validar RFC
                 if (!/^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/.test(emisorData.rfc)) {
                     alert('RFC inválido. Formato correcto: XAXX010101000');
@@ -3670,6 +3725,20 @@
                 document.getElementById('editEmisorCP').value = emisor.codigo_postal || '';
                 document.getElementById('editEmisorRegimen').value = emisor.regimen_fiscal || '';
                 
+                // Mostrar logo actual si existe
+                if (emisor.logo) {
+                    showCurrentLogo(emisor.logo);
+                } else {
+                    // Ocultar logo actual si no existe
+                    const logoActual = document.getElementById('editLogoActual');
+                    if (logoActual) {
+                        logoActual.style.display = 'none';
+                    }
+                }
+                
+                // Limpiar vista previa de nuevo logo
+                clearEditLogoPreview();
+                
                 // Mostrar información de CSD actual
                 mostrarInfoCSDActual(emisor);
                 
@@ -3952,6 +4021,21 @@
                     regimen_fiscal: regimenFiscal
                 };
                 
+                // Procesar logo si se seleccionó uno nuevo
+                const logoFile = document.getElementById('editEmisorLogo').files[0];
+                if (logoFile) {
+                    try {
+                        datosActualizacion.logo = await fileToBase64(logoFile);
+                        console.log('🖼️ Logo actualizado correctamente');
+                    } catch (error) {
+                        console.error('❌ Error procesando logo:', error);
+                        alert('Error procesando el logo. Por favor, intenta con otro archivo.');
+                        btnActualizar.innerHTML = '<i class="fas fa-save"></i> Actualizar Emisor';
+                        btnActualizar.disabled = false;
+                        return;
+                    }
+                }
+                
                 // Si se va a actualizar CSD, procesar archivos
                 if (actualizarCSD) {
                     const cerFile = document.getElementById('editCertificadoCer').files[0];
@@ -4029,6 +4113,131 @@
         // Los datos reales ahora se cargan automáticamente durante la inicialización
         // del dashboard usando el sistema híbrido (Supabase + localStorage)
         // No es necesario forzar la carga por separado.
+        
+        // ===== FUNCIONES PARA MANEJO DE LOGOS =====
+        
+        // Configurar event listeners para los campos de logo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Logo para creación de emisor
+            const logoInput = document.getElementById('emisorLogo');
+            if (logoInput) {
+                logoInput.addEventListener('change', handleLogoUpload);
+            }
+            
+            // Logo para edición de emisor
+            const editLogoInput = document.getElementById('editEmisorLogo');
+            if (editLogoInput) {
+                editLogoInput.addEventListener('change', handleEditLogoUpload);
+            }
+        });
+        
+        // Manejar subida de logo para creación
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validar archivo
+            if (!validateImageFile(file)) {
+                event.target.value = '';
+                return;
+            }
+            
+            // Mostrar vista previa
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('logoPreview');
+                const img = document.getElementById('logoPreviewImg');
+                
+                img.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Manejar subida de logo para edición
+        function handleEditLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validar archivo
+            if (!validateImageFile(file)) {
+                event.target.value = '';
+                return;
+            }
+            
+            // Mostrar vista previa
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('editLogoPreview');
+                const img = document.getElementById('editLogoPreviewImg');
+                
+                img.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Validar archivo de imagen
+        function validateImageFile(file) {
+            // Validar tipo de archivo
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Formato de archivo no válido. Solo se permiten archivos PNG, JPG, JPEG y GIF.');
+                return false;
+            }
+            
+            // Validar tamaño (máximo 2MB)
+            const maxSize = 2 * 1024 * 1024; // 2MB en bytes
+            if (file.size > maxSize) {
+                alert('El archivo es demasiado grande. El tamaño máximo permitido es 2MB.');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Limpiar vista previa de logo (creación)
+        function clearLogoPreview() {
+            const logoInput = document.getElementById('emisorLogo');
+            const preview = document.getElementById('logoPreview');
+            const img = document.getElementById('logoPreviewImg');
+            
+            logoInput.value = '';
+            img.src = '';
+            preview.style.display = 'none';
+        }
+        
+        // Limpiar vista previa de logo (edición)
+        function clearEditLogoPreview() {
+            const logoInput = document.getElementById('editEmisorLogo');
+            const preview = document.getElementById('editLogoPreview');
+            const img = document.getElementById('editLogoPreviewImg');
+            
+            logoInput.value = '';
+            img.src = '';
+            preview.style.display = 'none';
+        }
+        
+        // Convertir archivo a base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Mostrar logo actual en edición
+        function showCurrentLogo(logoBase64) {
+            if (logoBase64) {
+                const logoActual = document.getElementById('editLogoActual');
+                const img = document.getElementById('editLogoActualImg');
+                
+                img.src = logoBase64;
+                logoActual.style.display = 'block';
+            }
+        }
         
     </script>
 </body>

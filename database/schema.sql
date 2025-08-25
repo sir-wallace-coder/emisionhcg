@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS emisores (
     nombre VARCHAR(300) NOT NULL,
     codigo_postal VARCHAR(5) NOT NULL,
     regimen_fiscal VARCHAR(10) NOT NULL,
+    logo TEXT, -- Logo del emisor en base64 (imagen)
     certificado_cer TEXT, -- Contenido del archivo .cer en base64
     certificado_key TEXT, -- Contenido del archivo .key en base64
     password_key VARCHAR(255), -- Contraseña del certificado (encriptada)
