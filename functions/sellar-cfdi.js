@@ -204,8 +204,8 @@ exports.handler = async (event, context) => {
       console.log('📊 SELLADO DIRECTO: Datos enviados:');
       console.log('  - XML length:', xmlContent.length);
       console.log('  - XML preview:', xmlContent.substring(0, 100));
-      console.log('  - Certificado buffer length:', certificadoBuffer.length);
-      console.log('  - Key buffer length:', llaveBuffer.length);
+      console.log('  - Certificado length:', certificadoBase64Puro.length);
+      console.log('  - Key length:', llavePrivadaBase64Pura.length);
       console.log('  - Password length:', emisor.password_key.length);
       console.log('  - Password:', emisor.password_key);
       
