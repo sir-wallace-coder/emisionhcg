@@ -211,13 +211,33 @@ async function sellarConServicioExterno({
     rfc,
     versionCfdi = '4.0'
 }) {
+    console.log('🔥🔥🔥 EXTERNAL SEALER: FUNCIÓN INICIADA - DEBUG ULTRA TEMPRANO 🔥🔥🔥');
+    console.log('📋 EXTERNAL SEALER: Parámetros recibidos:', {
+        xmlLength: xmlSinSellar?.length || 0,
+        certificadoLength: certificadoBase64?.length || 0,
+        llaveLength: llavePrivadaBase64?.length || 0,
+        passwordLength: passwordLlave?.length || 0,
+        rfc,
+        versionCfdi
+    });
+    
     // Validar parámetros requeridos
     if (!xmlSinSellar || !certificadoBase64 || !llavePrivadaBase64 || !passwordLlave) {
+        console.error('❌ EXTERNAL SEALER: Faltan parámetros requeridos');
         throw new Error('Faltan parámetros requeridos para el sellado externo');
     }
-
+    
+    console.log('✅ EXTERNAL SEALER: Parámetros validados, obteniendo token...');
+    
     // Obtener token válido
-    const token = await obtenerTokenValido();
+    let token;
+    try {
+        token = await obtenerTokenValido();
+        console.log('✅ EXTERNAL SEALER: Token obtenido exitosamente');
+    } catch (tokenError) {
+        console.error('❌ EXTERNAL SEALER: Error obteniendo token:', tokenError.message);
+        throw new Error('Error obteniendo token: ' + tokenError.message);
+    }
     if (!token) {
         throw new Error('No se pudo obtener token de autenticación');
     }
