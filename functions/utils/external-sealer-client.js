@@ -23,8 +23,8 @@ const EXTERNAL_SEALER_CONFIG = {
     sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://consulta.click/api/v1/sellado',
     
     // Credenciales para login - consulta.click usa email
-    email: process.env.EXTERNAL_SEALER_EMAIL || '',
-    password: process.env.EXTERNAL_SEALER_PASSWORD || '',
+    email: process.env.EXTERNAL_SEALER_EMAIL || 'admin@cfdi.test',
+    password: process.env.EXTERNAL_SEALER_PASSWORD || 'password123',
     
     // Timeout en milisegundos (aumentado para sellado complejo)
     timeout: parseInt(process.env.EXTERNAL_SEALER_TIMEOUT) || 90000,  // 90 segundos
