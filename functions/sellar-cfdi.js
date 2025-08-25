@@ -189,9 +189,20 @@ exports.handler = async (event, context) => {
       
       console.log('📊 SELLADO DIRECTO: Datos enviados:');
       console.log('  - XML length:', xmlContent.length);
+      console.log('  - XML preview:', xmlContent.substring(0, 100));
       console.log('  - Certificado length:', certificadoBase64Puro.length);
+      console.log('  - Certificado preview:', certificadoBase64Puro.substring(0, 100));
       console.log('  - Key length:', llavePrivadaBase64Pura.length);
+      console.log('  - Key preview:', llavePrivadaBase64Pura.substring(0, 100));
       console.log('  - Password length:', emisor.password_key.length);
+      console.log('  - Password:', emisor.password_key);
+      
+      // 🔍 VERIFICAR FORMATO DE ARCHIVOS
+      console.log('🔍 SELLADO DIRECTO: Verificando formato de archivos:');
+      console.log('  - Certificado empieza con PEM?', certificadoBase64Puro.startsWith('-----BEGIN'));
+      console.log('  - Key empieza con PEM?', llavePrivadaBase64Pura.startsWith('-----BEGIN'));
+      console.log('  - Certificado es base64 puro?', /^[A-Za-z0-9+/=]+$/.test(certificadoBase64Puro));
+      console.log('  - Key es base64 puro?', /^[A-Za-z0-9+/=]+$/.test(llavePrivadaBase64Pura));
       
       console.log('🔐 SELLADO DIRECTO: Headers que se envían:', {
         'Authorization': `Bearer ${token.substring(0, 20)}...`,
