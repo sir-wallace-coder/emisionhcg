@@ -265,44 +265,79 @@ exports.handler = async (event, context) => {
             console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
             console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
             
-            // 🎨 PREPARAR OPCIONES DE PERSONALIZACIÓN CORPORATIVA
-            const pdfOptions = {};
-            
-            // ✅ PRIORIDAD 1: PERSONALIZACIÓN CORPORATIVA (LOGO Y COLOR)
+            // 🎨 GENERAR ADDENDA XML PARA PERSONALIZACIÓN CORPORATIVA
+            let addendaXml = null;
             let hasCustomization = false;
             
-            // Agregar logo corporativo si existe
-            if (emisorData?.logo) {
-                console.log('🎨 GENERAR PDF: Agregando logo corporativo del emisor');
-                pdfOptions.logo = emisorData.logo; // Base64 del logo
-                hasCustomization = true;
+            if (emisorData?.logo || emisorData?.color) {
+                console.log('🎨 GENERAR PDF: Creando addenda XML para personalización corporativa');
+                
+                // Crear addenda XML dinámicamente
+                let addendaContent = `<?xml version="1.0" encoding="UTF-8"?>
+<rd:redoc xmlns:rd="https://redoc.mx/addenda" 
+          xsi:schemaLocation="https://redoc.mx/addenda https://redoc.mx/addenda/v1.0.0/schema.xsd" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          version="1.0.0">
+  <rd:style>
+    <rd:pdf>
+      <rd:settings>`;
+      
+                // Agregar logo corporativo si existe
+                if (emisorData?.logo) {
+                    console.log('🎨 GENERAR PDF: Agregando logo corporativo a addenda XML');
+                    // Nota: RedDoc requiere que el logo esté subido a su plataforma
+                    // Por ahora usaremos un placeholder, pero necesitaremos subir el logo a RedDoc
+                    addendaContent += `
+        <rd:section id="header">
+          <rd:option id="logo" value="assets/logo-${emisorData.rfc}.png" />
+          <rd:option id="logo-horizontal-align" value="center" />
+          <rd:option id="logo-vertical-align" value="middle" />
+        </rd:section>`;
+                    hasCustomization = true;
+                }
+                
+                // Agregar color corporativo si existe (usando estilos CSS)
+                if (emisorData?.color) {
+                    console.log('🎨 GENERAR PDF: Aplicando color corporativo a addenda XML:', emisorData.color);
+                    addendaContent += `
+        <rd:section id="document">
+          <rd:option id="primary-color" value="${emisorData.color}" />
+          <rd:option id="accent-color" value="${emisorData.color}" />
+        </rd:section>`;
+                    hasCustomization = true;
+                }
+                
+                addendaContent += `
+      </rd:settings>
+    </rd:pdf>
+  </rd:style>
+</rd:redoc>`;
+                
+                addendaXml = addendaContent;
+                console.log('🎨 GENERAR PDF: Addenda XML generada:', {
+                    tiene_logo: !!emisorData?.logo,
+                    color: emisorData?.color,
+                    rfc: emisorData?.rfc
+                });
             }
             
-            // Agregar color corporativo si existe
-            if (emisorData?.color) {
-                console.log('🎨 GENERAR PDF: Aplicando color corporativo:', emisorData.color);
-                pdfOptions.primaryColor = emisorData.color; // Color hex (#RRGGBB)
-                pdfOptions.accentColor = emisorData.color;
-                hasCustomization = true;
+            // Aplicar addenda si existe personalización corporativa
+            if (addendaXml) {
+                try {
+                    console.log('🎨 GENERAR PDF: Aplicando addenda XML al CFDI...');
+                    const addenda = redoc.addenda.fromString(addendaXml);
+                    cfdi.setAddenda(addenda);
+                    console.log('✅ GENERAR PDF: Addenda XML aplicada exitosamente');
+                } catch (addendaError) {
+                    console.error('❌ GENERAR PDF: Error aplicando addenda XML:', addendaError.message);
+                    console.log('📝 GENERAR PDF: Continuando sin personalización corporativa');
+                }
+            } else {
+                console.log('📊 GENERAR PDF: Sin personalización corporativa, usando estilo estándar');
             }
             
-            // ⚠️ IMPORTANTE: Solo usar estilo predefinido si NO hay personalización corporativa
-            // El estilo predefinido puede interferir con logo y color corporativo
-            if (stylePdf && !hasCustomization) {
-                console.log('🎨 GENERAR PDF: Usando estilo predefinido (sin personalización corporativa):', stylePdf);
-                pdfOptions.style = stylePdf;
-            } else if (stylePdf && hasCustomization) {
-                console.log('⚠️ GENERAR PDF: Ignorando estilo predefinido para preservar personalización corporativa');
-            }
-            
-            console.log('🎨 GENERAR PDF: Opciones de personalización:', {
-                tiene_logo: !!pdfOptions.logo,
-                color: pdfOptions.primaryColor,
-                estilo: pdfOptions.style
-            });
-            
-            // Convertir CFDI a PDF usando el SDK oficial con personalización
-            const pdf = await cfdi.toPdf(pdfOptions);
+            // Convertir CFDI a PDF usando el SDK oficial
+            const pdf = await cfdi.toPdf();
             
             // Obtener buffer del PDF según documentación oficial
             const pdfBuffer = pdf.toBuffer();
