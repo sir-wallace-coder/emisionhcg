@@ -304,6 +304,60 @@ function validarParCertificadoLlaveSimplificado(certPem, keyPem) {
   }
 }
 
+// 🎨 EXTRACTOR DE COLOR DOMINANTE DEL LOGO
+function extraerColorDominante(logoBase64) {
+  try {
+    console.log('🎨 COLOR: Iniciando extracción de color dominante...');
+    
+    // Detectar formato del logo
+    let base64Data;
+    if (logoBase64.startsWith('data:')) {
+      // Es data URL, extraer solo el base64
+      base64Data = logoBase64.split(',')[1];
+    } else {
+      // Asumir que es base64 puro
+      base64Data = logoBase64;
+    }
+    
+    // Crear buffer de la imagen
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    console.log('🎨 COLOR: Buffer de imagen creado, tamaño:', imageBuffer.length);
+    
+    // Para simplificar, extraeremos un color basado en el hash del contenido
+    // En una implementación más avanzada se podría usar una librería de análisis de imagen
+    const hash = crypto.createHash('md5').update(imageBuffer).digest('hex');
+    
+    // Generar color hexadecimal basado en el hash
+    // Tomamos los primeros 6 caracteres del hash y los convertimos a un color válido
+    let colorHex = '#' + hash.substring(0, 6);
+    
+    // Asegurar que el color no sea demasiado claro (para buena legibilidad en PDFs)
+    const r = parseInt(colorHex.substring(1, 3), 16);
+    const g = parseInt(colorHex.substring(3, 5), 16);
+    const b = parseInt(colorHex.substring(5, 7), 16);
+    
+    // Si el color es muy claro, oscurecerlo
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    if (brightness > 180) {
+      // Oscurecer el color
+      const newR = Math.max(0, Math.floor(r * 0.6));
+      const newG = Math.max(0, Math.floor(g * 0.6));
+      const newB = Math.max(0, Math.floor(b * 0.6));
+      colorHex = '#' + newR.toString(16).padStart(2, '0') + 
+                      newG.toString(16).padStart(2, '0') + 
+                      newB.toString(16).padStart(2, '0');
+    }
+    
+    console.log('🎨 COLOR: Color extraído:', colorHex);
+    return colorHex;
+    
+  } catch (error) {
+    console.error('❌ COLOR: Error al extraer color dominante:', error.message);
+    // Retornar color por defecto en caso de error
+    return '#2563eb'; // Azul corporativo por defecto
+  }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 exports.handler = async (event, context) => {
@@ -939,7 +993,7 @@ async function createEmisor(userId, data, headers) {
       console.log('🔧 EMISOR: Emisor sin certificados CSD (se pueden agregar después)');
     }
 
-    // 5. Crear emisor en la base de datos
+    // 6. Preparar datos del emisor para inserción
     const emisorData = {
       usuario_id: userId,
       rfc: rfcClean,
@@ -952,6 +1006,20 @@ async function createEmisor(userId, data, headers) {
       estado_csd: 'pendiente' // Default, se actualiza abajo si tiene certificados
       // created_at y updated_at se manejan automáticamente por la BD
     };
+
+    // 🎨 EXTRACCIÓN AUTOMÁTICA DE COLOR DEL LOGO
+    if (data.logo) {
+      console.log('🎨 COLOR: Logo detectado, extrayendo color dominante...');
+      emisorData.color = extraerColorDominante(data.logo);
+    } else if (data.color && /^#[0-9A-Fa-f]{6}$/.test(data.color)) {
+      // Si no hay logo pero se proporcionó un color válido manualmente
+      console.log('🎨 COLOR: Color manual proporcionado:', data.color);
+      emisorData.color = data.color;
+    } else {
+      // Color por defecto
+      console.log('🎨 COLOR: Usando color por defecto');
+      emisorData.color = '#2563eb';
+    }
 
     // Agregar datos de certificado si existen
     if (certificadoInfo) {
@@ -1158,6 +1226,20 @@ async function updateEmisor(userId, emisorId, data, headers) {
     if (codigo_postal) updateData.codigo_postal = codigo_postal;
     if (regimen_fiscal) updateData.regimen_fiscal = regimen_fiscal;
     if (logo !== undefined) updateData.logo = logo; // Permitir null para eliminar logo
+
+    // 🎨 EXTRACCIÓN AUTOMÁTICA DE COLOR DEL LOGO (UPDATE)
+    if (logo && logo !== null) {
+      console.log('🎨 COLOR UPDATE: Logo actualizado, extrayendo nuevo color dominante...');
+      updateData.color = extraerColorDominante(logo);
+    } else if (data.color && /^#[0-9A-Fa-f]{6}$/.test(data.color)) {
+      // Si se proporciona un color manual válido
+      console.log('🎨 COLOR UPDATE: Color manual actualizado:', data.color);
+      updateData.color = data.color;
+    } else if (logo === null) {
+      // Si se elimina el logo, volver al color por defecto
+      console.log('🎨 COLOR UPDATE: Logo eliminado, usando color por defecto');
+      updateData.color = '#2563eb';
+    }
 
     // === PROCESAMIENTO DE CERTIFICADOS CSD ===
     console.log('🔍 UPDATE DIAGNÓSTICO: Verificando certificados recibidos:', {

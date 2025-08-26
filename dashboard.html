@@ -745,7 +745,7 @@
                         
                         <!-- Campo de Logo -->
                         <div class="row">
-                            <div class="col-12">
+                            <div class="col-md-8">
                                 <div class="mb-3">
                                     <label for="emisorLogo" class="form-label">
                                         <i class="fas fa-image"></i> Logo del Emisor
@@ -758,6 +758,18 @@
                                             <i class="fas fa-times"></i> Quitar
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="emisorColor" class="form-label">
+                                        <i class="fas fa-palette"></i> Color Corporativo
+                                    </label>
+                                    <div class="d-flex align-items-center">
+                                        <input type="color" class="form-control form-control-color" id="emisorColor" value="#2563eb" style="width: 60px; height: 38px;">
+                                        <input type="text" class="form-control ms-2" id="emisorColorText" value="#2563eb" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#2563eb">
+                                    </div>
+                                    <div class="form-text">Se extrae automáticamente del logo o se puede personalizar</div>
                                 </div>
                             </div>
                         </div>
@@ -3062,7 +3074,8 @@
                     nombre: document.getElementById('emisorNombre').value,
                     codigo_postal: document.getElementById('emisorCP').value,
                     regimen_fiscal: document.getElementById('emisorRegimen').value,
-                    password_key: document.getElementById('passwordKey').value
+                    password_key: document.getElementById('passwordKey').value,
+                    color: document.getElementById('emisorColorText').value || '#2563eb' // Color corporativo
                 };
                 
                 // Procesar logo si se seleccionó
@@ -4042,7 +4055,8 @@
                     rfc: document.getElementById('editEmisorRFC').value || '',
                     nombre: nombre,
                     codigo_postal: codigoPostal,
-                    regimen_fiscal: regimenFiscal
+                    regimen_fiscal: regimenFiscal,
+                    color: document.getElementById('editEmisorColorText')?.value || '#2563eb' // Color corporativo
                 };
                 
                 // Procesar logo si se seleccionó uno nuevo
@@ -4140,7 +4154,7 @@
         
         // ===== FUNCIONES PARA MANEJO DE LOGOS =====
         
-        // Configurar event listeners para los campos de logo
+        // Configurar event listeners para los campos de logo y color
         document.addEventListener('DOMContentLoaded', function() {
             // Logo para creación de emisor
             const logoInput = document.getElementById('emisorLogo');
@@ -4153,10 +4167,115 @@
             if (editLogoInput) {
                 editLogoInput.addEventListener('change', handleEditLogoUpload);
             }
+            
+            // 🎨 Sincronización de campos de color
+            setupColorFieldSync();
         });
         
+        // 🎨 FUNCIONES PARA MANEJO DE COLOR CORPORATIVO
+        function setupColorFieldSync() {
+            // Campos de color para creación
+            const colorPicker = document.getElementById('emisorColor');
+            const colorText = document.getElementById('emisorColorText');
+            
+            if (colorPicker && colorText) {
+                // Sincronizar selector de color con campo de texto
+                colorPicker.addEventListener('input', function() {
+                    colorText.value = this.value;
+                });
+                
+                // Sincronizar campo de texto con selector de color
+                colorText.addEventListener('input', function() {
+                    if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+                        colorPicker.value = this.value;
+                    }
+                });
+            }
+            
+            // Campos de color para edición (si existen)
+            const editColorPicker = document.getElementById('editEmisorColor');
+            const editColorText = document.getElementById('editEmisorColorText');
+            
+            if (editColorPicker && editColorText) {
+                editColorPicker.addEventListener('input', function() {
+                    editColorText.value = this.value;
+                });
+                
+                editColorText.addEventListener('input', function() {
+                    if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+                        editColorPicker.value = this.value;
+                    }
+                });
+            }
+        }
+        
+        // Extraer color dominante de una imagen (simulación simple)
+        function extractDominantColor(imageDataURL) {
+            return new Promise((resolve) => {
+                try {
+                    // Crear un canvas temporal para analizar la imagen
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        canvas.width = 50; // Reducir tamaño para análisis rápido
+                        canvas.height = 50;
+                        
+                        // Dibujar imagen redimensionada
+                        ctx.drawImage(img, 0, 0, 50, 50);
+                        
+                        // Obtener datos de píxeles
+                        const imageData = ctx.getImageData(0, 0, 50, 50);
+                        const data = imageData.data;
+                        
+                        // Calcular color promedio
+                        let r = 0, g = 0, b = 0;
+                        const pixelCount = data.length / 4;
+                        
+                        for (let i = 0; i < data.length; i += 4) {
+                            r += data[i];
+                            g += data[i + 1];
+                            b += data[i + 2];
+                        }
+                        
+                        r = Math.floor(r / pixelCount);
+                        g = Math.floor(g / pixelCount);
+                        b = Math.floor(b / pixelCount);
+                        
+                        // Asegurar que el color no sea demasiado claro
+                        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                        if (brightness > 180) {
+                            r = Math.max(0, Math.floor(r * 0.6));
+                            g = Math.max(0, Math.floor(g * 0.6));
+                            b = Math.max(0, Math.floor(b * 0.6));
+                        }
+                        
+                        // Convertir a hexadecimal
+                        const hex = '#' + 
+                            r.toString(16).padStart(2, '0') +
+                            g.toString(16).padStart(2, '0') +
+                            b.toString(16).padStart(2, '0');
+                        
+                        console.log('🎨 COLOR: Color extraído del logo:', hex);
+                        resolve(hex);
+                    };
+                    
+                    img.onerror = function() {
+                        console.warn('⚠️ COLOR: Error al analizar imagen, usando color por defecto');
+                        resolve('#2563eb');
+                    };
+                    
+                    img.src = imageDataURL;
+                } catch (error) {
+                    console.error('❌ COLOR: Error extrayendo color:', error);
+                    resolve('#2563eb');
+                }
+            });
+        }
+        
         // Manejar subida de logo para creación
-        function handleLogoUpload(event) {
+        async function handleLogoUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
@@ -4166,20 +4285,75 @@
                 return;
             }
             
-            // Mostrar vista previa
+            // Mostrar vista previa y extraer color
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const preview = document.getElementById('logoPreview');
                 const img = document.getElementById('logoPreviewImg');
                 
                 img.src = e.target.result;
                 preview.style.display = 'block';
+                
+                // 🎨 EXTRACCIÓN AUTOMÁTICA DE COLOR
+                console.log('🎨 COLOR: Extrayendo color dominante del logo...');
+                try {
+                    const dominantColor = await extractDominantColor(e.target.result);
+                    
+                    // Actualizar campos de color
+                    const colorPicker = document.getElementById('emisorColor');
+                    const colorText = document.getElementById('emisorColorText');
+                    
+                    if (colorPicker && colorText) {
+                        colorPicker.value = dominantColor;
+                        colorText.value = dominantColor;
+                        console.log('✅ COLOR: Color actualizado automáticamente:', dominantColor);
+                        
+                        // Mostrar notificación visual
+                        showColorExtractedNotification(dominantColor);
+                    }
+                } catch (error) {
+                    console.error('❌ COLOR: Error extrayendo color:', error);
+                }
             };
             reader.readAsDataURL(file);
         }
         
+        // Mostrar notificación visual cuando se extrae el color
+        function showColorExtractedNotification(color) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notification.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            notification.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="me-2" style="width: 20px; height: 20px; background-color: ${color}; border-radius: 4px; border: 1px solid #ddd;"></div>
+                    <div class="flex-grow-1">
+                        <strong>🎨 Color extraído!</strong><br>
+                        <small>Color dominante: ${color}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 4 segundos
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 4000);
+        }
+        
         // Manejar subida de logo para edición
-        function handleEditLogoUpload(event) {
+        async function handleEditLogoUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
@@ -4189,14 +4363,35 @@
                 return;
             }
             
-            // Mostrar vista previa
+            // Mostrar vista previa y extraer color
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const preview = document.getElementById('editLogoPreview');
                 const img = document.getElementById('editLogoPreviewImg');
                 
                 img.src = e.target.result;
                 preview.style.display = 'block';
+                
+                // 🎨 EXTRACCIÓN AUTOMÁTICA DE COLOR (EDIT)
+                console.log('🎨 COLOR EDIT: Extrayendo color dominante del logo...');
+                try {
+                    const dominantColor = await extractDominantColor(e.target.result);
+                    
+                    // Actualizar campos de color de edición
+                    const colorPicker = document.getElementById('editEmisorColor');
+                    const colorText = document.getElementById('editEmisorColorText');
+                    
+                    if (colorPicker && colorText) {
+                        colorPicker.value = dominantColor;
+                        colorText.value = dominantColor;
+                        console.log('✅ COLOR EDIT: Color actualizado automáticamente:', dominantColor);
+                        
+                        // Mostrar notificación visual
+                        showColorExtractedNotification(dominantColor);
+                    }
+                } catch (error) {
+                    console.error('❌ COLOR EDIT: Error extrayendo color:', error);
+                }
             };
             reader.readAsDataURL(file);
         }
