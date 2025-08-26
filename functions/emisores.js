@@ -2,6 +2,100 @@ const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
+// 🔑 VALIDADOR DE CONTRASEÑA CON LLAVE PRIVADA
+function validarLlavePrivadaConPassword(llaveData, password) {
+  try {
+    console.log('🔍 VALIDACIÓN PASSWORD: Iniciando validación, longitud llave:', llaveData.length);
+    console.log('🔍 VALIDACIÓN PASSWORD: Longitud contraseña:', password.length);
+    
+    let llaveBase64;
+    
+    // 🔍 DETECCIÓN INTELIGENTE: Verificar formato de la llave
+    if (llaveData.includes('-----BEGIN')) {
+      console.log('🔍 VALIDACIÓN PASSWORD: Formato PEM detectado, extrayendo base64...');
+      // Es formato PEM, extraer solo el contenido base64
+      llaveBase64 = llaveData
+        .replace(/-----BEGIN [^-]+-----/g, '')
+        .replace(/-----END [^-]+-----/g, '')
+        .replace(/\s/g, ''); // Eliminar espacios, saltos de línea, etc.
+    } else if (llaveData.startsWith('data:')) {
+      console.log('🔍 VALIDACIÓN PASSWORD: Formato data URL detectado, extrayendo base64...');
+      // Es data URL
+      llaveBase64 = llaveData.split(',')[1];
+    } else {
+      console.log('🔍 VALIDACIÓN PASSWORD: Asumiendo formato base64 puro...');
+      // Asumir que es base64 puro
+      llaveBase64 = llaveData;
+    }
+    
+    // Crear buffer desde base64 limpio
+    const llaveBuffer = Buffer.from(llaveBase64, 'base64');
+    console.log('🔍 VALIDACIÓN PASSWORD: Buffer creado, tamaño:', llaveBuffer.length);
+    
+    // Intentar como llave encriptada PKCS#8 primero (formato común del SAT)
+    try {
+      console.log('🔍 VALIDACIÓN PASSWORD: Intentando formato ENCRYPTED PRIVATE KEY...');
+      const encryptedKeyPem = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' + 
+                             llaveBase64.match(/.{1,64}/g).join('\n') + 
+                             '\n-----END ENCRYPTED PRIVATE KEY-----';
+      
+      // Desencriptar y validar con crypto.createPrivateKey
+      console.log('🔍 VALIDACIÓN PASSWORD: Desencriptando con password...');
+      const privateKeyObj = crypto.createPrivateKey({ 
+        key: encryptedKeyPem, 
+        passphrase: password,
+        format: 'pem'
+      });
+      
+      console.log('✅ VALIDACIÓN PASSWORD: ÉXITO - Llave desencriptada correctamente');
+      return {
+        valida: true,
+        mensaje: 'Contraseña válida - llave desencriptada exitosamente'
+      };
+      
+    } catch (encryptedError) {
+      console.log('⚠️ VALIDACIÓN PASSWORD: Formato ENCRYPTED PRIVATE KEY falló:', encryptedError.message);
+      
+      // Intentar otros formatos si falla
+      try {
+        console.log('🔍 VALIDACIÓN PASSWORD: Intentando formato RSA PRIVATE KEY...');
+        const rsaKeyPem = '-----BEGIN RSA PRIVATE KEY-----\n' + 
+                         llaveBase64.match(/.{1,64}/g).join('\n') + 
+                         '\n-----END RSA PRIVATE KEY-----';
+        
+        const privateKeyObj = crypto.createPrivateKey({ 
+          key: rsaKeyPem, 
+          passphrase: password,
+          format: 'pem'
+        });
+        
+        console.log('✅ VALIDACIÓN PASSWORD: ÉXITO - RSA PRIVATE KEY desencriptada');
+        return {
+          valida: true,
+          mensaje: 'Contraseña válida - RSA llave desencriptada exitosamente'
+        };
+        
+      } catch (rsaError) {
+        console.log('❌ VALIDACIÓN PASSWORD: Todos los formatos fallaron');
+        console.log('❌ VALIDACIÓN PASSWORD: Error ENCRYPTED:', encryptedError.message);
+        console.log('❌ VALIDACIÓN PASSWORD: Error RSA:', rsaError.message);
+        
+        return {
+          valida: false,
+          mensaje: `Contraseña incorrecta o formato de llave no soportado. Errores: PKCS8(${encryptedError.message}), RSA(${rsaError.message})`
+        };
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ VALIDACIÓN PASSWORD: Error general:', error);
+    return {
+      valida: false,
+      mensaje: `Error validando contraseña: ${error.message}`
+    };
+  }
+}
+
 // 🔧 PROCESADOR CSD SIMPLIFICADO (sin node-forge para evitar errores serverless)
 function procesarCertificadoSimplificado(certificadoData) {
   try {
@@ -703,18 +797,13 @@ async function createEmisor(userId, data, headers) {
             preview: keyInfo.llavePrivadaOriginal.substring(0, 50) + '...'
           });
           
-          // 2.5. VALIDACIÓN CRÍTICA: Verificar que la contraseña coincida con la llave privada
-          console.log('🔑 Validando contraseña con llave privada...');
+          // 2.5. VALIDACIÓN DE CONTRASEÑA: Usar validación interna con crypto nativo
+          console.log('🔑 Validando contraseña con llave privada usando crypto nativo...');
           try {
-            // Intentar descifrar la llave privada con la contraseña proporcionada
-            const { validarParCertificadoLlave } = require('./sellar-cfdi');
-            const validacionPassword = await validarParCertificadoLlave(
-              certificado_cer, 
-              certificado_key, 
-              password_key
-            );
+            // Intentar descifrar la llave privada con la contraseña usando la función interna
+            const validacionPassword = validarLlavePrivadaConPassword(certificado_key, password_key);
             
-            if (!validacionPassword.valido) {
+            if (!validacionPassword.valida) {
               console.error('❌ CONTRASEÑA INCORRECTA:', validacionPassword.mensaje);
               return {
                 statusCode: 400,
@@ -1137,18 +1226,13 @@ async function updateEmisor(userId, emisorId, data, headers) {
           length: updateData.certificado_key ? updateData.certificado_key.length : 0
         });
         
-        // 3. VALIDACIÓN CRÍTICA: Verificar que la contraseña coincida con la llave privada (UPDATE)
-        console.log('🔑 UPDATE: Validando contraseña con llave privada...');
+        // 3. VALIDACIÓN DE CONTRASEÑA: Usar validación interna con crypto nativo (UPDATE)
+        console.log('🔑 UPDATE: Validando contraseña con llave privada usando crypto nativo...');
         try {
-          // Intentar descifrar la llave privada con la contraseña proporcionada
-          const { validarParCertificadoLlave } = require('./sellar-cfdi');
-          const validacionPassword = await validarParCertificadoLlave(
-            certificado_cer, 
-            certificado_key, 
-            password_key
-          );
+          // Intentar descifrar la llave privada con la contraseña usando la función interna
+          const validacionPassword = validarLlavePrivadaConPassword(certificado_key, password_key);
           
-          if (!validacionPassword.valido) {
+          if (!validacionPassword.valida) {
             console.error('❌ UPDATE - CONTRASEÑA INCORRECTA:', validacionPassword.mensaje);
             return {
               statusCode: 400,
