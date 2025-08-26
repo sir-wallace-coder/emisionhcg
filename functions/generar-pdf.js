@@ -62,12 +62,39 @@ async function generarPdfLocal(xmlContent, emisorData = {}) {
         // Generar HTML con estilo idéntico a RedDoc
         const htmlContent = generarHtmlRedocStyle(xmlData, emisorData);
         
-        // Generar PDF usando Puppeteer
-        const puppeteer = require('puppeteer');
-        const browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        // Generar PDF usando Puppeteer (configuración serverless)
+        let browser;
+        
+        // Detectar si estamos en entorno serverless (Netlify)
+        const isServerless = process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME;
+        
+        if (isServerless) {
+            console.log('🐧 PDF LOCAL: Entorno serverless detectado, usando configuración compatible');
+            
+            // Para serverless, usar puppeteer con configuración específica
+            const puppeteer = require('puppeteer');
+            browser = await puppeteer.launch({
+                headless: 'new',
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                    '--single-process'
+                ],
+                // Usar el binario de Chromium que viene con Puppeteer
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+            });
+        } else {
+            console.log('💻 PDF LOCAL: Entorno local detectado, usando configuración estándar');
+            const puppeteer = require('puppeteer');
+            browser = await puppeteer.launch({
+                headless: 'new',
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+        }
         
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -806,7 +833,7 @@ exports.handler = async (event, context) => {
             
             try {
                 // Usar el generador local que replica RedDoc
-                pdfBuffer = await generarPdfLocal(xmlContent, emisorData);
+                pdfBuffer = await generarPdfLocal(xmlData.xml_content, emisorData);
                 
                 metadata = {
                     generator: 'local',
@@ -846,10 +873,10 @@ exports.handler = async (event, context) => {
                 console.log('✅ GENERAR PDF: Cliente @redocmx/client inicializado');
                 
                 console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
-                console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlContent.length, 'caracteres');
+                console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
                 
                 // Cargar CFDI desde string XML usando método oficial del SDK
-                const cfdi = redoc.cfdi.fromString(xmlContent);
+                const cfdi = redoc.cfdi.fromString(xmlData.xml_content);
                 console.log('✅ GENERAR PDF: CFDI cargado desde XML string');
                 
                 // 🎨 PERSONALIZACIÓN CORPORATIVA CON ADDENDA XML
@@ -979,7 +1006,7 @@ exports.handler = async (event, context) => {
                     console.log('🔄 GENERAR PDF: Intentando fallback con API HTTP directa...');
                     
                     try {
-                        const httpResult = await generarPdfViaHttp(xmlContent, redocApiKey, null);
+                        const httpResult = await generarPdfViaHttp(xmlData.xml_content, redocApiKey, null);
                         pdfBuffer = Buffer.from(httpResult.content, 'base64');
                         metadata = {
                             generator: 'redoc-http-fallback',
