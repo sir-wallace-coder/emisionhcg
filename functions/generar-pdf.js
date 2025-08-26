@@ -15,6 +15,459 @@ const FormData = require('form-data');
 // SDK de redoc.mx se cargará dinámicamente en la función handler
 // debido a que es un ES module y necesita import() dinámico
 
+// 🔧 CONFIGURACIÓN DE GENERACIÓN DE PDF
+const PDF_CONFIG = {
+    // Modo de generación: 'local' para generación local, 'redoc' para usar RedDoc SDK
+    mode: process.env.PDF_GENERATION_MODE || 'local', // Por defecto usar generación local
+    
+    // Configuraciones específicas
+    local: {
+        engine: 'puppeteer', // 'puppeteer' o 'jspdf'
+        format: 'A4',
+        margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
+        printBackground: true,
+        preferCSSPageSize: true
+    },
+    
+    redoc: {
+        fallback: true, // Si falla local, usar RedDoc
+        uploadLogo: true // Intentar subir logo automáticamente
+    }
+};
+
+console.log('🔧 PDF CONFIG: Modo de generación configurado:', PDF_CONFIG.mode);
+
+/**
+ * 🎨 GENERADOR DE PDF LOCAL QUE REPLICA EXACTAMENTE EL ESTILO DE REDOC
+ * Genera un PDF idéntico al de RedDoc usando HTML/CSS y Puppeteer
+ * @param {string} xmlContent - Contenido del XML CFDI
+ * @param {Object} emisorData - Datos del emisor (logo, color, etc.)
+ * @returns {Buffer} - Buffer del PDF generado
+ */
+async function generarPdfLocal(xmlContent, emisorData = {}) {
+    try {
+        console.log('🎨 PDF LOCAL: Iniciando generación local de PDF...');
+        
+        // Parsear XML para extraer datos
+        const xmlData = parsearXmlCfdi(xmlContent);
+        console.log('📋 PDF LOCAL: Datos extraídos del XML:', {
+            version: xmlData.version,
+            folio: xmlData.folio,
+            fecha: xmlData.fecha,
+            total: xmlData.total
+        });
+        
+        // Generar HTML con estilo idéntico a RedDoc
+        const htmlContent = generarHtmlRedocStyle(xmlData, emisorData);
+        
+        // Generar PDF usando Puppeteer
+        const puppeteer = require('puppeteer');
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        
+        const pdfBuffer = await page.pdf({
+            format: PDF_CONFIG.local.format,
+            margin: PDF_CONFIG.local.margin,
+            printBackground: PDF_CONFIG.local.printBackground,
+            preferCSSPageSize: PDF_CONFIG.local.preferCSSPageSize
+        });
+        
+        await browser.close();
+        
+        console.log('✅ PDF LOCAL: PDF generado exitosamente, tamaño:', pdfBuffer.length, 'bytes');
+        return pdfBuffer;
+        
+    } catch (error) {
+        console.error('❌ PDF LOCAL: Error generando PDF local:', error.message);
+        throw error;
+    }
+}
+
+/**
+ * 📋 PARSER DE XML CFDI PARA EXTRAER DATOS
+ * Extrae todos los datos necesarios del XML CFDI
+ * @param {string} xmlContent - Contenido del XML
+ * @returns {Object} - Datos estructurados del CFDI
+ */
+function parsearXmlCfdi(xmlContent) {
+    const { DOMParser } = require('@xmldom/xmldom');
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+    
+    // Obtener el nodo raíz del comprobante
+    const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0] || 
+                       xmlDoc.getElementsByTagName('Comprobante')[0];
+    
+    if (!comprobante) {
+        throw new Error('No se encontró el nodo Comprobante en el XML');
+    }
+    
+    // Extraer datos del emisor
+    const emisorNode = comprobante.getElementsByTagName('cfdi:Emisor')[0] || 
+                      comprobante.getElementsByTagName('Emisor')[0];
+    
+    // Extraer datos del receptor
+    const receptorNode = comprobante.getElementsByTagName('cfdi:Receptor')[0] || 
+                        comprobante.getElementsByTagName('Receptor')[0];
+    
+    // Extraer conceptos
+    const conceptosNode = comprobante.getElementsByTagName('cfdi:Conceptos')[0] || 
+                         comprobante.getElementsByTagName('Conceptos')[0];
+    const conceptos = [];
+    
+    if (conceptosNode) {
+        const conceptoNodes = conceptosNode.getElementsByTagName('cfdi:Concepto') || 
+                             conceptosNode.getElementsByTagName('Concepto');
+        
+        for (let i = 0; i < conceptoNodes.length; i++) {
+            const concepto = conceptoNodes[i];
+            conceptos.push({
+                cantidad: concepto.getAttribute('Cantidad') || '',
+                unidad: concepto.getAttribute('Unidad') || concepto.getAttribute('ClaveUnidad') || '',
+                descripcion: concepto.getAttribute('Descripcion') || '',
+                valorUnitario: concepto.getAttribute('ValorUnitario') || '',
+                importe: concepto.getAttribute('Importe') || ''
+            });
+        }
+    }
+    
+    return {
+        version: comprobante.getAttribute('Version') || '',
+        serie: comprobante.getAttribute('Serie') || '',
+        folio: comprobante.getAttribute('Folio') || '',
+        fecha: comprobante.getAttribute('Fecha') || '',
+        sello: comprobante.getAttribute('Sello') || '',
+        noCertificado: comprobante.getAttribute('NoCertificado') || '',
+        certificado: comprobante.getAttribute('Certificado') || '',
+        subTotal: comprobante.getAttribute('SubTotal') || '',
+        total: comprobante.getAttribute('Total') || '',
+        tipoDeComprobante: comprobante.getAttribute('TipoDeComprobante') || '',
+        metodoPago: comprobante.getAttribute('MetodoPago') || '',
+        formaPago: comprobante.getAttribute('FormaPago') || '',
+        
+        emisor: {
+            rfc: emisorNode?.getAttribute('Rfc') || '',
+            nombre: emisorNode?.getAttribute('Nombre') || '',
+            regimenFiscal: emisorNode?.getAttribute('RegimenFiscal') || ''
+        },
+        
+        receptor: {
+            rfc: receptorNode?.getAttribute('Rfc') || '',
+            nombre: receptorNode?.getAttribute('Nombre') || '',
+            usoCFDI: receptorNode?.getAttribute('UsoCFDI') || ''
+        },
+        
+        conceptos: conceptos
+    };
+}
+
+/**
+ * 🎨 GENERADOR DE HTML CON ESTILO IDÉNTICO A REDOC
+ * Replica exactamente el diseño y estilos de RedDoc
+ * @param {Object} xmlData - Datos del XML parseado
+ * @param {Object} emisorData - Datos del emisor (logo, color)
+ * @returns {string} - HTML con estilos de RedDoc
+ */
+function generarHtmlRedocStyle(xmlData, emisorData = {}) {
+    const logoBase64 = emisorData.logo || '';
+    const colorCorporativo = emisorData.color || '#2563eb'; // Azul por defecto
+    
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFDI - ${xmlData.serie}${xmlData.folio}</title>
+    <style>
+        /* 🎨 ESTILOS IDÉNTICOS A REDOC */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
+        
+        .cfdi-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+            background: white;
+        }
+        
+        /* Header con logo y datos del emisor */
+        .cfdi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid ${colorCorporativo};
+        }
+        
+        .emisor-info {
+            flex: 1;
+        }
+        
+        .emisor-logo {
+            width: 120px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        
+        .emisor-nombre {
+            font-size: 16px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 5px;
+        }
+        
+        .emisor-rfc {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .cfdi-info {
+            text-align: right;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid ${colorCorporativo};
+        }
+        
+        .cfdi-titulo {
+            font-size: 18px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 10px;
+        }
+        
+        .cfdi-datos {
+            font-size: 11px;
+        }
+        
+        .cfdi-datos strong {
+            color: #333;
+        }
+        
+        /* Datos del receptor */
+        .receptor-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        /* Tabla de conceptos */
+        .conceptos-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+        }
+        
+        .conceptos-table th {
+            background: ${colorCorporativo};
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .conceptos-table td {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+        
+        .conceptos-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        /* Totales */
+        .totales-section {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .totales-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid ${colorCorporativo};
+            min-width: 250px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        .total-final {
+            font-size: 16px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            border-top: 2px solid ${colorCorporativo};
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        
+        /* Sello digital */
+        .sello-section {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+        
+        .sello-text {
+            word-break: break-all;
+            line-height: 1.3;
+            color: #666;
+        }
+        
+        /* Pie de página */
+        .cfdi-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 15px;
+        }
+        
+        @media print {
+            .cfdi-container {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cfdi-container">
+        <!-- Header -->
+        <div class="cfdi-header">
+            <div class="emisor-info">
+                ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" class="emisor-logo">` : ''}
+                <div class="emisor-nombre">${xmlData.emisor.nombre}</div>
+                <div class="emisor-rfc">RFC: ${xmlData.emisor.rfc}</div>
+                <div>Régimen Fiscal: ${xmlData.emisor.regimenFiscal}</div>
+            </div>
+            <div class="cfdi-info">
+                <div class="cfdi-titulo">CFDI ${xmlData.version}</div>
+                <div class="cfdi-datos">
+                    <div><strong>Serie:</strong> ${xmlData.serie}</div>
+                    <div><strong>Folio:</strong> ${xmlData.folio}</div>
+                    <div><strong>Fecha:</strong> ${new Date(xmlData.fecha).toLocaleString('es-MX')}</div>
+                    <div><strong>Tipo:</strong> ${xmlData.tipoDeComprobante}</div>
+                    <div><strong>Método de Pago:</strong> ${xmlData.metodoPago}</div>
+                    <div><strong>Forma de Pago:</strong> ${xmlData.formaPago}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Receptor -->
+        <div class="receptor-section">
+            <div class="section-title">RECEPTOR</div>
+            <div><strong>Nombre:</strong> ${xmlData.receptor.nombre}</div>
+            <div><strong>RFC:</strong> ${xmlData.receptor.rfc}</div>
+            <div><strong>Uso CFDI:</strong> ${xmlData.receptor.usoCFDI}</div>
+        </div>
+        
+        <!-- Conceptos -->
+        <table class="conceptos-table">
+            <thead>
+                <tr>
+                    <th>Cantidad</th>
+                    <th>Unidad</th>
+                    <th>Descripción</th>
+                    <th class="text-right">Valor Unitario</th>
+                    <th class="text-right">Importe</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${xmlData.conceptos.map(concepto => `
+                    <tr>
+                        <td class="text-center">${concepto.cantidad}</td>
+                        <td>${concepto.unidad}</td>
+                        <td>${concepto.descripcion}</td>
+                        <td class="text-right">$${parseFloat(concepto.valorUnitario || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                        <td class="text-right">$${parseFloat(concepto.importe || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        
+        <!-- Totales -->
+        <div class="totales-section">
+            <div class="totales-box">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>$${parseFloat(xmlData.subTotal || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div class="total-row total-final">
+                    <span>Total:</span>
+                    <span>$${parseFloat(xmlData.total || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</span>
+                </div>
+            </div>
+        </div>
+        
+        ${xmlData.sello ? `
+        <!-- Sello Digital -->
+        <div class="sello-section">
+            <div class="section-title">SELLO DIGITAL</div>
+            <div class="sello-text">${xmlData.sello}</div>
+            <br>
+            <div><strong>No. Certificado:</strong> ${xmlData.noCertificado}</div>
+        </div>
+        ` : ''}
+        
+        <!-- Footer -->
+        <div class="cfdi-footer">
+            <div>Este documento es una representación impresa de un CFDI</div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+}
+
 /**
  * 🚀 FUNCIÓN PARA SUBIR LOGO AUTOMÁTICAMENTE A REDOC
  * Convierte logo base64 a buffer y lo sube a la plataforma RedDoc
@@ -308,24 +761,62 @@ exports.handler = async (event, context) => {
             console.error('❌ GENERAR PDF: Error obteniendo datos del emisor:', emisorError.message);
         }
 
-        console.log('🚀 GENERAR PDF: Usando SDK oficial de redoc.mx...');
+        // 🔧 DECIDIR MÉTODO DE GENERACIÓN SEGÚN CONFIGURACIÓN
+        console.log('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
         
-        try {
-            // Logs de diagnóstico para API Key
-            console.log('🔑 GENERAR PDF: API Key presente:', !!redocApiKey);
-            console.log('🔑 GENERAR PDF: API Key longitud:', redocApiKey ? redocApiKey.length : 0);
-            console.log('🔑 GENERAR PDF: API Key prefijo:', redocApiKey ? redocApiKey.substring(0, 10) + '...' : 'N/A');
+        let pdfBuffer;
+        let metadata = {};
+        
+        if (PDF_CONFIG.mode === 'local') {
+            console.log('🎨 GENERAR PDF: Usando generador local (replica RedDoc)...');
             
-            // Inicializar cliente de redoc.mx con API key según documentación oficial
-            const redoc = new Redoc(redocApiKey);
-            console.log('✅ GENERAR PDF: Cliente @redocmx/client inicializado');
+            try {
+                // Generar PDF localmente con estilo idéntico a RedDoc
+                pdfBuffer = await generarPdfLocal(xmlData.xml_content, emisorData);
+                
+                metadata = {
+                    generator: 'local',
+                    engine: PDF_CONFIG.local.engine,
+                    hasLogo: !!emisorData?.logo,
+                    hasColor: !!emisorData?.color,
+                    processTime: Date.now() - Date.now() // Placeholder
+                };
+                
+                console.log('✅ GENERAR PDF: PDF generado localmente exitosamente');
+                console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
+                
+            } catch (localError) {
+                console.error('❌ GENERAR PDF: Error en generación local:', localError.message);
+                
+                if (PDF_CONFIG.redoc.fallback) {
+                    console.log('🔄 GENERAR PDF: Usando RedDoc como fallback...');
+                    // Continuar con RedDoc como fallback
+                } else {
+                    throw localError;
+                }
+            }
+        }
+        
+        // Si es modo RedDoc o fallback desde local
+        if (PDF_CONFIG.mode === 'redoc' || (!pdfBuffer && PDF_CONFIG.redoc.fallback)) {
+            console.log('🚀 GENERAR PDF: Usando SDK oficial de redoc.mx...');
             
-            // Cargar CFDI desde string XML usando método oficial del SDK
-            const cfdi = redoc.cfdi.fromString(xmlData.xml_content);
-            console.log('✅ GENERAR PDF: CFDI cargado desde XML string');
-            
-            console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
-            console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
+            try {
+                // Logs de diagnóstico para API Key
+                console.log('🔑 GENERAR PDF: API Key presente:', !!redocApiKey);
+                console.log('🔑 GENERAR PDF: API Key longitud:', redocApiKey ? redocApiKey.length : 0);
+                console.log('🔑 GENERAR PDF: API Key prefijo:', redocApiKey ? redocApiKey.substring(0, 10) + '...' : 'N/A');
+                
+                // Inicializar cliente de redoc.mx con API key según documentación oficial
+                const redoc = new Redoc(redocApiKey);
+                console.log('✅ GENERAR PDF: Cliente @redocmx/client inicializado');
+                
+                // Cargar CFDI desde string XML usando método oficial del SDK
+                const cfdi = redoc.cfdi.fromString(xmlData.xml_content);
+                console.log('✅ GENERAR PDF: CFDI cargado desde XML string');
+                
+                console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
+                console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
             
             // 🎨 GENERAR ADDENDA XML PARA PERSONALIZACIÓN CORPORATIVA
             let addendaXml = null;
@@ -385,7 +876,7 @@ exports.handler = async (event, context) => {
                     }
                 }
                 
-                // ✅ COLOR CORPORATIVO (FUNCIONA DIRECTAMENTE)
+                    // ✅ COLOR CORPORATIVO (FUNCIONA DIRECTAMENTE)
                 if (emisorData?.color) {
                     console.log('✅ GENERAR PDF: Aplicando color corporativo (funcional):', emisorData.color);
                     addendaContent += `
@@ -432,105 +923,90 @@ exports.handler = async (event, context) => {
             const pdf = await cfdi.toPdf();
             
             // Obtener buffer del PDF según documentación oficial
-            const pdfBuffer = pdf.toBuffer();
-            const pdfBase64 = pdfBuffer.toString('base64');
+            pdfBuffer = pdf.toBuffer();
             
             console.log('✅ GENERAR PDF: PDF generado exitosamente con SDK oficial');
             console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
-            console.log('📊 GENERAR PDF: Tamaño PDF base64:', pdfBase64.length, 'caracteres');
             
             // Extraer metadatos del PDF usando métodos oficiales del SDK
-            const metadata = {
+            metadata = {
+                generator: 'redoc',
                 transactionId: pdf.getTransactionId(),
                 totalPages: pdf.getTotalPages(),
                 processTime: pdf.getTotalTimeMs(),
-                xmlMeta: pdf.getMetadata()
+                xmlMeta: pdf.getMetadata(),
+                hasLogo: !!emisorData?.logo,
+                hasColor: !!emisorData?.color
             };
             
             console.log('📋 GENERAR PDF: Metadatos extraídos del SDK:', metadata);
-
-            // Preparar respuesta exitosa
-            const respuesta = {
-                success: true,
-                mensaje: 'PDF generado exitosamente con SDK oficial',
-                pdf: {
-                    content: pdfBase64, // PDF en base64
-                    size: pdfBase64.length,
-                    encoding: 'base64'
-                },
-                xml: {
-                    id: xmlData.id,
-                    estado: xmlData.estado,
-                    emisor_rfc: xmlData.emisor_rfc,
-                    receptor_rfc: xmlData.receptor_rfc,
-                    total: xmlData.total
-                },
-                metadata: metadata,
-                timestamp: new Date().toISOString()
-            };
-
-            console.log('🎉 GENERAR PDF: Proceso completado exitosamente con SDK');
-
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(respuesta)
-            };
             
-        } catch (sdkError) {
-            console.error('❌ GENERAR PDF: Error del SDK redoc.mx:', sdkError.message);
-            console.error('Stack SDK:', sdkError.stack);
-            
-            // Si el SDK falla, intentar con API HTTP directa como fallback
-            console.log('🔄 GENERAR PDF: Intentando fallback con API HTTP directa...');
-            
-            try {
-                const httpResult = await generarPdfViaHttp(xmlData.xml_content, redocApiKey, stylePdf);
+            } catch (sdkError) {
+                console.error('❌ GENERAR PDF: Error del SDK redoc.mx:', sdkError.message);
+                console.error('Stack SDK:', sdkError.stack);
                 
-                // Preparar respuesta exitosa del fallback HTTP
-                const respuesta = {
-                    success: true,
-                    mensaje: 'PDF generado exitosamente con API HTTP (fallback)',
-                    pdf: {
-                        content: httpResult.content,
-                        size: httpResult.content.length,
-                        encoding: 'base64'
-                    },
-                    xml: {
-                        id: xmlData.id,
-                        estado: xmlData.estado,
-                        emisor_rfc: xmlData.emisor_rfc,
-                        receptor_rfc: xmlData.receptor_rfc,
-                        total: xmlData.total
-                    },
-                    metadata: httpResult.metadata || {},
-                    fallback: true,
-                    timestamp: new Date().toISOString()
-                };
-
-                console.log('🎉 GENERAR PDF: Proceso completado exitosamente con fallback HTTP');
-
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify(respuesta)
-                };
-                
-            } catch (httpError) {
-                console.error('❌ GENERAR PDF: Error en fallback HTTP:', httpError.message);
-                
-                return {
-                    statusCode: 500,
-                    headers,
-                    body: JSON.stringify({
-                        error: 'Error en SDK y fallback HTTP',
-                        sdkError: sdkError.message,
-                        httpError: httpError.message,
-                        timestamp: new Date().toISOString()
-                    })
-                };
+                if (PDF_CONFIG.redoc.fallback) {
+                    console.log('🔄 GENERAR PDF: Intentando fallback con API HTTP directa...');
+                    
+                    try {
+                        const httpResult = await generarPdfViaHttp(xmlData.xml_content, redocApiKey, stylePdf);
+                        pdfBuffer = Buffer.from(httpResult.content, 'base64');
+                        metadata = {
+                            generator: 'redoc-http-fallback',
+                            ...httpResult.metadata,
+                            hasLogo: !!emisorData?.logo,
+                            hasColor: !!emisorData?.color
+                        };
+                        console.log('✅ GENERAR PDF: Fallback HTTP exitoso');
+                    } catch (httpError) {
+                        console.error('❌ GENERAR PDF: Error en fallback HTTP:', httpError.message);
+                        throw new Error(`SDK y fallback HTTP fallaron: ${sdkError.message} / ${httpError.message}`);
+                    }
+                } else {
+                    throw sdkError;
+                }
             }
         }
+        
+        // ✅ RESPUESTA UNIFICADA PARA AMBOS MÉTODOS
+        if (!pdfBuffer) {
+            throw new Error('No se pudo generar el PDF con ningún método');
+        }
+        
+        const pdfBase64 = pdfBuffer.toString('base64');
+        
+        console.log('✅ GENERAR PDF: PDF generado exitosamente');
+        console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
+        console.log('📊 GENERAR PDF: Tamaño PDF base64:', pdfBase64.length, 'caracteres');
+        console.log('🔧 GENERAR PDF: Generador usado:', metadata.generator);
+        
+        // Preparar respuesta exitosa unificada
+        const respuesta = {
+            success: true,
+            mensaje: `PDF generado exitosamente con ${metadata.generator}`,
+            pdf: {
+                content: pdfBase64,
+                size: pdfBase64.length,
+                encoding: 'base64'
+            },
+            xml: {
+                id: xmlData.id,
+                estado: xmlData.estado,
+                emisor_rfc: xmlData.emisor_rfc,
+                receptor_rfc: xmlData.receptor_rfc,
+                total: xmlData.total
+            },
+            metadata: metadata,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log('🎉 GENERAR PDF: Proceso completado exitosamente');
+        
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(respuesta)
+        };
 
     } catch (error) {
         console.error('💥 GENERAR PDF: Error fatal:', error.message);
