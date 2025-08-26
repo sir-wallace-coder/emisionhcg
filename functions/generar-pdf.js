@@ -9,8 +9,10 @@
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-const fetch = require('node-fetch');
 const FormData = require('form-data');
+
+// ✅ Usar fetch nativo de Node.js 18+ (disponible globalmente)
+// No necesita import, está disponible como global en Node.js 18+
 
 // SDK de redoc.mx se cargará dinámicamente en la función handler
 // debido a que es un ES module y necesita import() dinámico
