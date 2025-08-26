@@ -609,11 +609,15 @@ async function generarPdfViaHttp(xmlContent, apiKey, stylePdf) {
         throw error;
     }
 }
-
 /**
  * Handler principal para generar PDF desde XML
  */
 exports.handler = async (event, context) => {
+    // 🚨🚨🚨 FORZAR DEPLOYMENT LIMPIO - VERSION NUEVA 🚨🚨🚨
+    console.log('🚨🚨🚨 HANDLER EJECUTANDOSE - VERSION NUEVA - COMMIT 5010efa 🚨🚨🚨');
+    console.log('🚨 TIMESTAMP:', new Date().toISOString());
+    console.log('🚨 NETLIFY FUNCTION VERSION: NUEVA');
+    
     console.log('📄 GENERAR PDF: Request recibido:', event.httpMethod);
     
     // Headers CORS
