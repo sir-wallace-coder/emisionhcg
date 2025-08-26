@@ -791,12 +791,19 @@ exports.handler = async (event, context) => {
         }
 
         // 🔧 DECIDIR MÉTODO DE GENERACIÓN SEGÚN CONFIGURACIÓN
+        console.log('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
         console.log('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
+        console.log('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
+        console.log('🔧 GENERAR PDF: PDF_CONFIG completo:', JSON.stringify(PDF_CONFIG, null, 2));
+        console.log('🔧 GENERAR PDF: process.env.PDF_GENERATION_MODE:', process.env.PDF_GENERATION_MODE);
         
         let pdfBuffer;
         let metadata = {};
         
+        console.log('🔥 DEBUG: Verificando condición PDF_CONFIG.mode === "local":', PDF_CONFIG.mode === 'local');
+        
         if (PDF_CONFIG.mode === 'local') {
+            console.log('🔥🔥🔥 ENTRANDO AL BLOQUE LOCAL 🔥🔥🔥');
             console.log('🎨 GENERAR PDF: Usando generador local (replica RedDoc)...');
             
             try {
