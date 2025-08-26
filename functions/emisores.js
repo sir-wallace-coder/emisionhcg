@@ -1009,16 +1009,17 @@ async function createEmisor(userId, data, headers) {
       // created_at y updated_at se manejan automáticamente por la BD
     };
 
-    // 🎨 EXTRACCIÓN AUTOMÁTICA DE COLOR DEL LOGO
-    if (data.logo) {
-      console.log('🎨 COLOR: Logo detectado, extrayendo color dominante...');
-      emisorData.color = extraerColorDominante(data.logo);
-    } else if (data.color && /^#[0-9A-Fa-f]{6}$/.test(data.color)) {
-      // Si no hay logo pero se proporcionó un color válido manualmente
-      console.log('🎨 COLOR: Color manual proporcionado:', data.color);
+    // 🎨 LÓGICA CORREGIDA: PRIORIZAR COLOR DEL FRONTEND
+    if (data.color && /^#[0-9A-Fa-f]{6}$/.test(data.color)) {
+      // ✅ PRIORIDAD 1: Color proporcionado por el frontend (ya extraído o manual)
+      console.log('🎨 COLOR: Usando color del frontend (extraído o manual):', data.color);
       emisorData.color = data.color;
+    } else if (data.logo) {
+      // ✅ PRIORIDAD 2: Si no hay color pero hay logo, extraer del backend
+      console.log('🎨 COLOR: No hay color del frontend, extrayendo del logo...');
+      emisorData.color = extraerColorDominante(data.logo);
     } else {
-      // Color por defecto
+      // ✅ PRIORIDAD 3: Color por defecto
       console.log('🎨 COLOR: Usando color por defecto');
       emisorData.color = '#2563eb';
     }

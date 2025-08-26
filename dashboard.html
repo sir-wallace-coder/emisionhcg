@@ -3783,7 +3783,8 @@
                     tiene_cer: !!emisor.certificado_cer,
                     tiene_key: !!emisor.certificado_key,
                     numero_certificado: emisor.numero_certificado,
-                    estado_csd: emisor.estado_csd
+                    estado_csd: emisor.estado_csd,
+                    color: emisor.color // 🎨 DEBUG COLOR RECIBIDO
                 });
                 
                 // Cargar datos en el formulario de edición
@@ -3806,12 +3807,35 @@
                 
                 // 🎨 CARGAR COLOR CORPORATIVO ACTUAL
                 const colorActual = emisor.color || '#2563eb';
+                console.log('🎨 COLOR DEBUG EDIT: Intentando cargar color:', {
+                    color_recibido: emisor.color,
+                    color_actual: colorActual,
+                    timestamp: new Date().toISOString()
+                });
+                
                 const editColorPicker = document.getElementById('editEmisorColor');
                 const editColorText = document.getElementById('editEmisorColorText');
+                
+                console.log('🎨 COLOR DEBUG ELEMENTOS:', {
+                    picker_exists: !!editColorPicker,
+                    text_exists: !!editColorText,
+                    picker_id: editColorPicker?.id,
+                    text_id: editColorText?.id
+                });
+                
                 if (editColorPicker && editColorText) {
                     editColorPicker.value = colorActual;
                     editColorText.value = colorActual;
-                    console.log('🎨 COLOR EDIT: Color cargado:', colorActual);
+                    console.log('🎨 COLOR EDIT SUCCESS: Color cargado exitosamente:', {
+                        color: colorActual,
+                        picker_value: editColorPicker.value,
+                        text_value: editColorText.value
+                    });
+                } else {
+                    console.error('❌ COLOR EDIT ERROR: Elementos no encontrados:', {
+                        picker_missing: !editColorPicker,
+                        text_missing: !editColorText
+                    });
                 }
                 
                 // Limpiar vista previa de nuevo logo
