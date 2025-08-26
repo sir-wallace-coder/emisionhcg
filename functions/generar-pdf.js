@@ -800,38 +800,6 @@ exports.handler = async (event, context) => {
             console.log('🎨 GENERAR PDF: Usando generador local (replica RedDoc)...');
             
             try {
-                // Generar PDF localmente con estilo idéntico a RedDoc
-                pdfBuffer = await generarPdfLocal(xmlData.xml_content, emisorData);
-                
-                metadata = {
-                    generator: 'local',
-                    engine: PDF_CONFIG.local.engine,
-                    hasLogo: !!emisorData?.logo,
-                    hasColor: !!emisorData?.color,
-                    processTime: Date.now() - Date.now() // Placeholder
-                };
-                
-                console.log('✅ GENERAR PDF: PDF generado localmente exitosamente');
-                console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
-                
-            } catch (localError) {
-                console.error('❌ GENERAR PDF: Error en generación local:', localError.message);
-                
-                if (PDF_CONFIG.redoc.fallback) {
-                    console.log('🔄 GENERAR PDF: Usando RedDoc como fallback...');
-                    // Continuar con RedDoc como fallback
-                } else {
-                    throw localError;
-                }
-            }
-        }
-        
-        // 🎯 DECISIÓN DE GENERADOR SEGÚN CONFIGURACIÓN
-        if (PDF_CONFIG.mode === 'local') {
-            console.log('🎨 PDF CONFIG: Modo de generación configurado: local');
-            console.log('🎨 PDF LOCAL: Iniciando generación local de PDF...');
-            
-            try {
                 // Usar el generador local que replica RedDoc
                 pdfBuffer = await generarPdfLocal(xmlData.xml_content, emisorData);
                 
