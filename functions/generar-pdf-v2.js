@@ -614,11 +614,14 @@ async function generarPdfViaHttp(xmlContent, apiKey, stylePdf) {
  */
 exports.handler = async (event, context) => {
     // 🚨🚨🚨 FORZAR DEPLOYMENT LIMPIO - VERSION NUEVA 🚨🚨🚨
-    console.log('🚨🚨🚨 HANDLER EJECUTANDOSE - VERSION NUEVA - COMMIT 5010efa 🚨🚨🚨');
-    console.log('🚨 TIMESTAMP:', new Date().toISOString());
-    console.log('🚨 NETLIFY FUNCTION VERSION: NUEVA');
+    console.error('🚨🚨🚨 HANDLER EJECUTANDOSE - VERSION NUEVA - COMMIT 5010efa 🚨🚨🚨');
+    console.error('🚨 TIMESTAMP:', new Date().toISOString());
+    console.error('🚨 NETLIFY FUNCTION VERSION: NUEVA');
+    console.error('🚨 EVENT METHOD:', event.httpMethod);
+    console.error('🚨 CONTEXT:', JSON.stringify(context, null, 2));
     
     console.log('📄 GENERAR PDF: Request recibido:', event.httpMethod);
+    console.error('📄 GENERAR PDF: Request recibido (ERROR LOG):', event.httpMethod);
     
     // Headers CORS
     const headers = {
@@ -795,6 +798,11 @@ exports.handler = async (event, context) => {
         }
 
         // 🔧 DECIDIR MÉTODO DE GENERACIÓN SEGÚN CONFIGURACIÓN
+        console.error('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
+        console.error('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
+        console.error('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
+        console.error('🔧 GENERAR PDF: PDF_CONFIG completo:', JSON.stringify(PDF_CONFIG, null, 2));
+        console.error('🔧 GENERAR PDF: process.env.PDF_GENERATION_MODE:', process.env.PDF_GENERATION_MODE);
         console.log('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
         console.log('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
         console.log('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
