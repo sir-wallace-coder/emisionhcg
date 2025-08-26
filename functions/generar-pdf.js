@@ -265,13 +265,17 @@ exports.handler = async (event, context) => {
             console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
             console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
             
-            // 🎨 PREPARAR OPCIONES DE PERSONALIZACIÓN
+            // 🎨 PREPARAR OPCIONES DE PERSONALIZACIÓN CORPORATIVA
             const pdfOptions = {};
+            
+            // ✅ PRIORIDAD 1: PERSONALIZACIÓN CORPORATIVA (LOGO Y COLOR)
+            let hasCustomization = false;
             
             // Agregar logo corporativo si existe
             if (emisorData?.logo) {
                 console.log('🎨 GENERAR PDF: Agregando logo corporativo del emisor');
                 pdfOptions.logo = emisorData.logo; // Base64 del logo
+                hasCustomization = true;
             }
             
             // Agregar color corporativo si existe
@@ -279,11 +283,16 @@ exports.handler = async (event, context) => {
                 console.log('🎨 GENERAR PDF: Aplicando color corporativo:', emisorData.color);
                 pdfOptions.primaryColor = emisorData.color; // Color hex (#RRGGBB)
                 pdfOptions.accentColor = emisorData.color;
+                hasCustomization = true;
             }
             
-            // Agregar estilo personalizado si se especificó
-            if (stylePdf) {
+            // ⚠️ IMPORTANTE: Solo usar estilo predefinido si NO hay personalización corporativa
+            // El estilo predefinido puede interferir con logo y color corporativo
+            if (stylePdf && !hasCustomization) {
+                console.log('🎨 GENERAR PDF: Usando estilo predefinido (sin personalización corporativa):', stylePdf);
                 pdfOptions.style = stylePdf;
+            } else if (stylePdf && hasCustomization) {
+                console.log('⚠️ GENERAR PDF: Ignorando estilo predefinido para preservar personalización corporativa');
             }
             
             console.log('🎨 GENERAR PDF: Opciones de personalización:', {
