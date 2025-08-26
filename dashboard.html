@@ -1586,6 +1586,30 @@
                 return;
             }
             
+            // 🛡️ VALIDACIÓN DEFENSIVA: Verificar que los datos estén completos
+            if (emisores && emisores.length > 0) {
+                const primerEmisor = emisores[0];
+                if (!primerEmisor.nombre || primerEmisor.nombre === undefined) {
+                    console.warn('⚠️ RACE CONDITION DETECTADO: Datos aún no están completamente cargados, esperando...');
+                    emisoresContent.innerHTML = `
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Cargando emisores...</p>
+                        </div>
+                    `;
+                    // Reintentar después de un breve delay
+                    setTimeout(() => {
+                        console.log('🔄 Reintentando mostrar emisores después del delay...');
+                        if (emisores[0].nombre && emisores[0].nombre !== undefined) {
+                            mostrarEmisores(emisores);
+                        }
+                    }, 500);
+                    return;
+                }
+            }
+            
             // Limpiar contenido actual
             emisoresContent.innerHTML = '';
             
@@ -1619,10 +1643,10 @@
                         <tbody>
                             ${emisores.map(emisor => `
                                 <tr>
-                                    <td><strong>${emisor.rfc}</strong></td>
-                                    <td>${emisor.nombre}</td>
-                                    <td>${emisor.codigo_postal}</td>
-                                    <td>${emisor.regimen_fiscal}</td>
+                                    <td><strong>${emisor.rfc || 'Cargando...'}</strong></td>
+                                    <td>${emisor.nombre || 'Cargando...'}</td>
+                                    <td>${emisor.codigo_postal || 'Cargando...'}</td>
+                                    <td>${emisor.regimen_fiscal || 'Cargando...'}</td>
                                     <td>
                                         <span class="badge ${
                                             emisor.estado_csd === 'activo' ? 'bg-success' : 
