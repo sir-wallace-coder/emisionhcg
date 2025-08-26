@@ -674,7 +674,48 @@ async function createEmisor(userId, data, headers) {
             preview: keyInfo.llavePrivadaOriginal.substring(0, 50) + '...'
           });
           
-          // 2.5. Validar que el RFC del emisor coincida con el del certificado
+          // 2.5. VALIDACIÓN CRÍTICA: Verificar que la contraseña coincida con la llave privada
+          console.log('🔑 Validando contraseña con llave privada...');
+          try {
+            // Intentar descifrar la llave privada con la contraseña proporcionada
+            const { validarParCertificadoLlave } = require('./sellar-cfdi');
+            const validacionPassword = await validarParCertificadoLlave(
+              certificado_cer, 
+              certificado_key, 
+              password_key
+            );
+            
+            if (!validacionPassword.valido) {
+              console.error('❌ CONTRASEÑA INCORRECTA:', validacionPassword.mensaje);
+              return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                  error: 'La contraseña no coincide con la llave privada del certificado',
+                  tipo: 'PASSWORD_INCORRECTA',
+                  detalle: validacionPassword.mensaje || 'Contraseña inválida',
+                  sugerencia: 'Verifica que la contraseña sea correcta y no tenga espacios adicionales'
+                })
+              };
+            }
+            
+            console.log('✅ Contraseña validada correctamente con la llave privada');
+            
+          } catch (passwordError) {
+            console.error('❌ Error validando contraseña:', passwordError);
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: 'Error validando la contraseña del certificado',
+                tipo: 'ERROR_VALIDACION_PASSWORD',
+                detalle: passwordError.message,
+                sugerencia: 'Verifica que la contraseña y los archivos de certificado sean correctos'
+              })
+            };
+          }
+          
+          // 2.6. Validar que el RFC del emisor coincida con el del certificado
           console.log('🔍 Validando coincidencia RFC emisor vs certificado...');
           if (certInfo.rfcCertificado) {
             if (certInfo.rfcCertificado !== rfcClean) {
@@ -1067,7 +1108,48 @@ async function updateEmisor(userId, emisorId, data, headers) {
           length: updateData.certificado_key ? updateData.certificado_key.length : 0
         });
         
-        // 3. Validación de par certificado-llave DESHABILITADA temporalmente
+        // 3. VALIDACIÓN CRÍTICA: Verificar que la contraseña coincida con la llave privada (UPDATE)
+        console.log('🔑 UPDATE: Validando contraseña con llave privada...');
+        try {
+          // Intentar descifrar la llave privada con la contraseña proporcionada
+          const { validarParCertificadoLlave } = require('./sellar-cfdi');
+          const validacionPassword = await validarParCertificadoLlave(
+            certificado_cer, 
+            certificado_key, 
+            password_key
+          );
+          
+          if (!validacionPassword.valido) {
+            console.error('❌ UPDATE - CONTRASEÑA INCORRECTA:', validacionPassword.mensaje);
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: 'La contraseña no coincide con la llave privada del certificado',
+                tipo: 'PASSWORD_INCORRECTA',
+                detalle: validacionPassword.mensaje || 'Contraseña inválida',
+                sugerencia: 'Verifica que la contraseña sea correcta y no tenga espacios adicionales'
+              })
+            };
+          }
+          
+          console.log('✅ UPDATE: Contraseña validada correctamente con la llave privada');
+          
+        } catch (passwordError) {
+          console.error('❌ UPDATE: Error validando contraseña:', passwordError);
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Error validando la contraseña del certificado',
+              tipo: 'ERROR_VALIDACION_PASSWORD',
+              detalle: passwordError.message,
+              sugerencia: 'Verifica que la contraseña y los archivos de certificado sean correctos'
+            })
+          };
+        }
+        
+        // 4. Validación de par certificado-llave DESHABILITADA temporalmente
         // (La llave ahora se guarda sin manipulación y puede estar en formato base64)
         console.log('🔗 UPDATE: Validación de par certificado-llave: OMITIDA (llave sin manipulación)');
         const parValido = { valido: true, mensaje: 'Validación omitida - llave sin manipulación' };
