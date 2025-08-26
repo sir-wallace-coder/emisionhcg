@@ -601,7 +601,8 @@ async function createEmisor(userId, data, headers) {
           };
         }
         
-        if (!password_key || password_key.trim() === '') {
+        // 🔑 VALIDACIÓN MEJORADA: Permitir contraseñas con espacios en blanco
+        if (!password_key || password_key === '' || password_key === null || password_key === undefined) {
           return {
             statusCode: 400,
             headers,
@@ -610,7 +611,17 @@ async function createEmisor(userId, data, headers) {
               tipo: 'PASSWORD_KEY_VACIO'
             })
           };
-          }
+        }
+        
+        // 🔍 DEBUG: Mostrar información de la contraseña (sin revelar el contenido)
+        console.log('🔑 CONTRASEÑA DEBUG:', {
+          length: password_key.length,
+          starts_with_space: password_key.startsWith(' '),
+          ends_with_space: password_key.endsWith(' '),
+          contains_spaces: password_key.includes(' '),
+          first_char_code: password_key.charCodeAt(0),
+          last_char_code: password_key.charCodeAt(password_key.length - 1)
+        });
           
           // 1.5. Procesar certificado .cer
           console.log('📜 Procesando certificado .cer...');
