@@ -1238,19 +1238,21 @@ async function updateEmisor(userId, emisorId, data, headers) {
     if (regimen_fiscal) updateData.regimen_fiscal = regimen_fiscal;
     if (logo !== undefined) updateData.logo = logo; // Permitir null para eliminar logo
 
-    // 🎨 EXTRACCIÓN AUTOMÁTICA DE COLOR DEL LOGO (UPDATE)
-    if (logo && logo !== null) {
-      console.log('🎨 COLOR UPDATE: Logo actualizado, extrayendo nuevo color dominante...');
-      updateData.color = extraerColorDominante(logo);
-    } else if (data.color && /^#[0-9A-Fa-f]{6}$/.test(data.color)) {
-      // Si se proporciona un color manual válido
-      console.log('🎨 COLOR UPDATE: Color manual actualizado:', data.color);
+    // 🎨 LÓGICA CORREGIDA: PRIORIZAR COLOR DEL FRONTEND (UPDATE)
+    if (data.color && /^#[0-9A-Fa-f]{6}$/.test(data.color)) {
+      // ✅ PRIORIDAD 1: Color proporcionado por el frontend (ya extraído o manual)
+      console.log('🎨 COLOR UPDATE: Usando color del frontend (extraído o manual):', data.color);
       updateData.color = data.color;
+    } else if (logo && logo !== null) {
+      // ✅ PRIORIDAD 2: Si no hay color pero hay logo nuevo, extraer del backend
+      console.log('🎨 COLOR UPDATE: No hay color del frontend, extrayendo del logo actualizado...');
+      updateData.color = extraerColorDominante(logo);
     } else if (logo === null) {
-      // Si se elimina el logo, volver al color por defecto
+      // ✅ PRIORIDAD 3: Si se elimina el logo, volver al color por defecto
       console.log('🎨 COLOR UPDATE: Logo eliminado, usando color por defecto');
       updateData.color = '#2563eb';
     }
+    // ✅ Si no hay logo nuevo ni color del frontend, mantener color actual (no actualizar)
 
     // === PROCESAMIENTO DE CERTIFICADOS CSD ===
     console.log('🔍 UPDATE DIAGNÓSTICO: Verificando certificados recibidos:', {
