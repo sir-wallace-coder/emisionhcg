@@ -9,9 +9,71 @@
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
+const fetch = require('node-fetch');
+const FormData = require('form-data');
 
 // SDK de redoc.mx se cargará dinámicamente en la función handler
 // debido a que es un ES module y necesita import() dinámico
+
+/**
+ * 🚀 FUNCIÓN PARA SUBIR LOGO AUTOMÁTICAMENTE A REDOC
+ * Convierte logo base64 a buffer y lo sube a la plataforma RedDoc
+ * @param {string} logoBase64 - Logo en formato base64
+ * @param {string} logoPath - Ruta donde se guardará en RedDoc (ej: assets/logos/RFC-logo.png)
+ * @returns {boolean} - true si se subió exitosamente, false si falló
+ */
+async function subirLogoARedoc(logoBase64, logoPath) {
+    try {
+        console.log('🚀 SUBIR LOGO: Iniciando upload a RedDoc...');
+        console.log('📁 SUBIR LOGO: Ruta destino:', logoPath);
+        
+        // Validar que tenemos API key
+        if (!process.env.REDOC_API_KEY) {
+            console.error('❌ SUBIR LOGO: REDOC_API_KEY no configurada');
+            return false;
+        }
+        
+        // Convertir base64 a buffer
+        const base64Data = logoBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+        const logoBuffer = Buffer.from(base64Data, 'base64');
+        
+        console.log('📊 SUBIR LOGO: Tamaño del buffer:', logoBuffer.length, 'bytes');
+        
+        // Crear FormData para el upload
+        const formData = new FormData();
+        formData.append('file', logoBuffer, {
+            filename: logoPath.split('/').pop(), // Extraer solo el nombre del archivo
+            contentType: 'image/png'
+        });
+        formData.append('path', logoPath); // Ruta completa en RedDoc
+        
+        // Realizar upload a RedDoc API
+        const uploadResponse = await fetch('https://api.redoc.mx/v1/assets/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.REDOC_API_KEY}`,
+                ...formData.getHeaders()
+            },
+            body: formData
+        });
+        
+        console.log('📡 SUBIR LOGO: Status de respuesta:', uploadResponse.status);
+        
+        if (uploadResponse.ok) {
+            const result = await uploadResponse.json();
+            console.log('✅ SUBIR LOGO: Upload exitoso:', result);
+            return true;
+        } else {
+            const error = await uploadResponse.text();
+            console.error('❌ SUBIR LOGO: Error en upload:', error);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('💥 SUBIR LOGO: Excepción durante upload:', error.message);
+        return false;
+    }
+}
 
 /**
  * Función para generar PDF vía API HTTP directa (fallback)
@@ -268,6 +330,7 @@ exports.handler = async (event, context) => {
             // 🎨 GENERAR ADDENDA XML PARA PERSONALIZACIÓN CORPORATIVA
             let addendaXml = null;
             let hasCustomization = false;
+            let logoStatus = 'no_logo';
             
             if (emisorData?.logo || emisorData?.color) {
                 console.log('🎨 GENERAR PDF: Creando addenda XML para personalización corporativa');
@@ -282,27 +345,54 @@ exports.handler = async (event, context) => {
     <rd:pdf>
       <rd:settings>`;
       
-                // Agregar logo corporativo si existe
+                // 🚀 MANEJO INTELIGENTE DEL LOGO CORPORATIVO CON UPLOAD AUTOMÁTICO
                 if (emisorData?.logo) {
-                    console.log('🎨 GENERAR PDF: Agregando logo corporativo a addenda XML');
-                    // Nota: RedDoc requiere que el logo esté subido a su plataforma
-                    // Por ahora usaremos un placeholder, pero necesitaremos subir el logo a RedDoc
-                    addendaContent += `
+                    console.log('🎨 GENERAR PDF: Logo corporativo detectado en base de datos');
+                    console.log('📋 GENERAR PDF: Tamaño del logo:', emisorData.logo.length, 'caracteres base64');
+                    
+                    const logoPath = `assets/logos/${emisorData.rfc}-logo.png`;
+                    
+                    try {
+                        // 🚀 INTENTAR SUBIR EL LOGO AUTOMÁTICAMENTE A REDOC
+                        console.log('🚀 GENERAR PDF: Intentando subir logo automáticamente a RedDoc...');
+                        const uploadSuccess = await subirLogoARedoc(emisorData.logo, logoPath);
+                        
+                        if (uploadSuccess) {
+                            console.log('✅ GENERAR PDF: Logo subido exitosamente a RedDoc:', logoPath);
+                            logoStatus = 'uploaded_success';
+                        } else {
+                            console.log('⚠️ GENERAR PDF: No se pudo subir el logo, usando sin logo');
+                            logoStatus = 'upload_failed';
+                        }
+                    } catch (uploadError) {
+                        console.error('❌ GENERAR PDF: Error subiendo logo:', uploadError.message);
+                        logoStatus = 'upload_error';
+                    }
+                    
+                    // Agregar logo a la addenda (funcionará si se subió exitosamente)
+                    if (logoStatus === 'uploaded_success') {
+                        addendaContent += `
         <rd:section id="header">
-          <rd:option id="logo" value="assets/logo-${emisorData.rfc}.png" />
+          <rd:option id="logo" value="${logoPath}" />
           <rd:option id="logo-horizontal-align" value="center" />
           <rd:option id="logo-vertical-align" value="middle" />
+          <rd:option id="logo-width" value="120" />
+          <rd:option id="logo-height" value="60" />
         </rd:section>`;
-                    hasCustomization = true;
+                        hasCustomization = true;
+                    } else {
+                        console.log('📋 GENERAR PDF: Omitiendo logo en addenda (no disponible en RedDoc)');
+                    }
                 }
                 
-                // Agregar color corporativo si existe (usando estilos CSS)
+                // ✅ COLOR CORPORATIVO (FUNCIONA DIRECTAMENTE)
                 if (emisorData?.color) {
-                    console.log('🎨 GENERAR PDF: Aplicando color corporativo a addenda XML:', emisorData.color);
+                    console.log('✅ GENERAR PDF: Aplicando color corporativo (funcional):', emisorData.color);
                     addendaContent += `
         <rd:section id="document">
           <rd:option id="primary-color" value="${emisorData.color}" />
           <rd:option id="accent-color" value="${emisorData.color}" />
+          <rd:option id="header-background-color" value="${emisorData.color}" />
         </rd:section>`;
                     hasCustomization = true;
                 }
@@ -315,9 +405,11 @@ exports.handler = async (event, context) => {
                 
                 addendaXml = addendaContent;
                 console.log('🎨 GENERAR PDF: Addenda XML generada:', {
-                    tiene_logo: !!emisorData?.logo,
-                    color: emisorData?.color,
-                    rfc: emisorData?.rfc
+                    rfc: emisorData?.rfc,
+                    tiene_logo_bd: !!emisorData?.logo,
+                    logo_status: logoStatus,
+                    color_corporativo: emisorData?.color,
+                    personalizacion_activa: hasCustomization
                 });
             }
             
