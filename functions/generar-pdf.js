@@ -209,6 +209,42 @@ exports.handler = async (event, context) => {
         console.log('✅ GENERAR PDF: XML encontrado');
         console.log('📊 GENERAR PDF: Estado XML:', xmlData.estado);
         console.log('📄 GENERAR PDF: Tamaño XML:', xmlData.xml_content?.length || 0, 'caracteres');
+        
+        // 🎨 OBTENER DATOS DEL EMISOR PARA PERSONALIZACIÓN
+        let emisorData = null;
+        try {
+            // Extraer RFC del emisor del XML para buscar sus datos
+            const xmlDoc = xmlData.xml_content;
+            const rfcMatch = xmlDoc.match(/Rfc="([^"]+)"/i);
+            const rfcEmisor = rfcMatch ? rfcMatch[1] : null;
+            
+            if (rfcEmisor) {
+                console.log('🔍 GENERAR PDF: RFC del emisor extraído:', rfcEmisor);
+                
+                // Buscar datos del emisor (logo y color)
+                const { data: emisor, error: emisorError } = await supabase
+                    .from('emisores')
+                    .select('id, rfc, nombre, logo, color')
+                    .eq('rfc', rfcEmisor)
+                    .single();
+                
+                if (emisor && !emisorError) {
+                    emisorData = emisor;
+                    console.log('✅ GENERAR PDF: Datos del emisor encontrados:', {
+                        rfc: emisor.rfc,
+                        nombre: emisor.nombre,
+                        tiene_logo: !!emisor.logo,
+                        color: emisor.color
+                    });
+                } else {
+                    console.log('⚠️ GENERAR PDF: Emisor no encontrado en BD, usando valores por defecto');
+                }
+            } else {
+                console.log('⚠️ GENERAR PDF: No se pudo extraer RFC del XML');
+            }
+        } catch (emisorError) {
+            console.error('❌ GENERAR PDF: Error obteniendo datos del emisor:', emisorError.message);
+        }
 
         console.log('🚀 GENERAR PDF: Usando SDK oficial de redoc.mx...');
         
@@ -229,9 +265,35 @@ exports.handler = async (event, context) => {
             console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
             console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
             
-            // Convertir CFDI a PDF usando el SDK oficial
-            // Nota: stylePdf se maneja internamente por el SDK
-            const pdf = await cfdi.toPdf();
+            // 🎨 PREPARAR OPCIONES DE PERSONALIZACIÓN
+            const pdfOptions = {};
+            
+            // Agregar logo corporativo si existe
+            if (emisorData?.logo) {
+                console.log('🎨 GENERAR PDF: Agregando logo corporativo del emisor');
+                pdfOptions.logo = emisorData.logo; // Base64 del logo
+            }
+            
+            // Agregar color corporativo si existe
+            if (emisorData?.color) {
+                console.log('🎨 GENERAR PDF: Aplicando color corporativo:', emisorData.color);
+                pdfOptions.primaryColor = emisorData.color; // Color hex (#RRGGBB)
+                pdfOptions.accentColor = emisorData.color;
+            }
+            
+            // Agregar estilo personalizado si se especificó
+            if (stylePdf) {
+                pdfOptions.style = stylePdf;
+            }
+            
+            console.log('🎨 GENERAR PDF: Opciones de personalización:', {
+                tiene_logo: !!pdfOptions.logo,
+                color: pdfOptions.primaryColor,
+                estilo: pdfOptions.style
+            });
+            
+            // Convertir CFDI a PDF usando el SDK oficial con personalización
+            const pdf = await cfdi.toPdf(pdfOptions);
             
             // Obtener buffer del PDF según documentación oficial
             const pdfBuffer = pdf.toBuffer();
