@@ -3,9 +3,38 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 // 🔧 PROCESADOR CSD SIMPLIFICADO (sin node-forge para evitar errores serverless)
-function procesarCertificadoSimplificado(cerBase64) {
+function procesarCertificadoSimplificado(certificadoData) {
   try {
-    const cerBuffer = Buffer.from(cerBase64, 'base64');
+    console.log('📋 DEBUG CERT: Procesando certificado, longitud:', certificadoData.length);
+    console.log('📋 DEBUG CERT: Primeros 100 caracteres:', certificadoData.substring(0, 100));
+    
+    let cerBuffer;
+    let cerBase64;
+    
+    // 🔍 DETECCIÓN INTELIGENTE: Verificar si es PEM o base64 puro
+    if (certificadoData.includes('-----BEGIN CERTIFICATE-----')) {
+      console.log('📋 DEBUG CERT: Formato PEM detectado, extrayendo base64...');
+      // Es formato PEM, extraer solo el contenido base64
+      cerBase64 = certificadoData
+        .replace(/-----BEGIN CERTIFICATE-----/g, '')
+        .replace(/-----END CERTIFICATE-----/g, '')
+        .replace(/\s/g, ''); // Eliminar espacios, saltos de línea, etc.
+      
+      console.log('📋 DEBUG CERT: Base64 extraído, longitud:', cerBase64.length);
+    } else if (certificadoData.startsWith('data:')) {
+      console.log('📋 DEBUG CERT: Formato data URL detectado, extrayendo base64...');
+      // Es data URL (data:application/octet-stream;base64,XXXXX)
+      cerBase64 = certificadoData.split(',')[1];
+    } else {
+      console.log('📋 DEBUG CERT: Asumiendo formato base64 puro...');
+      // Asumir que es base64 puro
+      cerBase64 = certificadoData;
+    }
+    
+    // Crear buffer desde base64 limpio
+    cerBuffer = Buffer.from(cerBase64, 'base64');
+    console.log('📋 DEBUG CERT: Buffer creado, tamaño:', cerBuffer.length);
+    
     const cert = new crypto.X509Certificate(cerBuffer);
     
     // Extraer número de serie en formato decimal
