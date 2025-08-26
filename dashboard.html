@@ -951,9 +951,9 @@
                             </div>
                         </div>
                         
-                        <!-- Campo de Logo para Edición -->
+                        <!-- Campo de Logo y Color para Edición -->
                         <div class="row">
-                            <div class="col-12">
+                            <div class="col-md-8">
                                 <div class="mb-3">
                                     <label for="editEmisorLogo" class="form-label">
                                         <i class="fas fa-image"></i> Logo del Emisor
@@ -970,6 +970,18 @@
                                         <small class="text-muted">Logo actual:</small><br>
                                         <img id="editLogoActualImg" src="" alt="Logo actual" style="max-width: 150px; max-height: 75px; border-radius: 8px; border: 1px solid #ddd;">
                                     </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editEmisorColor" class="form-label">
+                                        <i class="fas fa-palette"></i> Color Corporativo
+                                    </label>
+                                    <div class="d-flex align-items-center">
+                                        <input type="color" class="form-control form-control-color" id="editEmisorColor" value="#2563eb" style="width: 60px; height: 38px;">
+                                        <input type="text" class="form-control ms-2" id="editEmisorColorText" value="#2563eb" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#2563eb">
+                                    </div>
+                                    <div class="form-text">Se extrae automáticamente del logo o se puede personalizar</div>
                                 </div>
                             </div>
                         </div>
@@ -2873,9 +2885,28 @@
             console.log('🏢 Abriendo modal de emisor...');
             
             try {
-                // Limpiar formulario
+                // Limpiar formulario completamente
                 document.getElementById('formEmisor').reset();
                 document.getElementById('infoCertificado').innerHTML = '<small>Selecciona los archivos CSD para ver la información</small>';
+                
+                // 🧹 LIMPIAR VISTA PREVIA DE LOGO
+                const logoPreview = document.getElementById('logoPreview');
+                const logoPreviewImg = document.getElementById('logoPreviewImg');
+                if (logoPreview && logoPreviewImg) {
+                    logoPreview.style.display = 'none';
+                    logoPreviewImg.src = '';
+                }
+                
+                // 🎨 RESETEAR CAMPOS DE COLOR A VALORES POR DEFECTO
+                const colorPicker = document.getElementById('emisorColor');
+                const colorText = document.getElementById('emisorColorText');
+                if (colorPicker && colorText) {
+                    colorPicker.value = '#2563eb';
+                    colorText.value = '#2563eb';
+                }
+                
+                console.log('🧹 Formulario completamente limpiado (logo, color, campos)');
+                
                 
                 // Configurar event listeners para archivos CSD ANTES de mostrar el modal
                 setupCSDFileListeners();
@@ -3771,6 +3802,16 @@
                     if (logoActual) {
                         logoActual.style.display = 'none';
                     }
+                }
+                
+                // 🎨 CARGAR COLOR CORPORATIVO ACTUAL
+                const colorActual = emisor.color || '#2563eb';
+                const editColorPicker = document.getElementById('editEmisorColor');
+                const editColorText = document.getElementById('editEmisorColorText');
+                if (editColorPicker && editColorText) {
+                    editColorPicker.value = colorActual;
+                    editColorText.value = colorActual;
+                    console.log('🎨 COLOR EDIT: Color cargado:', colorActual);
                 }
                 
                 // Limpiar vista previa de nuevo logo
