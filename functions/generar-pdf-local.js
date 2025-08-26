@@ -523,25 +523,25 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const { xml_id } = requestData;
-        if (!xml_id) {
+        const { xmlId } = requestData;
+        if (!xmlId) {
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ 
                     error: 'ID del XML es requerido',
-                    campo_requerido: 'xml_id'
+                    campo_requerido: 'xmlId'
                 })
             };
         }
 
-        console.log('🔍 DB: Buscando XML con ID:', xml_id);
+        console.log('🔍 DB: Buscando XML con ID:', xmlId);
 
         // Obtener XML de la base de datos
         const { data: xmlData, error: xmlError } = await supabase
             .from('xmls')
             .select('*')
-            .eq('id', xml_id)
+            .eq('id', xmlId)
             .eq('usuario_id', usuario.id)
             .single();
 
@@ -552,7 +552,7 @@ exports.handler = async (event, context) => {
                 headers,
                 body: JSON.stringify({ 
                     error: 'XML no encontrado o no tienes permisos para accederlo',
-                    xml_id: xml_id,
+                    xmlId: xmlId,
                     usuario_id: usuario.id
                 })
             };
@@ -622,7 +622,7 @@ exports.handler = async (event, context) => {
                     size_bytes: pdfBuffer.length,
                     size_base64: pdfBase64.length,
                     generator: 'local-puppeteer',
-                    xml_id: xml_id,
+                    xmlId: xmlId,
                     emisor: emisorData ? {
                         rfc: emisorData.rfc,
                         nombre: emisorData.nombre,
