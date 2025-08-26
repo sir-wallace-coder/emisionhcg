@@ -652,6 +652,18 @@ exports.handler = async (event, context) => {
         };
     }
 
+    // 🔧 DECIDIR MÉTODO DE GENERACIÓN SEGÚN CONFIGURACIÓN - LOGS FUERA DEL TRY
+    console.error('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
+    console.error('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
+    console.error('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
+    console.error('🔧 GENERAR PDF: PDF_CONFIG completo:', JSON.stringify(PDF_CONFIG, null, 2));
+    console.error('🔧 GENERAR PDF: process.env.PDF_GENERATION_MODE:', process.env.PDF_GENERATION_MODE);
+    console.log('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
+    console.log('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
+    console.log('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
+    console.log('🔧 GENERAR PDF: PDF_CONFIG completo:', JSON.stringify(PDF_CONFIG, null, 2));
+    console.log('🔧 GENERAR PDF: process.env.PDF_GENERATION_MODE:', process.env.PDF_GENERATION_MODE);
+
     try {
         // Verificar autenticación
         const authHeader = event.headers.authorization || event.headers.Authorization;
@@ -797,17 +809,7 @@ exports.handler = async (event, context) => {
             console.error('❌ GENERAR PDF: Error obteniendo datos del emisor:', emisorError.message);
         }
 
-        // 🔧 DECIDIR MÉTODO DE GENERACIÓN SEGÚN CONFIGURACIÓN
-        console.error('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
-        console.error('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
-        console.error('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
-        console.error('🔧 GENERAR PDF: PDF_CONFIG completo:', JSON.stringify(PDF_CONFIG, null, 2));
-        console.error('🔧 GENERAR PDF: process.env.PDF_GENERATION_MODE:', process.env.PDF_GENERATION_MODE);
-        console.log('🔥🔥🔥 DEBUG CRITICO: INICIANDO DECISION DE GENERADOR 🔥🔥🔥');
-        console.log('🔧 GENERAR PDF: Modo configurado:', PDF_CONFIG.mode);
-        console.log('🔧 GENERAR PDF: Tipo de PDF_CONFIG.mode:', typeof PDF_CONFIG.mode);
-        console.log('🔧 GENERAR PDF: PDF_CONFIG completo:', JSON.stringify(PDF_CONFIG, null, 2));
-        console.log('🔧 GENERAR PDF: process.env.PDF_GENERATION_MODE:', process.env.PDF_GENERATION_MODE);
+        // 🔧 LOGS DE DIAGNÓSTICO MOVIDOS FUERA DEL TRY (líneas 655-665)
         
         let pdfBuffer;
         let metadata = {};
