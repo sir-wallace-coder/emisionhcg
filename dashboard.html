@@ -1276,7 +1276,7 @@
                 `;
                 document.body.appendChild(loadingDiv);
                 
-                const response = await fetch('/.netlify/functions/generar-pdf', {
+                const response = await fetch('/.netlify/functions/generar-pdf-v2', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
