@@ -799,8 +799,40 @@ exports.handler = async (event, context) => {
             }
         }
         
-        // Si es modo RedDoc o fallback desde local
-        if (PDF_CONFIG.mode === 'redoc' || (!pdfBuffer && PDF_CONFIG.redoc.fallback)) {
+        // 🎯 DECISIÓN DE GENERADOR SEGÚN CONFIGURACIÓN
+        if (PDF_CONFIG.mode === 'local') {
+            console.log('🎨 PDF CONFIG: Modo de generación configurado: local');
+            console.log('🎨 PDF LOCAL: Iniciando generación local de PDF...');
+            
+            try {
+                // Usar el generador local que replica RedDoc
+                pdfBuffer = await generarPdfLocal(xmlContent, emisorData);
+                
+                metadata = {
+                    generator: 'local',
+                    hasLogo: !!emisorData?.logo,
+                    hasColor: !!emisorData?.color,
+                    mode: 'local-puppeteer'
+                };
+                
+                console.log('✅ PDF LOCAL: PDF generado exitosamente');
+                console.log('📊 PDF LOCAL: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
+                
+            } catch (localError) {
+                console.error('❌ PDF LOCAL: Error en generación local:', localError.message);
+                console.error('Stack Local:', localError.stack);
+                
+                if (PDF_CONFIG.redoc.fallback) {
+                    console.log('🔄 PDF LOCAL: Intentando fallback a RedDoc...');
+                    // Continuar con RedDoc como fallback
+                } else {
+                    throw localError;
+                }
+            }
+        }
+        
+        // 🔄 GENERADOR REDOC (MODO REDOC O FALLBACK)
+        if (!pdfBuffer) {
             console.log('🚀 GENERAR PDF: Usando SDK oficial de redoc.mx...');
             
             try {
@@ -813,58 +845,54 @@ exports.handler = async (event, context) => {
                 const redoc = new Redoc(redocApiKey);
                 console.log('✅ GENERAR PDF: Cliente @redocmx/client inicializado');
                 
+                console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
+                console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlContent.length, 'caracteres');
+                
                 // Cargar CFDI desde string XML usando método oficial del SDK
-                const cfdi = redoc.cfdi.fromString(xmlData.xml_content);
+                const cfdi = redoc.cfdi.fromString(xmlContent);
                 console.log('✅ GENERAR PDF: CFDI cargado desde XML string');
                 
-                console.log('🔄 GENERAR PDF: Convirtiendo CFDI a PDF usando SDK oficial...');
-                console.log('📊 GENERAR PDF: Tamaño XML para conversión:', xmlData.xml_content.length, 'caracteres');
-            
-            // 🎨 GENERAR ADDENDA XML PARA PERSONALIZACIÓN CORPORATIVA
-            let addendaXml = null;
-            let hasCustomization = false;
-            let logoStatus = 'no_logo';
-            
-            if (emisorData?.logo || emisorData?.color) {
-                console.log('🎨 GENERAR PDF: Creando addenda XML para personalización corporativa');
+                // 🎨 PERSONALIZACIÓN CORPORATIVA CON ADDENDA XML
+                let addendaXml = null;
+                let logoStatus = 'no_logo';
                 
-                // Crear addenda XML dinámicamente
-                let addendaContent = `<?xml version="1.0" encoding="UTF-8"?>
-<rd:redoc xmlns:rd="https://redoc.mx/addenda" 
-          xsi:schemaLocation="https://redoc.mx/addenda https://redoc.mx/addenda/v1.0.0/schema.xsd" 
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-          version="1.0.0">
+                if (emisorData?.logo || emisorData?.color) {
+                    console.log('🎨 GENERAR PDF: Creando addenda XML para personalización corporativa');
+                    
+                    let addendaContent = `<rd:redoc xmlns:rd="http://redoc.mx/addenda">
   <rd:style>
     <rd:pdf>
       <rd:settings>`;
-      
-                // 🚀 MANEJO INTELIGENTE DEL LOGO CORPORATIVO CON UPLOAD AUTOMÁTICO
-                if (emisorData?.logo) {
-                    console.log('🎨 GENERAR PDF: Logo corporativo detectado en base de datos');
-                    console.log('📋 GENERAR PDF: Tamaño del logo:', emisorData.logo.length, 'caracteres base64');
+                    let hasCustomization = false;
                     
-                    const logoPath = `assets/logos/${emisorData.rfc}-logo.png`;
-                    
-                    try {
-                        // 🚀 INTENTAR SUBIR EL LOGO AUTOMÁTICAMENTE A REDOC
-                        console.log('🚀 GENERAR PDF: Intentando subir logo automáticamente a RedDoc...');
-                        const uploadSuccess = await subirLogoARedoc(emisorData.logo, logoPath);
+                    // 🖼️ LOGO CORPORATIVO (REQUIERE UPLOAD PREVIO)
+                    if (emisorData?.logo) {
+                        console.log('🎨 GENERAR PDF: Logo corporativo detectado en base de datos');
+                        console.log('📋 GENERAR PDF: Tamaño del logo:', emisorData.logo.length, 'caracteres base64');
                         
-                        if (uploadSuccess) {
-                            console.log('✅ GENERAR PDF: Logo subido exitosamente a RedDoc:', logoPath);
-                            logoStatus = 'uploaded_success';
-                        } else {
-                            console.log('⚠️ GENERAR PDF: No se pudo subir el logo, usando sin logo');
-                            logoStatus = 'upload_failed';
+                        const logoPath = `assets/logos/${emisorData.rfc}-logo.png`;
+                        
+                        try {
+                            if (PDF_CONFIG.redoc.uploadLogo) {
+                                console.log('🚀 GENERAR PDF: Intentando subir logo automáticamente a RedDoc...');
+                                const uploadSuccess = await subirLogoARedoc(emisorData.logo, logoPath);
+                                
+                                if (uploadSuccess) {
+                                    console.log('✅ GENERAR PDF: Logo subido exitosamente a RedDoc:', logoPath);
+                                    logoStatus = 'uploaded_success';
+                                } else {
+                                    console.log('⚠️ GENERAR PDF: No se pudo subir el logo, usando sin logo');
+                                    logoStatus = 'upload_failed';
+                                }
+                            }
+                        } catch (uploadError) {
+                            console.error('❌ GENERAR PDF: Error subiendo logo:', uploadError.message);
+                            logoStatus = 'upload_error';
                         }
-                    } catch (uploadError) {
-                        console.error('❌ GENERAR PDF: Error subiendo logo:', uploadError.message);
-                        logoStatus = 'upload_error';
-                    }
-                    
-                    // Agregar logo a la addenda (funcionará si se subió exitosamente)
-                    if (logoStatus === 'uploaded_success') {
-                        addendaContent += `
+                        
+                        // Agregar logo a la addenda (funcionará si se subió exitosamente)
+                        if (logoStatus === 'uploaded_success') {
+                            addendaContent += `
         <rd:section id="header">
           <rd:option id="logo" value="${logoPath}" />
           <rd:option id="logo-horizontal-align" value="center" />
@@ -872,77 +900,77 @@ exports.handler = async (event, context) => {
           <rd:option id="logo-width" value="120" />
           <rd:option id="logo-height" value="60" />
         </rd:section>`;
-                        hasCustomization = true;
-                    } else {
-                        console.log('📋 GENERAR PDF: Omitiendo logo en addenda (no disponible en RedDoc)');
+                            hasCustomization = true;
+                        } else {
+                            console.log('📋 GENERAR PDF: Omitiendo logo en addenda (no disponible en RedDoc)');
+                        }
                     }
-                }
-                
+                    
                     // ✅ COLOR CORPORATIVO (FUNCIONA DIRECTAMENTE)
-                if (emisorData?.color) {
-                    console.log('✅ GENERAR PDF: Aplicando color corporativo (funcional):', emisorData.color);
-                    addendaContent += `
+                    if (emisorData?.color) {
+                        console.log('✅ GENERAR PDF: Aplicando color corporativo (funcional):', emisorData.color);
+                        addendaContent += `
         <rd:section id="document">
           <rd:option id="primary-color" value="${emisorData.color}" />
           <rd:option id="accent-color" value="${emisorData.color}" />
           <rd:option id="header-background-color" value="${emisorData.color}" />
         </rd:section>`;
-                    hasCustomization = true;
-                }
-                
-                addendaContent += `
+                        hasCustomization = true;
+                    }
+                    
+                    addendaContent += `
       </rd:settings>
     </rd:pdf>
   </rd:style>
 </rd:redoc>`;
-                
-                addendaXml = addendaContent;
-                console.log('🎨 GENERAR PDF: Addenda XML generada:', {
-                    rfc: emisorData?.rfc,
-                    tiene_logo_bd: !!emisorData?.logo,
-                    logo_status: logoStatus,
-                    color_corporativo: emisorData?.color,
-                    personalizacion_activa: hasCustomization
-                });
-            }
-            
-            // Aplicar addenda si existe personalización corporativa
-            if (addendaXml) {
-                try {
-                    console.log('🎨 GENERAR PDF: Aplicando addenda XML al CFDI...');
-                    const addenda = redoc.addenda.fromString(addendaXml);
-                    cfdi.setAddenda(addenda);
-                    console.log('✅ GENERAR PDF: Addenda XML aplicada exitosamente');
-                } catch (addendaError) {
-                    console.error('❌ GENERAR PDF: Error aplicando addenda XML:', addendaError.message);
-                    console.log('📝 GENERAR PDF: Continuando sin personalización corporativa');
+                    
+                    addendaXml = addendaContent;
+                    console.log('🎨 GENERAR PDF: Addenda XML generada:', {
+                        rfc: emisorData?.rfc,
+                        tiene_logo_bd: !!emisorData?.logo,
+                        logo_status: logoStatus,
+                        color_corporativo: emisorData?.color,
+                        personalizacion_activa: hasCustomization
+                    });
                 }
-            } else {
-                console.log('📊 GENERAR PDF: Sin personalización corporativa, usando estilo estándar');
-            }
-            
-            // Convertir CFDI a PDF usando el SDK oficial
-            const pdf = await cfdi.toPdf();
-            
-            // Obtener buffer del PDF según documentación oficial
-            pdfBuffer = pdf.toBuffer();
-            
-            console.log('✅ GENERAR PDF: PDF generado exitosamente con SDK oficial');
-            console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
-            
-            // Extraer metadatos del PDF usando métodos oficiales del SDK
-            metadata = {
-                generator: 'redoc',
-                transactionId: pdf.getTransactionId(),
-                totalPages: pdf.getTotalPages(),
-                processTime: pdf.getTotalTimeMs(),
-                xmlMeta: pdf.getMetadata(),
-                hasLogo: !!emisorData?.logo,
-                hasColor: !!emisorData?.color
-            };
-            
-            console.log('📋 GENERAR PDF: Metadatos extraídos del SDK:', metadata);
-            
+                
+                // Aplicar addenda si existe personalización corporativa
+                if (addendaXml) {
+                    try {
+                        console.log('🎨 GENERAR PDF: Aplicando addenda XML al CFDI...');
+                        const addenda = redoc.addenda.fromString(addendaXml);
+                        cfdi.setAddenda(addenda);
+                        console.log('✅ GENERAR PDF: Addenda XML aplicada exitosamente');
+                    } catch (addendaError) {
+                        console.error('❌ GENERAR PDF: Error aplicando addenda XML:', addendaError.message);
+                        console.log('📝 GENERAR PDF: Continuando sin personalización corporativa');
+                    }
+                } else {
+                    console.log('📊 GENERAR PDF: Sin personalización corporativa, usando estilo estándar');
+                }
+                
+                // Convertir CFDI a PDF usando el SDK oficial
+                const pdf = await cfdi.toPdf();
+                
+                // Obtener buffer del PDF según documentación oficial
+                pdfBuffer = pdf.toBuffer();
+                
+                console.log('✅ GENERAR PDF: PDF generado exitosamente con SDK oficial');
+                console.log('📊 GENERAR PDF: Tamaño PDF buffer:', pdfBuffer.length, 'bytes');
+                
+                // Extraer metadatos del PDF usando métodos oficiales del SDK
+                metadata = {
+                    generator: 'redoc',
+                    transactionId: pdf.getTransactionId(),
+                    totalPages: pdf.getTotalPages(),
+                    processTime: pdf.getTotalTimeMs(),
+                    xmlMeta: pdf.getMetadata(),
+                    hasLogo: !!emisorData?.logo,
+                    hasColor: !!emisorData?.color
+                };
+                
+                console.log('📋 GENERAR PDF: Metadatos extraídos del SDK:', metadata);
+                
             } catch (sdkError) {
                 console.error('❌ GENERAR PDF: Error del SDK redoc.mx:', sdkError.message);
                 console.error('Stack SDK:', sdkError.stack);
@@ -951,7 +979,7 @@ exports.handler = async (event, context) => {
                     console.log('🔄 GENERAR PDF: Intentando fallback con API HTTP directa...');
                     
                     try {
-                        const httpResult = await generarPdfViaHttp(xmlData.xml_content, redocApiKey, stylePdf);
+                        const httpResult = await generarPdfViaHttp(xmlContent, redocApiKey, null);
                         pdfBuffer = Buffer.from(httpResult.content, 'base64');
                         metadata = {
                             generator: 'redoc-http-fallback',
