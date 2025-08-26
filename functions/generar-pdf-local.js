@@ -524,21 +524,26 @@ exports.handler = async (event, context) => {
         }
 
         const { xmlId } = requestData;
-        if (!xmlId) {
+        
+        // Validar que xmlId existe y no es "undefined"
+        if (!xmlId || xmlId === 'undefined' || xmlId === undefined) {
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ 
-                    error: 'ID del XML es requerido',
-                    campo_requerido: 'xmlId'
+                    error: 'ID del XML es requerido y debe ser válido',
+                    campo_requerido: 'xmlId',
+                    valor_recibido: xmlId,
+                    tipo_recibido: typeof xmlId
                 })
             };
         }
 
         console.log('🔍 DB: Buscando XML con ID:', xmlId);
+        console.log('🔍 DB: Tipo de xmlId:', typeof xmlId);
 
         // Obtener XML de la base de datos
-        const { data: xmlData, error: xmlError } = await supabase
+        let { data: xmlData, error: xmlError } = await supabase
             .from('xmls_generados')
             .select('*')
             .eq('id', xmlId)
