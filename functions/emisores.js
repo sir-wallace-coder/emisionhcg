@@ -464,7 +464,8 @@ async function getEmisores(userId, headers, emisorId = null) {
         tiene_cer: !!emisor.certificado_cer,
         tiene_key: !!emisor.certificado_key,
         numero_certificado: emisor.numero_certificado,
-        estado_csd: emisor.estado_csd
+        estado_csd: emisor.estado_csd,
+        color: emisor.color // 🎨 DEBUG COLOR
       });
       
       // 🔧 CALCULAR PROPIEDADES ANTES de eliminar campos sensibles (igual que en lista)
@@ -514,7 +515,8 @@ async function getEmisores(userId, headers, emisorId = null) {
         tiene_cer: !!emisor.certificado_cer,
         tiene_key: !!emisor.certificado_key,
         numero_certificado: emisor.numero_certificado,
-        estado_csd: emisor.estado_csd
+        estado_csd: emisor.estado_csd,
+        color: emisor.color // 🎨 DEBUG COLOR
       });
       
       // 🔧 CALCULAR PROPIEDADES ANTES de eliminar campos sensibles
@@ -1089,8 +1091,16 @@ async function createEmisor(userId, data, headers) {
       codigo_postal: emisorData.codigo_postal,
       regimen_fiscal: emisorData.regimen_fiscal,
       activo: emisorData.activo,
+      color: emisorData.color, // 🎨 DEBUG COLOR ANTES DE INSERTAR
       tiene_certificados: !!certificadoInfo,
       campos_certificado: certificadoInfo ? Object.keys(certificadoInfo) : []
+    });
+    
+    // 🎨 DEBUG ESPECÍFICO PARA COLOR
+    console.log('🎨 COLOR DEBUG: Valor que se va a insertar:', {
+      color_value: emisorData.color,
+      color_type: typeof emisorData.color,
+      color_length: emisorData.color ? emisorData.color.length : 0
     });
     
     let nuevoEmisor = null;
