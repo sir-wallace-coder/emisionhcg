@@ -146,7 +146,7 @@ function convertirNumeroALetras(numero, moneda = 'MXN') {
     
     if (numero === 0) return 'CERO PESOS 00/100 M.N.';
     
-    const entero = Math.floor(numero);
+    let entero = Math.floor(numero);
     const centavos = Math.round((numero - entero) * 100);
     
     let resultado = '';
