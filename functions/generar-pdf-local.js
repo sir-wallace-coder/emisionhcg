@@ -261,7 +261,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     // Variables de emisor y receptor (campos faltantes)
     let emisorRegimenFiscal = '';
     let emisorCodigoPostal = '';
+    let lugarExpedicion = '';
     let receptorCodigoPostal = '';
+    let tipoComprobante = '';
     
     try {
         // Extraer conceptos del XML usando regex simple
@@ -325,8 +327,18 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         // Extraer campos faltantes del emisor y receptor
         emisorRegimenFiscal = xmlContent.match(/<cfdi:Emisor[^>]*RegimenFiscal="([^"]*)"/)?.[1] || '';
         emisorCodigoPostal = xmlContent.match(/<cfdi:DomicilioFiscal[^>]*CodigoPostal="([^"]*)"/)?.[1] || '';
+        lugarExpedicion = xmlContent.match(/LugarExpedicion="([^"]*)"/)?.[1] || '';
         receptorCodigoPostal = xmlContent.match(/<cfdi:Receptor[^>]*DomicilioFiscalReceptor="([^"]*)"/)?.[1] || 
                               xmlContent.match(/<cfdi:Receptor[^>]*CodigoPostal="([^"]*)"/)?.[1] || '';
+        
+        // Extraer tipo de comprobante y convertir a texto
+        const tipoComprobanteCode = xmlContent.match(/TipoDeComprobante="([^"]*)"/)?.[1] || '';
+        switch(tipoComprobanteCode) {
+            case 'I': tipoComprobante = 'Ingreso'; break;
+            case 'E': tipoComprobante = 'Egreso'; break;
+            case 'T': tipoComprobante = 'Traslado'; break;
+            default: tipoComprobante = tipoComprobanteCode;
+        }
         
         // Extraer campos SAT oficiales
         noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
@@ -436,6 +448,12 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         .emisor-cp {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        .emisor-expedicion {
             font-size: 12px;
             color: #666;
             margin-bottom: 10px;
@@ -747,7 +765,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 <div class="emisor-nombre">${emisorData.nombre || xmlData.emisor_nombre}</div>
                 <div class="emisor-rfc">RFC: ${emisorData.rfc || xmlData.emisor_rfc}</div>
                 ${emisorRegimenFiscal ? `<div class="emisor-regimen">Régimen Fiscal: ${emisorRegimenFiscal}</div>` : ''}
-                ${emisorCodigoPostal ? `<div class="emisor-cp">Lugar de Emisión: ${emisorCodigoPostal}</div>` : ''}
+                ${lugarExpedicion ? `<div class="emisor-expedicion">Lugar de Expedición: ${lugarExpedicion}</div>` : ''}
             </div>
             
             <div class="factura-info">
@@ -756,6 +774,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                     <div><strong>Serie:</strong> ${xmlData.serie}</div>
                     <div><strong>Folio:</strong> ${xmlData.folio}</div>
                     <div><strong>Fecha:</strong> ${fecha}</div>
+                    ${tipoComprobante ? `<div><strong>Tipo:</strong> ${tipoComprobante}</div>` : ''}
                 </div>
             </div>
         </div>
