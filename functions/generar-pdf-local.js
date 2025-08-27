@@ -10,7 +10,9 @@
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-// Solución ultra-ligera: Mantener lógica local, usar servicio externo solo para HTML→PDF
+// GENERADOR PDF IDÉNTICO A REDOC - Puppeteer con configuración específica
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 
 console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
 
@@ -21,83 +23,467 @@ console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
  * @returns {Buffer} - Buffer del PDF
  */
 async function convertirHtmlAPdfLigero(html) {
-    console.log('🔄 PDF: Convirtiendo HTML a PDF con servicio ligero...');
+    console.log('🔄 PDF: Convirtiendo HTML a PDF con servicio confiable...');
     
-    try {
-        // Usar API pública ligera para HTML→PDF
-        const response = await fetch('https://api.html-css-to-pdf.com/v1/generate', {
-            method: 'POST',
+    // Intentar múltiples servicios PDF confiables
+    const servicios = [
+        {
+            nombre: 'htmlcsstoimage',
+            url: 'https://hcti.io/v1/image',
             headers: {
+                'Authorization': 'Basic ' + Buffer.from('demo:demo').toString('base64'),
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
+            body: {
+                html: html,
+                format: 'pdf',
+                width: 794,
+                height: 1123
+            }
+        },
+        {
+            nombre: 'api2pdf',
+            url: 'https://v2.api2pdf.com/chrome/pdf/html',
+            headers: {
+                'Authorization': 'demo-key',
+                'Content-Type': 'application/json'
+            },
+            body: {
                 html: html,
                 options: {
                     format: 'A4',
-                    margin: {
-                        top: '1cm',
-                        right: '1cm',
-                        bottom: '1cm',
-                        left: '1cm'
-                    },
-                    printBackground: true
+                    margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' }
                 }
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error del servicio PDF: ${response.status}`);
+            }
+        }
+    ];
+    
+    for (const servicio of servicios) {
+        try {
+            console.log(`🔄 PDF: Intentando con ${servicio.nombre}...`);
+            
+            const response = await fetch(servicio.url, {
+                method: 'POST',
+                headers: servicio.headers,
+                body: JSON.stringify(servicio.body)
+            });
+            
+            if (response.ok) {
+                const pdfBuffer = Buffer.from(await response.arrayBuffer());
+                console.log(`✅ PDF: Conversión exitosa con ${servicio.nombre}`);
+                console.log(`📊 PDF: Tamaño real: ${pdfBuffer.length} bytes`);
+                
+                // Verificar que es realmente un PDF
+                if (pdfBuffer.length > 100 && pdfBuffer.toString('ascii', 0, 4) === '%PDF') {
+                    console.log('✅ PDF: Archivo PDF válido confirmado');
+                    return pdfBuffer;
+                } else {
+                    console.log('❌ PDF: Respuesta no es un PDF válido');
+                }
+            }
+        } catch (error) {
+            console.error(`❌ PDF: Error con ${servicio.nombre}:`, error.message);
+        }
+    }
+    
+    // Si todos los servicios fallan, generar PDF simple con jsPDF
+    console.log('🔄 PDF: Todos los servicios fallaron, usando generador simple...');
+    return generarPdfSimple(html);
+}
+
+/**
+ * 🎨 GENERADOR HTML IDÉNTICO A REDOC
+ * Replica EXACTAMENTE el formato visual de RedDoc
+ * @param {Object} xmlData - Datos parseados del XML
+ * @param {Object} emisorData - Datos del emisor
+ * @returns {string} - HTML con formato idéntico a RedDoc
+ */
+function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
+    console.log('🎨 HTML: Generando HTML con formato RedDoc...');
+    
+    const logoBase64 = emisorData.logo || '';
+    const colorCorporativo = emisorData.color || '#2563eb';
+    
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura CFDI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        const pdfBuffer = Buffer.from(await response.arrayBuffer());
-        console.log('✅ PDF: Conversión exitosa con servicio ligero');
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
         
-        return pdfBuffer;
+        .factura-container {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 15mm;
+            background: white;
+        }
         
-    } catch (error) {
-        console.error('❌ PDF: Error en servicio ligero:', error.message);
+        /* Header con logo y datos del emisor */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            border-bottom: 2px solid ${colorCorporativo};
+            padding-bottom: 15px;
+        }
         
-        // Fallback: generar respuesta con HTML
-        console.log('🔄 PDF: Usando fallback HTML...');
-        return generarPdfFallbackHtml(html);
-    }
+        .logo-section {
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .logo {
+            max-width: 150px;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        
+        .emisor-info {
+            flex: 2;
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .emisor-nombre {
+            font-size: 18px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 5px;
+        }
+        
+        .emisor-rfc {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .factura-info {
+            flex: 1;
+            text-align: right;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid ${colorCorporativo};
+        }
+        
+        .factura-titulo {
+            font-size: 16px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 10px;
+        }
+        
+        .factura-datos {
+            font-size: 12px;
+        }
+        
+        .factura-datos div {
+            margin-bottom: 3px;
+        }
+        
+        /* Sección del receptor */
+        .receptor-section {
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid ${colorCorporativo};
+        }
+        
+        .receptor-titulo {
+            font-size: 14px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 10px;
+        }
+        
+        .receptor-datos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        /* Tabla de conceptos */
+        .conceptos-section {
+            margin: 20px 0;
+        }
+        
+        .conceptos-titulo {
+            font-size: 14px;
+            font-weight: bold;
+            color: ${colorCorporativo};
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .conceptos-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        
+        .conceptos-tabla th {
+            background: ${colorCorporativo};
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        
+        .conceptos-tabla td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        
+        .conceptos-tabla tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        /* Totales */
+        .totales-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .totales-tabla {
+            width: 300px;
+            border-collapse: collapse;
+        }
+        
+        .totales-tabla td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+        }
+        
+        .totales-tabla .label {
+            background: #f8f9fa;
+            font-weight: bold;
+            text-align: right;
+            width: 60%;
+        }
+        
+        .totales-tabla .valor {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .total-final {
+            background: ${colorCorporativo} !important;
+            color: white !important;
+            font-size: 14px;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .campo {
+            margin-bottom: 3px;
+        }
+        
+        .campo strong {
+            color: #333;
+        }
+        
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="factura-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                ${logoBase64 ? `<img src="data:image/png;base64,${logoBase64}" alt="Logo" class="logo">` : ''}
+            </div>
+            
+            <div class="emisor-info">
+                <div class="emisor-nombre">${xmlData.emisor.nombre}</div>
+                <div class="emisor-rfc">RFC: ${xmlData.emisor.rfc}</div>
+            </div>
+            
+            <div class="factura-info">
+                <div class="factura-titulo">FACTURA</div>
+                <div class="factura-datos">
+                    <div><strong>Serie:</strong> ${xmlData.serie}</div>
+                    <div><strong>Folio:</strong> ${xmlData.folio}</div>
+                    <div><strong>Fecha:</strong> ${xmlData.fecha}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Receptor -->
+        <div class="receptor-section">
+            <div class="receptor-titulo">DATOS DEL CLIENTE</div>
+            <div class="receptor-datos">
+                <div>
+                    <div class="campo"><strong>Nombre:</strong> ${xmlData.receptor.nombre}</div>
+                    <div class="campo"><strong>RFC:</strong> ${xmlData.receptor.rfc}</div>
+                </div>
+                <div>
+                    <div class="campo"><strong>Uso CFDI:</strong> ${xmlData.receptor.uso}</div>
+                    <div class="campo"><strong>Moneda:</strong> ${xmlData.moneda}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conceptos -->
+        <div class="conceptos-section">
+            <div class="conceptos-titulo">CONCEPTOS</div>
+            <table class="conceptos-tabla">
+                <thead>
+                    <tr>
+                        <th style="width: 8%">Cantidad</th>
+                        <th style="width: 10%">Unidad</th>
+                        <th style="width: 12%">Clave</th>
+                        <th style="width: 45%">Descripción</th>
+                        <th style="width: 12%">Precio Unit.</th>
+                        <th style="width: 13%">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${xmlData.conceptos.map(concepto => `
+                        <tr>
+                            <td>${concepto.cantidad}</td>
+                            <td>${concepto.claveUnidad}</td>
+                            <td>${concepto.claveProdServ}</td>
+                            <td>${concepto.descripcion}</td>
+                            <td style="text-align: right;">$${parseFloat(concepto.valorUnitario).toFixed(2)}</td>
+                            <td style="text-align: right;">$${parseFloat(concepto.importe).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Totales -->
+        <div class="totales-section">
+            <table class="totales-tabla">
+                <tr>
+                    <td class="label">Subtotal:</td>
+                    <td class="valor">$${parseFloat(xmlData.subtotal).toFixed(2)}</td>
+                </tr>
+                <tr>
+                    <td class="label">IVA (16%):</td>
+                    <td class="valor">$${(parseFloat(xmlData.subtotal) * 0.16).toFixed(2)}</td>
+                </tr>
+                <tr class="total-final">
+                    <td class="label total-final">TOTAL:</td>
+                    <td class="valor total-final">$${parseFloat(xmlData.total).toFixed(2)}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Este documento es una representación impresa de un CFDI</p>
+        </div>
+    </div>
+</body>
+</html>`;
+    
+    console.log('✅ HTML: HTML con formato RedDoc generado exitosamente');
+    return html;
 }
 
 /**
- * 🔧 FALLBACK PDF SIMPLE
- * @param {string} html - HTML generado
- * @returns {Buffer} - Buffer con HTML como fallback
- */
-function generarPdfFallbackHtml(html) {
-    console.log('🔧 PDF: Generando fallback HTML...');
-    const htmlBuffer = Buffer.from(html, 'utf8');
-    console.log('✅ PDF: Fallback HTML generado');
-    return htmlBuffer;
-}
-
-/**
- * 🎨 GENERADOR DE PDF ULTRA-LIGERO
- * Mantiene TODA la lógica local (parsing, HTML, estilos) y usa servicio externo solo para HTML→PDF
+ * 🎨 GENERADOR DE PDF IDÉNTICO A REDOC
+ * Genera un PDF usando Puppeteer con el formato EXACTO de RedDoc
  * @param {string} xmlContent - Contenido del XML CFDI
  * @param {Object} emisorData - Datos del emisor (logo, color, etc.)
  * @returns {Buffer} - Buffer del PDF generado
  */
 async function generarPdfLocal(xmlContent, emisorData = {}) {
-    console.log('🎨 PDF LOCAL: Iniciando generación ULTRA-LIGERA de PDF...');
+    console.log('🎨 PDF LOCAL: Iniciando generación IDÉNTICA A REDOC...');
     
+    let browser = null;
     try {
-        // Parsear XML para extraer datos (LÓGICA 100% LOCAL)
+        // Parsear XML para extraer datos
         console.log('📋 PDF LOCAL: Parseando XML CFDI...');
         const xmlData = parsearXmlCfdi(xmlContent);
         
-        // Generar HTML con estilo profesional (LÓGICA 100% LOCAL)
-        console.log('🎨 PDF LOCAL: Generando HTML con estilos...');
-        const html = generarHtmlProfesional(xmlData, emisorData);
+        // Generar HTML con formato EXACTO de RedDoc
+        console.log('🎨 PDF LOCAL: Generando HTML con formato RedDoc...');
+        const html = generarHtmlRedocIdentico(xmlData, emisorData);
         
-        // Usar servicio externo ligero SOLO para HTML→PDF
-        console.log('📄 PDF LOCAL: Convirtiendo HTML a PDF con servicio ligero...');
-        const pdfBuffer = await convertirHtmlAPdfLigero(html);
-
+        // Configurar Puppeteer para serverless
+        console.log('🔧 PDF LOCAL: Configurando Puppeteer para serverless...');
+        const puppeteerConfig = {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=VizDisplayCompositor',
+                '--single-process',
+                '--no-zygote'
+            ]
+        };
+        
+        // Detectar entorno serverless
+        if (process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+            console.log('🔧 PDF LOCAL: Configurando Chrome para serverless...');
+            puppeteerConfig.executablePath = await chromium.executablePath();
+            puppeteerConfig.args = [...puppeteerConfig.args, ...chromium.args];
+            puppeteerConfig.defaultViewport = chromium.defaultViewport;
+            puppeteerConfig.headless = chromium.headless;
+        }
+        
+        // Lanzar navegador
+        console.log('🚀 PDF LOCAL: Lanzando navegador...');
+        browser = await puppeteer.launch(puppeteerConfig);
+        const page = await browser.newPage();
+        
+        // Configurar página para PDF idéntico a RedDoc
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        
+        console.log('📄 PDF LOCAL: Generando PDF con formato RedDoc...');
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            margin: {
+                top: '20mm',
+                right: '15mm',
+                bottom: '20mm',
+                left: '15mm'
+            },
+            printBackground: true,
+            preferCSSPageSize: true
+        });
+        
         console.log('✅ PDF LOCAL: PDF generado exitosamente');
         console.log('📊 PDF LOCAL: Tamaño:', pdfBuffer.length, 'bytes');
         
@@ -106,6 +492,11 @@ async function generarPdfLocal(xmlContent, emisorData = {}) {
     } catch (error) {
         console.error('❌ PDF LOCAL: Error generando PDF:', error.message);
         throw error;
+    } finally {
+        if (browser) {
+            await browser.close();
+            console.log('🔧 PDF LOCAL: Navegador cerrado');
+        }
     }
 }
 
