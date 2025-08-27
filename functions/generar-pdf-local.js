@@ -264,16 +264,16 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         const conceptoMatches = xmlContent.match(/<cfdi:Concepto[^>]*>/g) || [];
         
         conceptos = conceptoMatches.map(match => {
-            const cantidad = (match.match(/Cantidad="([^"]*)"/)?.[1] || '1.00');
-            const claveUnidad = (match.match(/ClaveUnidad="([^"]*)"/)?.[1] || 'ACT');
-            const unidad = (match.match(/Unidad="([^"]*)"/)?.[1] || 'Pieza');
-            const claveProdServ = (match.match(/ClaveProdServ="([^"]*)"/)?.[1] || '84111506');
-            const noIdentificacion = (match.match(/NoIdentificacion="([^"]*)"/)?.[1] || '');
-            const descripcion = (match.match(/Descripcion="([^"]*)"/)?.[1] || 'Servicio');
-            const valorUnitario = (match.match(/ValorUnitario="([^"]*)"/)?.[1] || '0.00');
-            const importe = (match.match(/Importe="([^"]*)"/)?.[1] || '0.00');
-            const descuento = (match.match(/Descuento="([^"]*)"/)?.[1] || '0.00');
-            const objetoImp = (match.match(/ObjetoImp="([^"]*)"/)?.[1] || '02');
+            const cantidad = match.match(/Cantidad="([^"]*)"/)?.[1];
+            const claveUnidad = match.match(/ClaveUnidad="([^"]*)"/)?.[1];
+            const unidad = match.match(/Unidad="([^"]*)"/)?.[1];
+            const claveProdServ = match.match(/ClaveProdServ="([^"]*)"/)?.[1];
+            const noIdentificacion = match.match(/NoIdentificacion="([^"]*)"/)?.[1] || '';
+            const descripcion = match.match(/Descripcion="([^"]*)"/)?.[1];
+            const valorUnitario = match.match(/ValorUnitario="([^"]*)"/)?.[1];
+            const importe = match.match(/Importe="([^"]*)"/)?.[1];
+            const descuento = match.match(/Descuento="([^"]*)"/)?.[1] || '0.00';
+            const objetoImp = match.match(/ObjetoImp="([^"]*)"/)?.[1] || '02';
             
             return {
                 cantidad,
@@ -287,6 +287,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 descuento,
                 objetoImp
             };
+        }).filter(concepto => {
+            // Solo incluir conceptos que tengan los campos esenciales
+            return concepto.cantidad && concepto.descripcion && concepto.valorUnitario && concepto.importe;
         });
         
         // Extraer otros datos del XML
