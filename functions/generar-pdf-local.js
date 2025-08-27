@@ -133,6 +133,76 @@ async function convertirHtmlRedocAPdf(html) {
 }
 
 /**
+ * 💰 CONVERTIR NÚMERO A LETRAS (OBLIGATORIO SAT)
+ * Convierte un número a su representación en letras para CFDIs
+ * @param {number} numero - Número a convertir
+ * @param {string} moneda - Moneda (MXN, USD, etc.)
+ * @returns {string} - Número en letras
+ */
+function convertirNumeroALetras(numero, moneda = 'MXN') {
+    const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+    const decenas = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+    
+    if (numero === 0) return 'CERO PESOS 00/100 M.N.';
+    
+    const entero = Math.floor(numero);
+    const centavos = Math.round((numero - entero) * 100);
+    
+    let resultado = '';
+    
+    if (entero >= 1000000) {
+        const millones = Math.floor(entero / 1000000);
+        resultado += convertirGrupo(millones) + (millones === 1 ? ' MILLÓN ' : ' MILLONES ');
+        entero = entero % 1000000;
+    }
+    
+    if (entero >= 1000) {
+        const miles = Math.floor(entero / 1000);
+        if (miles === 1) {
+            resultado += 'MIL ';
+        } else {
+            resultado += convertirGrupo(miles) + ' MIL ';
+        }
+        entero = entero % 1000;
+    }
+    
+    if (entero > 0) {
+        resultado += convertirGrupo(entero);
+    }
+    
+    const monedaTexto = moneda === 'USD' ? 'DÓLARES' : 'PESOS';
+    return `${resultado.trim()} ${monedaTexto} ${centavos.toString().padStart(2, '0')}/100 M.N.`;
+    
+    function convertirGrupo(num) {
+        let texto = '';
+        
+        if (num >= 100) {
+            if (num === 100) {
+                texto += 'CIEN ';
+            } else {
+                texto += centenas[Math.floor(num / 100)] + ' ';
+            }
+            num = num % 100;
+        }
+        
+        if (num >= 20) {
+            texto += decenas[Math.floor(num / 10)];
+            if (num % 10 > 0) {
+                texto += ' Y ' + unidades[num % 10];
+            }
+        } else if (num >= 10) {
+            const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+            texto += especiales[num - 10];
+        } else if (num > 0) {
+            texto += unidades[num];
+        }
+        
+        return texto + ' ';
+    }
+}
+
+/**
  * 🎨 GENERADOR HTML IDÉNTICO A REDOC
  * Replica EXACTAMENTE el formato visual de RedDoc
  * @param {Object} xmlData - Datos parseados del XML
@@ -182,18 +252,26 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         conceptos = conceptoMatches.map(match => {
             const cantidad = (match.match(/Cantidad="([^"]*)"/)?.[1] || '1.00');
             const claveUnidad = (match.match(/ClaveUnidad="([^"]*)"/)?.[1] || 'ACT');
+            const unidad = (match.match(/Unidad="([^"]*)"/)?.[1] || 'Pieza');
             const claveProdServ = (match.match(/ClaveProdServ="([^"]*)"/)?.[1] || '84111506');
+            const noIdentificacion = (match.match(/NoIdentificacion="([^"]*)"/)?.[1] || '');
             const descripcion = (match.match(/Descripcion="([^"]*)"/)?.[1] || 'Servicio');
             const valorUnitario = (match.match(/ValorUnitario="([^"]*)"/)?.[1] || '0.00');
             const importe = (match.match(/Importe="([^"]*)"/)?.[1] || '0.00');
+            const descuento = (match.match(/Descuento="([^"]*)"/)?.[1] || '0.00');
+            const objetoImp = (match.match(/ObjetoImp="([^"]*)"/)?.[1] || '02');
             
             return {
                 cantidad,
                 claveUnidad,
+                unidad,
                 claveProdServ,
+                noIdentificacion,
                 descripcion,
                 valorUnitario,
-                importe
+                importe,
+                descuento,
+                objetoImp
             };
         });
         
@@ -218,11 +296,36 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             usoCfdi = usoCfdiMatch;
         }
         
+        // Extraer campos SAT oficiales
+        const noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
+        const selloDigital = xmlContent.match(/Sello="([^"]*)"/)?.[1] || '';
+        
+        // Detectar si está timbrado
+        const uuidTimbre = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*UUID="([^"]*)"/)?.[1];
+        const esTimbrado = !!uuidTimbre;
+        
+        // Campos de timbrado (solo si está timbrado)
+        let fechaCertificacion = '';
+        let selloSAT = '';
+        let rfcProvCertif = '';
+        
+        if (esTimbrado) {
+            fechaCertificacion = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*FechaTimbrado="([^"]*)"/)?.[1] || '';
+            selloSAT = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*SelloSAT="([^"]*)"/)?.[1] || '';
+            rfcProvCertif = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*RfcProvCertif="([^"]*)"/)?.[1] || '';
+        }
+        
         console.log('🔍 HTML: Conceptos extraidos:', conceptos.length);
         console.log('📅 HTML: Fecha parseada:', fecha);
         console.log('💰 HTML: Moneda parseada:', moneda);
         console.log('💵 HTML: Subtotal parseado:', subtotal);
         console.log('📋 HTML: Uso CFDI parseado:', usoCfdi);
+        console.log('🏷️ SAT: Es timbrado:', esTimbrado);
+        console.log('🏷️ SAT: UUID timbre:', uuidTimbre || 'N/A');
+        console.log('🔐 SAT: Certificado:', noCertificado);
+        
+        // Generar total en letra (obligatorio SAT)
+        const totalEnLetra = convertirNumeroALetras(parseFloat(total || '0'), moneda);
     } catch (parseError) {
         console.error('❌ HTML: Error parseando XML:', parseError.message);
         // Fallback: crear concepto básico
@@ -400,12 +503,13 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         .totales-tabla {
-            width: 300px;
+            width: 100%;
             border-collapse: collapse;
+            margin-top: 10px;
         }
         
         .totales-tabla td {
-            padding: 8px 12px;
+            padding: 8px 15px;
             border: 1px solid #ddd;
         }
         
@@ -413,7 +517,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             background: #f8f9fa;
             font-weight: bold;
             text-align: right;
-            width: 60%;
+            width: 70%;
         }
         
         .totales-tabla .valor {
@@ -424,7 +528,47 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .total-final {
             background: ${colorCorporativo} !important;
             color: white !important;
-            font-size: 14px;
+            font-size: 16px;
+        }
+        
+        /* Estilos SAT oficiales */
+        .total-letra {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid ${colorCorporativo};
+            font-size: 12px;
+        }
+        
+        .campos-sat {
+            margin: 15px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .campo-sat {
+            font-size: 11px;
+            padding: 5px;
+            background: #f8f9fa;
+        }
+        
+        .sellos-digitales {
+            margin: 15px 0;
+        }
+        
+        .sello {
+            margin: 10px 0;
+            font-size: 10px;
+        }
+        
+        .sello-texto {
+            word-break: break-all;
+            background: #f8f9fa;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            font-family: monospace;
         }
         
         /* Footer */
@@ -529,13 +673,42 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 </tr>
                 <tr>
                     <td class="label">IVA (16%):</td>
-                    <td class="valor">${(parseFloat(subtotal) * 0.16).toFixed(2)}</td>
+                    <td class="valor">$${(parseFloat(subtotal) * 0.16).toFixed(2)}</td>
                 </tr>
                 <tr class="total-final">
                     <td class="label total-final">TOTAL:</td>
-                    <td class="valor total-final">$${parseFloat(xmlData.total).toFixed(2)}</td>
+                    <td class="valor total-final">$${parseFloat(xmlData.total).toFixed(2)} ${moneda}</td>
                 </tr>
             </table>
+            
+            <!-- Total en letra (obligatorio SAT) -->
+            <div class="total-letra">
+                <strong>Importe con letra:</strong> ${totalEnLetra}
+            </div>
+            
+            <!-- Campos SAT oficiales -->
+            <div class="campos-sat">
+                <div class="campo-sat"><strong>No. de certificado:</strong> ${noCertificado}</div>
+                ${esTimbrado ? `
+                <div class="campo-sat"><strong>Folio fiscal:</strong> ${uuidTimbre}</div>
+                <div class="campo-sat"><strong>Fecha y hora de certificación:</strong> ${fechaCertificacion}</div>
+                <div class="campo-sat"><strong>RFC Proveedor de certificación:</strong> ${rfcProvCertif}</div>
+                ` : ''}
+            </div>
+            
+            <!-- Sellos digitales -->
+            <div class="sellos-digitales">
+                <div class="sello">
+                    <strong>Sello digital del CFDI:</strong>
+                    <div class="sello-texto">${selloDigital}</div>
+                </div>
+                ${esTimbrado ? `
+                <div class="sello">
+                    <strong>Sello digital del SAT:</strong>
+                    <div class="sello-texto">${selloSAT}</div>
+                </div>
+                ` : ''}
+            </div>
         </div>
         
         <!-- Footer -->
@@ -949,24 +1122,34 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
             <!-- Conceptos -->
             <div class="section">
                 <div class="section-title">Conceptos</div>
-                <table class="conceptos-table">
+                <table class="conceptos-tabla">
                     <thead>
                         <tr>
+                            <th>Código</th>
+                            <th>No. Identificación</th>
                             <th>Cantidad</th>
+                            <th>Clave unidad</th>
                             <th>Unidad</th>
                             <th>Descripción</th>
-                            <th>Precio Unitario</th>
+                            <th>Valor unitario</th>
                             <th>Importe</th>
+                            <th>Descuento</th>
+                            <th>Objeto Imp.</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${conceptos.map(concepto => `
                             <tr>
+                                <td>${concepto.claveProdServ}</td>
+                                <td>${concepto.noIdentificacion}</td>
                                 <td>${concepto.cantidad}</td>
                                 <td>${concepto.claveUnidad}</td>
+                                <td>${concepto.unidad}</td>
                                 <td>${concepto.descripcion}</td>
                                 <td>$${parseFloat(concepto.valorUnitario).toFixed(2)}</td>
                                 <td>$${parseFloat(concepto.importe).toFixed(2)}</td>
+                                <td>$${parseFloat(concepto.descuento).toFixed(2)}</td>
+                                <td>${concepto.objetoImp}</td>
                             </tr>
                         `).join('')}
                     </tbody>
