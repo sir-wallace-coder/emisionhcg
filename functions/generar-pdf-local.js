@@ -240,6 +240,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     let conceptos = [];
     let subtotal = '0.00';
     let total = xmlData.total || '0.00';
+    let totalEnLetra = convertirNumeroALetras(parseFloat(total)) || 'CERO PESOS 00/100 M.N.';
     let fecha = '';
     let moneda = 'MXN';
     let usoCfdi = 'G03';
