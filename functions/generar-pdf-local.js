@@ -832,6 +832,7 @@ function parsearXmlCfdi(xmlContent) {
         const serieMatch = xmlContent.match(/Serie="([^"]+)"/);
         const folioMatch = xmlContent.match(/Folio="([^"]+)"/);
         const totalMatch = xmlContent.match(/Total="([^"]+)"/);
+        const totalEnLetra = totalMatch ? convertirNumeroALetras(parseFloat(totalMatch[1])) : 'CERO PESOS 00/100 M.N.';
         const subtotalMatch = xmlContent.match(/SubTotal="([^"]+)"/);
         const monedaMatch = xmlContent.match(/Moneda="([^"]+)"/);
         
