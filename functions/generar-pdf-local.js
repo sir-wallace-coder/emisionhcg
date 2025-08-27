@@ -258,6 +258,11 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     let metodoPago = 'PUE';
     let formaPago = '03';
     
+    // Variables de emisor y receptor (campos faltantes)
+    let emisorRegimenFiscal = '';
+    let emisorCodigoPostal = '';
+    let receptorCodigoPostal = '';
+    
     try {
         // Extraer conceptos del XML usando regex simple
         const xmlContent = xmlData.xml_content || '';
@@ -316,6 +321,12 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         // Extraer método y forma de pago
         metodoPago = xmlContent.match(/MetodoPago="([^"]*)"/)?.[1] || 'PUE';
         formaPago = xmlContent.match(/FormaPago="([^"]*)"/)?.[1] || '03';
+        
+        // Extraer campos faltantes del emisor y receptor
+        emisorRegimenFiscal = xmlContent.match(/<cfdi:Emisor[^>]*RegimenFiscal="([^"]*)"/)?.[1] || '';
+        emisorCodigoPostal = xmlContent.match(/<cfdi:DomicilioFiscal[^>]*CodigoPostal="([^"]*)"/)?.[1] || '';
+        receptorCodigoPostal = xmlContent.match(/<cfdi:Receptor[^>]*DomicilioFiscalReceptor="([^"]*)"/)?.[1] || 
+                              xmlContent.match(/<cfdi:Receptor[^>]*CodigoPostal="([^"]*)"/)?.[1] || '';
         
         // Extraer campos SAT oficiales
         noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
@@ -415,6 +426,18 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .emisor-rfc {
             font-size: 14px;
             font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .emisor-regimen {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        .emisor-cp {
+            font-size: 12px;
+            color: #666;
             margin-bottom: 10px;
         }
         
@@ -723,6 +746,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             <div class="emisor-info">
                 <div class="emisor-nombre">${emisorData.nombre || xmlData.emisor_nombre}</div>
                 <div class="emisor-rfc">RFC: ${emisorData.rfc || xmlData.emisor_rfc}</div>
+                ${emisorRegimenFiscal ? `<div class="emisor-regimen">Régimen Fiscal: ${emisorRegimenFiscal}</div>` : ''}
+                ${emisorCodigoPostal ? `<div class="emisor-cp">Lugar de Emisión: ${emisorCodigoPostal}</div>` : ''}
             </div>
             
             <div class="factura-info">
@@ -742,6 +767,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 <div>
                     <div class="campo"><strong>Nombre:</strong> ${xmlData.receptor_nombre}</div>
                     <div class="campo"><strong>RFC:</strong> ${xmlData.receptor_rfc}</div>
+                    ${receptorCodigoPostal ? `<div class="campo"><strong>Código Postal:</strong> ${receptorCodigoPostal}</div>` : ''}
                 </div>
                 <div>
                     <div class="campo"><strong>Uso CFDI:</strong> ${usoCfdi}</div>
@@ -811,7 +837,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                     </div>
                     <div class="metodo-item">
                         <span class="metodo-label">Forma de pago:</span>
-                        <span class="metodo-valor">${formaPago} - ${formaPago === '03' ? 'Transferencia electrónica de fondos' : formaPago === '01' ? 'Efectivo' : formaPago === '04' ? 'Tarjeta de crédito' : 'Otro método'}</span>
+                        <span class="metodo-valor">${formaPago} - ${formaPago === '03' ? 'Transferencia electrónica de fondos' : formaPago === '01' ? 'Efectivo' : formaPago === '04' ? 'Tarjeta de crédito' : 'Por Definir'}</span>
                     </div>
                 </div>
             </div>
