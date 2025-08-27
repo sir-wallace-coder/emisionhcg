@@ -665,6 +665,31 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             line-height: 1.3;
         }
         
+        .campo-certificado-final {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .campo-certificado-final .campo-sat-oficial {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .campo-certificado-final .campo-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .campo-certificado-final .campo-valor {
+            color: #666;
+            font-family: monospace;
+        }
+        
         /* Footer */
         .footer {
             margin-top: 30px;
@@ -797,10 +822,6 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             
             <!-- Columna derecha: Campos SAT oficiales -->
             <div class="columna-campos-sat">
-                <div class="campo-sat-oficial">
-                    <span class="campo-label">No. de certificado:</span>
-                    <span class="campo-valor">${noCertificado}</span>
-                </div>
                 ${esTimbrado ? `
                 <div class="campo-sat-oficial">
                     <span class="campo-label">Folio fiscal:</span>
@@ -830,6 +851,14 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 <div class="sello-contenido">${selloSAT}</div>
             </div>
             ` : ''}
+            
+            <!-- Número de certificado debajo del sello SAT -->
+            <div class="campo-certificado-final">
+                <div class="campo-sat-oficial">
+                    <span class="campo-label">No. de certificado:</span>
+                    <span class="campo-valor">${noCertificado}</span>
+                </div>
+            </div>
         </div>
         
         <!-- Footer -->
