@@ -10,7 +10,8 @@
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 
 console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
 
@@ -43,10 +44,11 @@ async function generarPdfLocal(xmlContent, emisorData = {}) {
         // Detectar si estamos en entorno serverless
         if (process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME) {
             console.log('🔧 PDF LOCAL: Configurando para entorno serverless');
-            // En serverless, usar chromium empaquetado
-            puppeteerConfig.executablePath = '/opt/chrome/chrome' || 
-                                           process.env.PUPPETEER_EXECUTABLE_PATH ||
-                                           puppeteer.executablePath();
+            // En serverless, usar @sparticuz/chromium
+            puppeteerConfig.executablePath = await chromium.executablePath();
+            puppeteerConfig.args = chromium.args;
+            puppeteerConfig.defaultViewport = chromium.defaultViewport;
+            puppeteerConfig.headless = chromium.headless;
         }
 
         console.log('🚀 PDF LOCAL: Lanzando navegador...');
