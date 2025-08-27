@@ -254,6 +254,10 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     let selloSAT = '';
     let rfcProvCertif = '';
     
+    // Variables de método y forma de pago (definidas fuera del try)
+    let metodoPago = 'PUE';
+    let formaPago = '03';
+    
     try {
         // Extraer conceptos del XML usando regex simple
         const xmlContent = xmlData.xml_content || '';
@@ -307,8 +311,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         // Extraer método y forma de pago
-        const metodoPago = xmlContent.match(/MetodoPago="([^"]*)"/)?.[1] || 'PUE';
-        const formaPago = xmlContent.match(/FormaPago="([^"]*)"/)?.[1] || '03';
+        metodoPago = xmlContent.match(/MetodoPago="([^"]*)"/)?.[1] || 'PUE';
+        formaPago = xmlContent.match(/FormaPago="([^"]*)"/)?.[1] || '03';
         
         // Extraer campos SAT oficiales
         const noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
