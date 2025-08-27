@@ -343,15 +343,6 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         totalEnLetra = convertirNumeroALetras(parseFloat(total || '0'), moneda);
     } catch (parseError) {
         console.error('❌ HTML: Error parseando XML:', parseError.message);
-        // Fallback: crear concepto básico
-        conceptos = [{
-            cantidad: '1.00',
-            claveUnidad: 'ACT',
-            claveProdServ: '84111506',
-            descripcion: 'Servicio',
-            valorUnitario: xmlData.total || '0.00',
-            importe: xmlData.total || '0.00'
-        }];
     }
     
     const html = `
