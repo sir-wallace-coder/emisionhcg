@@ -1010,7 +1010,22 @@ exports.handler = async (event, context) => {
         console.log('🔍 DB: Usuario ID para consulta:', usuarioId);
         console.log('🔍 DB: Tipo de usuario ID para consulta:', typeof usuarioId);
 
-        // Obtener XML de la base de datos
+        // Primero verificar si el XML existe (sin filtro de usuario)
+        console.log('🔍 DB: Verificando si XML existe sin filtro de usuario...');
+        let { data: xmlCheck, error: xmlCheckError } = await supabase
+            .from('xmls_generados')
+            .select('id, usuario_id, emisor_rfc, estado')
+            .eq('id', xmlId);
+            
+        console.log('🔍 DB: XML existe?', xmlCheck?.length > 0 ? 'SÍ' : 'NO');
+        if (xmlCheck?.length > 0) {
+            console.log('🔍 DB: XML encontrado:', xmlCheck[0]);
+            console.log('🔍 DB: Usuario del XML:', xmlCheck[0].usuario_id);
+            console.log('🔍 DB: Usuario actual:', usuarioId);
+            console.log('🔍 DB: ¿Coinciden usuarios?', xmlCheck[0].usuario_id === usuarioId);
+        }
+
+        // Obtener XML de la base de datos con filtro de usuario
         let { data: xmlData, error: xmlError } = await supabase
             .from('xmls_generados')
             .select('*')
@@ -1018,7 +1033,7 @@ exports.handler = async (event, context) => {
             .eq('usuario_id', usuarioId)
             .single();
             
-        console.log('🔍 DB: Consulta ejecutada');
+        console.log('🔍 DB: Consulta con filtro ejecutada');
         console.log('🔍 DB: xmlData:', xmlData ? 'ENCONTRADO' : 'NULL');
         console.log('🔍 DB: xmlError:', xmlError);
 
