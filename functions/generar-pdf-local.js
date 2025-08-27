@@ -366,8 +366,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             </div>
             
             <div class="emisor-info">
-                <div class="emisor-nombre">${xmlData.emisor.nombre}</div>
-                <div class="emisor-rfc">RFC: ${xmlData.emisor.rfc}</div>
+                <div class="emisor-nombre">${emisorData.nombre || xmlData.emisor_nombre}</div>
+                <div class="emisor-rfc">RFC: ${emisorData.rfc || xmlData.emisor_rfc}</div>
             </div>
             
             <div class="factura-info">
@@ -385,11 +385,11 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             <div class="receptor-titulo">DATOS DEL CLIENTE</div>
             <div class="receptor-datos">
                 <div>
-                    <div class="campo"><strong>Nombre:</strong> ${xmlData.receptor.nombre}</div>
-                    <div class="campo"><strong>RFC:</strong> ${xmlData.receptor.rfc}</div>
+                    <div class="campo"><strong>Nombre:</strong> ${xmlData.receptor_nombre}</div>
+                    <div class="campo"><strong>RFC:</strong> ${xmlData.receptor_rfc}</div>
                 </div>
                 <div>
-                    <div class="campo"><strong>Uso CFDI:</strong> ${xmlData.receptor.uso}</div>
+                    <div class="campo"><strong>Uso CFDI:</strong> ${xmlData.uso_cfdi || 'G03'}</div>
                     <div class="campo"><strong>Moneda:</strong> ${xmlData.moneda}</div>
                 </div>
             </div>
@@ -835,16 +835,16 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
                     <div class="info-box">
                         <div class="info-label">Emisor</div>
                         <div class="info-value">
-                            <strong>${xmlData.emisor.nombre}</strong><br>
-                            RFC: ${xmlData.emisor.rfc}
+                            <strong>${emisorData.nombre || xmlData.emisor_nombre}</strong><br>
+                            RFC: ${emisorData.rfc || xmlData.emisor_rfc}
                         </div>
                     </div>
                     <div class="info-box">
                         <div class="info-label">Receptor</div>
                         <div class="info-value">
-                            <strong>${xmlData.receptor.nombre}</strong><br>
-                            RFC: ${xmlData.receptor.rfc}<br>
-                            Uso CFDI: ${xmlData.receptor.uso}
+                            <strong>${xmlData.receptor_nombre}</strong><br>
+                            RFC: ${xmlData.receptor_rfc}<br>
+                            Uso CFDI: ${xmlData.uso_cfdi || 'G03'}
                         </div>
                     </div>
                 </div>
