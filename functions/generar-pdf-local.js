@@ -1010,30 +1010,15 @@ exports.handler = async (event, context) => {
         console.log('🔍 DB: Usuario ID para consulta:', usuarioId);
         console.log('🔍 DB: Tipo de usuario ID para consulta:', typeof usuarioId);
 
-        // Primero verificar si el XML existe (sin filtro de usuario)
-        console.log('🔍 DB: Verificando si XML existe sin filtro de usuario...');
-        let { data: xmlCheck, error: xmlCheckError } = await supabase
-            .from('xmls_generados')
-            .select('id, usuario_id, emisor_rfc, estado')
-            .eq('id', xmlId);
-            
-        console.log('🔍 DB: XML existe?', xmlCheck?.length > 0 ? 'SÍ' : 'NO');
-        if (xmlCheck?.length > 0) {
-            console.log('🔍 DB: XML encontrado:', xmlCheck[0]);
-            console.log('🔍 DB: Usuario del XML:', xmlCheck[0].usuario_id);
-            console.log('🔍 DB: Usuario actual:', usuarioId);
-            console.log('🔍 DB: ¿Coinciden usuarios?', xmlCheck[0].usuario_id === usuarioId);
-        }
-
-        // Obtener XML de la base de datos con filtro de usuario
+        // Obtener XML de la base de datos (sin filtro de usuario - las políticas RLS manejan permisos)
+        console.log('🔍 DB: Consultando XML según políticas RLS...');
         let { data: xmlData, error: xmlError } = await supabase
             .from('xmls_generados')
             .select('*')
             .eq('id', xmlId)
-            .eq('usuario_id', usuarioId)
             .single();
             
-        console.log('🔍 DB: Consulta con filtro ejecutada');
+        console.log('🔍 DB: Consulta ejecutada');
         console.log('🔍 DB: xmlData:', xmlData ? 'ENCONTRADO' : 'NULL');
         console.log('🔍 DB: xmlError:', xmlError);
 
@@ -1043,10 +1028,9 @@ exports.handler = async (event, context) => {
                 statusCode: 404,
                 headers,
                 body: JSON.stringify({ 
-                    error: 'XML no encontrado',
-                    detalle: xmlError?.message || 'No se encontró el XML con el ID proporcionado',
-                    xmlId: xmlId,
-                    usuario_id: usuarioId
+                    error: 'XML no encontrado o sin permisos',
+                    detalle: xmlError?.message || 'No se encontró el XML con el ID proporcionado o no tienes permisos para accederlo',
+                    xmlId: xmlId
                 })
             };
         }
