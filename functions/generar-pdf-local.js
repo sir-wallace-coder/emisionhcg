@@ -681,42 +681,89 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         
         .sellos-digitales-oficiales {
             margin: 30px 0 15px 0;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .columna-sello {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .qr-validacion {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .qr-titulo {
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .qr-placeholder {
+            width: 80px;
+            height: 80px;
+            background: #e9ecef;
+            border: 2px dashed #adb5bd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 8px;
+            color: #6c757d;
+            text-align: center;
         }
         
         .sello-oficial {
-            margin: 15px 0;
+            margin: 0;
         }
         
         .sello-titulo {
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10px;
             margin-bottom: 5px;
             color: #333;
+            text-align: center;
         }
         
         .sello-contenido {
             word-break: break-all;
             background: #f8f9fa;
-            padding: 8px;
+            padding: 6px;
             border: 1px solid #ddd;
             font-family: monospace;
-            font-size: 9px;
-            line-height: 1.3;
+            font-size: 8px;
+            line-height: 1.2;
+            max-height: 80px;
+            overflow: hidden;
         }
         
-        .campo-certificado-final {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
+        .certificado-oficial {
             text-align: center;
-        }
-        
-        .campo-certificado-final .campo-sat-oficial {
-            display: inline-block;
+            padding: 10px;
             background: #f8f9fa;
-            padding: 8px 15px;
             border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        
+        .certificado-titulo {
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .certificado-numero {
+            font-family: monospace;
+            font-size: 9px;
+            color: #495057;
+            word-break: break-all;
         }
         
         .campo-certificado-final .campo-label {
@@ -882,24 +929,47 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             </div>
         </div>
         
-        <!-- Sellos digitales al final (formato SAT oficial) -->
+        <!-- Sellos digitales en 4 columnas (formato SAT oficial) -->
         <div class="sellos-digitales-oficiales">
-            <div class="sello-oficial">
-                <div class="sello-titulo">Sello digital del CFDI:</div>
-                <div class="sello-contenido">${selloDigital}</div>
+            <!-- Columna 1: QR de validación CFDI -->
+            <div class="columna-sello">
+                <div class="qr-validacion">
+                    <div class="qr-titulo">QR Validación SAT</div>
+                    <div class="qr-placeholder">
+                        QR CODE
+                        <br>CFDI
+                    </div>
+                </div>
             </div>
-            ${esTimbrado ? `
-            <div class="sello-oficial">
-                <div class="sello-titulo">Sello digital del SAT:</div>
-                <div class="sello-contenido">${selloSAT}</div>
-            </div>
-            ` : ''}
             
-            <!-- Número de certificado debajo del sello SAT -->
-            <div class="campo-certificado-final">
-                <div class="campo-sat-oficial">
-                    <span class="campo-label">No. de certificado:</span>
-                    <span class="campo-valor">${noCertificado}</span>
+            <!-- Columna 2: Sello digital del CFDI -->
+            <div class="columna-sello">
+                <div class="sello-oficial">
+                    <div class="sello-titulo">Sello Digital CFDI</div>
+                    <div class="sello-contenido">${selloDigital}</div>
+                </div>
+            </div>
+            
+            <!-- Columna 3: Sello digital del SAT (solo si está timbrado) -->
+            <div class="columna-sello">
+                ${esTimbrado ? `
+                <div class="sello-oficial">
+                    <div class="sello-titulo">Sello Digital SAT</div>
+                    <div class="sello-contenido">${selloSAT}</div>
+                </div>
+                ` : `
+                <div class="sello-oficial">
+                    <div class="sello-titulo">Sello Digital SAT</div>
+                    <div class="sello-contenido" style="color: #999; font-style: italic;">No timbrado</div>
+                </div>
+                `}
+            </div>
+            
+            <!-- Columna 4: Número de certificado -->
+            <div class="columna-sello">
+                <div class="certificado-oficial">
+                    <div class="certificado-titulo">No. Certificado</div>
+                    <div class="certificado-numero">${noCertificado}</div>
                 </div>
             </div>
         </div>
