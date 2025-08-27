@@ -212,15 +212,17 @@ function convertirNumeroALetras(numero, moneda = 'MXN') {
 function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     console.log('🎨 HTML: Generando HTML con formato RedDoc...');
     
-    const logoBase64 = emisorData.logo || '';
-    const colorCorporativo = emisorData.color || '#2563eb';
+    // Manejar caso donde emisorData es null
+    const emisorSafe = emisorData || {};
+    const logoBase64 = emisorSafe.logo || '';
+    const colorCorporativo = emisorSafe.color || '#2563eb';
     
     // Debug del logo en el generador HTML
     console.log('🖼️ HTML LOGO: Datos emisor recibidos:', {
         tieneEmisorData: !!emisorData,
-        logoExiste: !!emisorData.logo,
-        logoTamanio: emisorData.logo?.length || 0,
-        color: emisorData.color
+        logoExiste: !!emisorSafe.logo,
+        logoTamanio: emisorSafe.logo?.length || 0,
+        color: emisorSafe.color
     });
     
     if (logoBase64) {
@@ -762,8 +764,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             </div>
             
             <div class="emisor-info">
-                <div class="emisor-nombre">${emisorData.nombre || xmlData.emisor_nombre}</div>
-                <div class="emisor-rfc">RFC: ${emisorData.rfc || xmlData.emisor_rfc}</div>
+                <div class="emisor-nombre">${emisorSafe.nombre || xmlData.emisor_nombre}</div>
+                <div class="emisor-rfc">RFC: ${emisorSafe.rfc || xmlData.emisor_rfc}</div>
                 ${emisorRegimenFiscal ? `<div class="emisor-regimen">Régimen Fiscal: ${emisorRegimenFiscal}</div>` : ''}
                 ${lugarExpedicion ? `<div class="emisor-expedicion">Lugar de Expedición: ${lugarExpedicion}</div>` : ''}
             </div>
@@ -1094,8 +1096,10 @@ function parsearXmlCfdi(xmlContent) {
 function generarHtmlProfesional(xmlData, emisorData = {}) {
     console.log('🎨 HTML: Generando HTML con estilo profesional...');
     
-    const colorPrimario = emisorData.color || '#2563eb';
-    const logoBase64 = emisorData.logo || '';
+    // Manejar caso donde emisorData es null
+    const emisorSafe = emisorData || {};
+    const colorPrimario = emisorSafe.color || '#2563eb';
+    const logoBase64 = emisorSafe.logo || '';
     
     const html = `
     <!DOCTYPE html>
@@ -1296,8 +1300,8 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
                     <div class="info-box">
                         <div class="info-label">Emisor</div>
                         <div class="info-value">
-                            <strong>${emisorData.nombre || xmlData.emisor_nombre}</strong><br>
-                            RFC: ${emisorData.rfc || xmlData.emisor_rfc}
+                            <strong>${emisorSafe.nombre || xmlData.emisor_nombre}</strong><br>
+                            RFC: ${emisorSafe.rfc || xmlData.emisor_rfc}
                         </div>
                     </div>
                     <div class="info-box">
@@ -1551,11 +1555,12 @@ exports.handler = async (event, context) => {
         console.log('🎯 PDF: Generando PDF local idéntico a RedDoc...');
         
         // Debug del logo del emisor
+        const emisorSafeDebug = emisorData || {};
         console.log('🖼️ LOGO DEBUG: Datos emisor completos:', emisorData);
-        console.log('🖼️ LOGO DEBUG: Logo existe:', !!emisorData?.logo);
-        console.log('🖼️ LOGO DEBUG: Tamaño logo:', emisorData?.logo?.length || 0, 'caracteres');
-        if (emisorData?.logo) {
-            console.log('🖼️ LOGO DEBUG: Primeros 50 chars del logo:', emisorData.logo.substring(0, 50));
+        console.log('🖼️ LOGO DEBUG: Logo existe:', !!emisorSafeDebug.logo);
+        console.log('🖼️ LOGO DEBUG: Tamaño logo:', emisorSafeDebug.logo?.length || 0, 'caracteres');
+        if (emisorSafeDebug.logo) {
+            console.log('🖼️ LOGO DEBUG: Primeros 50 chars del logo:', emisorSafeDebug.logo.substring(0, 50));
         }
         
         // Generar HTML idéntico al de RedDoc
@@ -1586,10 +1591,10 @@ exports.handler = async (event, context) => {
                     generator: 'local-puppeteer',
                     xmlId: xmlId,
                     emisor: emisorData ? {
-                        rfc: emisorData.rfc,
-                        nombre: emisorData.nombre,
-                        tiene_logo: !!emisorData.logo,
-                        color: emisorData.color
+                        rfc: emisorSafeDebug.rfc,
+                        nombre: emisorSafeDebug.nombre,
+                        tiene_logo: !!emisorSafeDebug.logo,
+                        color: emisorSafeDebug.color
                     } : null,
                     timestamp: new Date().toISOString()
                 }
