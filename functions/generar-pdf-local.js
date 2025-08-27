@@ -1005,15 +1005,17 @@ exports.handler = async (event, context) => {
 
         console.log('🔍 DB: Buscando XML con ID:', xmlId);
         console.log('🔍 DB: Tipo de xmlId:', typeof xmlId);
-        console.log('🔍 DB: Usuario ID para consulta:', usuario.id);
-        console.log('🔍 DB: Tipo de usuario.id para consulta:', typeof usuario.id);
+        // Usar userId del JWT (no id)
+        const usuarioId = usuario.userId || usuario.id;
+        console.log('🔍 DB: Usuario ID para consulta:', usuarioId);
+        console.log('🔍 DB: Tipo de usuario ID para consulta:', typeof usuarioId);
 
         // Obtener XML de la base de datos
         let { data: xmlData, error: xmlError } = await supabase
             .from('xmls_generados')
             .select('*')
             .eq('id', xmlId)
-            .eq('usuario_id', usuario.id)
+            .eq('usuario_id', usuarioId)
             .single();
             
         console.log('🔍 DB: Consulta ejecutada');
@@ -1029,7 +1031,7 @@ exports.handler = async (event, context) => {
                     error: 'XML no encontrado',
                     detalle: xmlError?.message || 'No se encontró el XML con el ID proporcionado',
                     xmlId: xmlId,
-                    usuario_id: usuario.id
+                    usuario_id: usuarioId
                 })
             };
         }
