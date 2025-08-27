@@ -957,6 +957,9 @@ exports.handler = async (event, context) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             usuario = decoded;
             console.log('✅ AUTH: Usuario autenticado:', usuario.email);
+            console.log('🔍 AUTH: Usuario ID:', usuario.id);
+            console.log('🔍 AUTH: Tipo de usuario.id:', typeof usuario.id);
+            console.log('🔍 AUTH: Objeto usuario completo:', JSON.stringify(usuario, null, 2));
         } catch (jwtError) {
             return {
                 statusCode: 401,
@@ -1002,6 +1005,8 @@ exports.handler = async (event, context) => {
 
         console.log('🔍 DB: Buscando XML con ID:', xmlId);
         console.log('🔍 DB: Tipo de xmlId:', typeof xmlId);
+        console.log('🔍 DB: Usuario ID para consulta:', usuario.id);
+        console.log('🔍 DB: Tipo de usuario.id para consulta:', typeof usuario.id);
 
         // Obtener XML de la base de datos
         let { data: xmlData, error: xmlError } = await supabase
@@ -1010,6 +1015,10 @@ exports.handler = async (event, context) => {
             .eq('id', xmlId)
             .eq('usuario_id', usuario.id)
             .single();
+            
+        console.log('🔍 DB: Consulta ejecutada');
+        console.log('🔍 DB: xmlData:', xmlData ? 'ENCONTRADO' : 'NULL');
+        console.log('🔍 DB: xmlError:', xmlError);
 
         if (xmlError || !xmlData) {
             console.error('❌ DB: Error obteniendo XML:', xmlError?.message);
