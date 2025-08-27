@@ -145,6 +145,21 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     const logoBase64 = emisorData.logo || '';
     const colorCorporativo = emisorData.color || '#2563eb';
     
+    // Debug del logo en el generador HTML
+    console.log('🖼️ HTML LOGO: Datos emisor recibidos:', {
+        tieneEmisorData: !!emisorData,
+        logoExiste: !!emisorData.logo,
+        logoTamanio: emisorData.logo?.length || 0,
+        color: emisorData.color
+    });
+    
+    if (logoBase64) {
+        console.log('🖼️ HTML LOGO: Logo procesado correctamente');
+        console.log('🖼️ HTML LOGO: Primeros 50 chars:', logoBase64.substring(0, 50));
+    } else {
+        console.log('⚠️ HTML LOGO: Logo NO encontrado o vacío');
+    }
+    
     // Parsear XML para extraer conceptos y otros datos
     console.log('🔍 HTML: Parseando XML para extraer datos...');
     let conceptos = [];
@@ -1154,6 +1169,14 @@ exports.handler = async (event, context) => {
 
         // 🚀 GENERAR PDF LOCAL IDÉNTICO A REDOC
         console.log('🎯 PDF: Generando PDF local idéntico a RedDoc...');
+        
+        // Debug del logo del emisor
+        console.log('🖼️ LOGO DEBUG: Datos emisor completos:', emisorData);
+        console.log('🖼️ LOGO DEBUG: Logo existe:', !!emisorData?.logo);
+        console.log('🖼️ LOGO DEBUG: Tamaño logo:', emisorData?.logo?.length || 0, 'caracteres');
+        if (emisorData?.logo) {
+            console.log('🖼️ LOGO DEBUG: Primeros 50 chars del logo:', emisorData.logo.substring(0, 50));
+        }
         
         // Generar HTML idéntico al de RedDoc
         const htmlRedoc = generarHtmlRedocIdentico(xmlData, emisorData);
