@@ -143,8 +143,11 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     // Parsear XML para extraer conceptos y otros datos
     console.log('🔍 HTML: Parseando XML para extraer datos...');
     let conceptos = [];
-    let subtotal = xmlData.total || '0.00';
+    let subtotal = '0.00';
     let total = xmlData.total || '0.00';
+    let fecha = '';
+    let moneda = 'MXN';
+    let usoCfdi = 'G03';
     
     try {
         // Extraer conceptos del XML usando regex simple
@@ -169,7 +172,32 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             };
         });
         
+        // Extraer otros datos del XML
+        const fechaMatch = xmlContent.match(/Fecha="([^"]*)"/)?.[1];
+        if (fechaMatch) {
+            fecha = new Date(fechaMatch).toLocaleDateString('es-MX');
+        }
+        
+        const monedaMatch = xmlContent.match(/Moneda="([^"]*)"/)?.[1];
+        if (monedaMatch) {
+            moneda = monedaMatch;
+        }
+        
+        const subtotalMatch = xmlContent.match(/SubTotal="([^"]*)"/)?.[1];
+        if (subtotalMatch) {
+            subtotal = subtotalMatch;
+        }
+        
+        const usoCfdiMatch = xmlContent.match(/UsoCFDI="([^"]*)"/)?.[1];
+        if (usoCfdiMatch) {
+            usoCfdi = usoCfdiMatch;
+        }
+        
         console.log('🔍 HTML: Conceptos extraidos:', conceptos.length);
+        console.log('📅 HTML: Fecha parseada:', fecha);
+        console.log('💰 HTML: Moneda parseada:', moneda);
+        console.log('💵 HTML: Subtotal parseado:', subtotal);
+        console.log('📋 HTML: Uso CFDI parseado:', usoCfdi);
     } catch (parseError) {
         console.error('❌ HTML: Error parseando XML:', parseError.message);
         // Fallback: crear concepto básico
@@ -418,7 +446,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 <div class="factura-datos">
                     <div><strong>Serie:</strong> ${xmlData.serie}</div>
                     <div><strong>Folio:</strong> ${xmlData.folio}</div>
-                    <div><strong>Fecha:</strong> ${xmlData.fecha}</div>
+                    <div><strong>Fecha:</strong> ${fecha}</div>
                 </div>
             </div>
         </div>
@@ -432,8 +460,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                     <div class="campo"><strong>RFC:</strong> ${xmlData.receptor_rfc}</div>
                 </div>
                 <div>
-                    <div class="campo"><strong>Uso CFDI:</strong> ${xmlData.uso_cfdi || 'G03'}</div>
-                    <div class="campo"><strong>Moneda:</strong> ${xmlData.moneda}</div>
+                    <div class="campo"><strong>Uso CFDI:</strong> ${usoCfdi}</div>
+                    <div class="campo"><strong>Moneda:</strong> ${moneda}</div>
                 </div>
             </div>
         </div>
@@ -472,11 +500,11 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             <table class="totales-tabla">
                 <tr>
                     <td class="label">Subtotal:</td>
-                    <td class="valor">$${parseFloat(xmlData.subtotal).toFixed(2)}</td>
+                    <td class="valor">$${parseFloat(subtotal).toFixed(2)}</td>
                 </tr>
                 <tr>
                     <td class="label">IVA (16%):</td>
-                    <td class="valor">$${(parseFloat(xmlData.subtotal) * 0.16).toFixed(2)}</td>
+                    <td class="valor">${(parseFloat(subtotal) * 0.16).toFixed(2)}</td>
                 </tr>
                 <tr class="total-final">
                     <td class="label total-final">TOTAL:</td>
@@ -866,7 +894,7 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
                     <div class="cfdi-details">
                         <div><strong>Serie:</strong> ${xmlData.serie}</div>
                         <div><strong>Folio:</strong> ${xmlData.folio}</div>
-                        <div><strong>Fecha:</strong> ${xmlData.fecha}</div>
+                        <div><strong>Fecha:</strong> ${fecha}</div>
                     </div>
                 </div>
             </div>
@@ -887,7 +915,7 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
                         <div class="info-value">
                             <strong>${xmlData.receptor_nombre}</strong><br>
                             RFC: ${xmlData.receptor_rfc}<br>
-                            Uso CFDI: ${xmlData.uso_cfdi || 'G03'}
+                            Uso CFDI: ${usoCfdi}
                         </div>
                     </div>
                 </div>
@@ -924,11 +952,11 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
             <div class="totales">
                 <div class="total-row">
                     <span>Subtotal:</span>
-                    <span>$${parseFloat(xmlData.subtotal).toFixed(2)} ${xmlData.moneda}</span>
+                    <span>$${parseFloat(subtotal).toFixed(2)} ${moneda}</span>
                 </div>
                 <div class="total-row total-final">
                     <span>Total:</span>
-                    <span>$${parseFloat(xmlData.total).toFixed(2)} ${xmlData.moneda}</span>
+                    <span>$${parseFloat(xmlData.total).toFixed(2)} ${moneda}</span>
                 </div>
             </div>
             
