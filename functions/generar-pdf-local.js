@@ -315,17 +315,14 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         formaPago = xmlContent.match(/FormaPago="([^"]*)"/)?.[1] || '03';
         
         // Extraer campos SAT oficiales
-        const noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
-        const selloDigital = xmlContent.match(/Sello="([^"]*)"/)?.[1] || '';
+        noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
+        selloDigital = xmlContent.match(/Sello="([^"]*)"/)?.[1] || '';
         
         // Detectar si está timbrado
-        const uuidTimbre = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*UUID="([^"]*)"/)?.[1];
-        const esTimbrado = !!uuidTimbre;
+        uuidTimbre = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*UUID="([^"]*)"/)?.[1];
+        esTimbrado = !!uuidTimbre;
         
         // Campos de timbrado (solo si está timbrado)
-        let fechaCertificacion = '';
-        let selloSAT = '';
-        let rfcProvCertif = '';
         
         if (esTimbrado) {
             fechaCertificacion = xmlContent.match(/<tfd:TimbreFiscalDigital[^>]*FechaTimbrado="([^"]*)"/)?.[1] || '';
@@ -343,7 +340,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         console.log('🔐 SAT: Certificado:', noCertificado);
         
         // Generar total en letra (obligatorio SAT)
-        const totalEnLetra = convertirNumeroALetras(parseFloat(total || '0'), moneda);
+        totalEnLetra = convertirNumeroALetras(parseFloat(total || '0'), moneda);
     } catch (parseError) {
         console.error('❌ HTML: Error parseando XML:', parseError.message);
         // Fallback: crear concepto básico
