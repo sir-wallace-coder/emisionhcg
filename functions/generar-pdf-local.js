@@ -156,6 +156,11 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     if (logoBase64) {
         console.log('🖼️ HTML LOGO: Logo procesado correctamente');
         console.log('🖼️ HTML LOGO: Primeros 50 chars:', logoBase64.substring(0, 50));
+        console.log('🖼️ HTML LOGO: Formato corregido - usando directamente sin prefijo adicional');
+        
+        // Verificar si ya tiene el prefijo data:image
+        const tienePrefijoDataImage = logoBase64.startsWith('data:image/');
+        console.log('🖼️ HTML LOGO: Ya tiene prefijo data:image:', tienePrefijoDataImage);
     } else {
         console.log('⚠️ HTML LOGO: Logo NO encontrado o vacío');
     }
@@ -453,7 +458,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         <!-- Header -->
         <div class="header">
             <div class="logo-section">
-                ${logoBase64 ? `<img src="data:image/png;base64,${logoBase64}" alt="Logo" class="logo">` : ''}
+                ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" class="logo">` : ''}
             </div>
             
             <div class="emisor-info">
@@ -907,7 +912,7 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
             <!-- Header -->
             <div class="header">
                 <div class="logo-section">
-                    ${logoBase64 ? `<img src="data:image/png;base64,${logoBase64}" alt="Logo" class="logo">` : ''}
+                    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" class="logo">` : ''}
                 </div>
                 <div class="cfdi-info">
                     <div class="cfdi-title">CFDI</div>
