@@ -1293,24 +1293,36 @@
                 
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
+                if (result.success) {
                     console.log('✅ PDF generado exitosamente:', result);
                     
-                    // Convertir base64 a blob y descargar
-                    const pdfBase64 = result.pdf.content;
+                    // Validar estructura de respuesta
+                    if (!result.data || !result.data.pdf_base64) {
+                        throw new Error('Respuesta del servidor no contiene datos de PDF válidos');
+                    }
+                    
+                    // Extraer PDF base64 (estructura correcta del backend)
+                    const pdfBase64 = result.data.pdf_base64;
+                    
+                    if (!pdfBase64 || pdfBase64.length === 0) {
+                        throw new Error('PDF base64 está vacío o no válido');
+                    }
+                    
                     const pdfBlob = base64ToBlob(pdfBase64, 'application/pdf');
                     
-                    // Crear nombre de archivo
-                    const fileName = `CFDI_${result.xml.emisor_rfc}_${result.xml.receptor_rfc}_${Date.now()}.pdf`;
+                    // Crear nombre de archivo usando datos del emisor
+                    const emisorRfc = result.data.emisor?.rfc || 'EMISOR';
+                    const fileName = `CFDI_${emisorRfc}_${result.data.xmlId}_${Date.now()}.pdf`;
                     
                     // Descargar archivo
                     downloadBlob(pdfBlob, fileName);
                     
-                    // Mostrar mensaje de éxito
+                    // Mostrar mensaje de éxito con datos reales
                     alert(`✅ PDF generado y descargado exitosamente\n\n` +
                           `• Archivo: ${fileName}\n` +
-                          `• Páginas: ${result.metadata.totalPages || 'N/A'}\n` +
-                          `• Tiempo de procesamiento: ${result.metadata.processTime || 'N/A'}ms`);
+                          `• Tamaño: ${(result.data.size_bytes / 1024).toFixed(1)} KB\n` +
+                          `• Generador: ${result.data.generator}\n` +
+                          `• Emisor: ${result.data.emisor?.nombre || 'N/A'}`);
                     
                 } else {
                     console.error('❌ Error generando PDF:', result);
