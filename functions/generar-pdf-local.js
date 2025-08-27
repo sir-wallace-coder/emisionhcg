@@ -10,14 +10,14 @@
 
 const { supabase } = require('./config/supabase');
 const jwt = require('jsonwebtoken');
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
+// Solución alternativa para PDF sin dependencias complejas de Chrome
+const htmlPdf = require('html-pdf-node');
 
 console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
 
 /**
  * 🎨 GENERADOR DE PDF LOCAL
- * Genera un PDF usando HTML/CSS y Puppeteer
+ * Genera un PDF usando HTML/CSS y html-pdf-node (compatible serverless)
  * @param {string} xmlContent - Contenido del XML CFDI
  * @param {Object} emisorData - Datos del emisor (logo, color, etc.)
  * @returns {Buffer} - Buffer del PDF generado
@@ -25,36 +25,7 @@ console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
 async function generarPdfLocal(xmlContent, emisorData = {}) {
     console.log('🎨 PDF LOCAL: Iniciando generación de PDF...');
     
-    let browser = null;
     try {
-        // Configuración de Puppeteer para serverless
-        const puppeteerConfig = {
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-gpu'
-            ]
-        };
-
-        // Detectar si estamos en entorno serverless
-        if (process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-            console.log('🔧 PDF LOCAL: Configurando para entorno serverless');
-            // En serverless, usar @sparticuz/chromium
-            puppeteerConfig.executablePath = await chromium.executablePath();
-            puppeteerConfig.args = chromium.args;
-            puppeteerConfig.defaultViewport = chromium.defaultViewport;
-            puppeteerConfig.headless = chromium.headless;
-        }
-
-        console.log('🚀 PDF LOCAL: Lanzando navegador...');
-        browser = await puppeteer.launch(puppeteerConfig);
-        const page = await browser.newPage();
-
         // Parsear XML para extraer datos
         console.log('📋 PDF LOCAL: Parseando XML CFDI...');
         const xmlData = parsearXmlCfdi(xmlContent);
@@ -63,16 +34,22 @@ async function generarPdfLocal(xmlContent, emisorData = {}) {
         console.log('🎨 PDF LOCAL: Generando HTML con estilos...');
         const html = generarHtmlProfesional(xmlData, emisorData);
         
-        // Configurar página para PDF
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-        
-        console.log('📄 PDF LOCAL: Generando PDF...');
-        const pdfBuffer = await page.pdf({
+        // Configuración para html-pdf-node (compatible serverless)
+        const options = {
             format: 'A4',
-            margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
+            margin: {
+                top: '1cm',
+                right: '1cm', 
+                bottom: '1cm',
+                left: '1cm'
+            },
             printBackground: true,
             preferCSSPageSize: true
-        });
+        };
+        
+        console.log('📄 PDF LOCAL: Generando PDF con html-pdf-node...');
+        const file = { content: html };
+        const pdfBuffer = await htmlPdf.generatePdf(file, options);
 
         console.log('✅ PDF LOCAL: PDF generado exitosamente');
         console.log('📊 PDF LOCAL: Tamaño:', pdfBuffer.length, 'bytes');
@@ -82,11 +59,6 @@ async function generarPdfLocal(xmlContent, emisorData = {}) {
     } catch (error) {
         console.error('❌ PDF LOCAL: Error generando PDF:', error.message);
         throw error;
-    } finally {
-        if (browser) {
-            await browser.close();
-            console.log('🔧 PDF LOCAL: Navegador cerrado');
-        }
     }
 }
 
