@@ -558,6 +558,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .columna-totales {
             flex: 1;
             max-width: 50%;
+            order: 2; /* Mover totales al lado derecho */
         }
         
         .totales-sat {
@@ -611,6 +612,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .columna-campos-sat {
             flex: 1;
             max-width: 45%;
+            order: 1; /* Mover campos SAT al lado izquierdo */
         }
         
         .campo-sat-oficial {
