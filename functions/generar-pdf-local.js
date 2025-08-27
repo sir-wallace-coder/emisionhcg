@@ -1013,24 +1013,16 @@ exports.handler = async (event, context) => {
 
         if (xmlError || !xmlData) {
             console.error('❌ DB: Error obteniendo XML:', xmlError?.message);
-            console.log('🔧 MOCK: Usando datos de prueba para demostrar el generador local...');
-            
-            // DATOS MOCK PARA PRUEBA DEL GENERADOR LOCAL
-            xmlData = {
-                id: xmlId,
-                xml_content: `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="AABBB" Folio="007373" Fecha="2023-06-21T14:45:59" Total="116.00" SubTotal="100.00" Moneda="MXN">
-  <cfdi:Emisor Rfc="BGR190902815" Nombre="BASA GREEN" />
-  <cfdi:Receptor Rfc="GFB130130NZ8" Nombre="GRUPO FRANCO BEST SERVICIOS" UsoCFDI="G03" />
-  <cfdi:Conceptos>
-    <cfdi:Concepto ClaveProdServ="84111506" Cantidad="1.00" ClaveUnidad="ACT" Descripcion="Servicios de consultoría" ValorUnitario="100.00" Importe="100.00" />
-  </cfdi:Conceptos>
-</cfdi:Comprobante>`,
-                estado: 'generado',
-                usuario_id: usuario.id
+            return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'XML no encontrado',
+                    detalle: xmlError?.message || 'No se encontró el XML con el ID proporcionado',
+                    xmlId: xmlId,
+                    usuario_id: usuario.id
+                })
             };
-            
-            console.log('✅ MOCK: Datos de prueba cargados exitosamente');
         }
 
         console.log('✅ DB: XML encontrado');
@@ -1064,23 +1056,8 @@ exports.handler = async (event, context) => {
                         color: emisor.color
                     });
                 } else {
-                    console.log('⚠️ EMISOR: No encontrado en BD, usando datos mock para prueba...');
-                    
-                    // DATOS MOCK DEL EMISOR PARA PRUEBA
-                    emisorData = {
-                        id: 'mock-emisor-id',
-                        rfc: rfcEmisor || 'BGR190902815',
-                        nombre: 'BASA GREEN (DEMO)',
-                        color: '#2563eb',
-                        logo: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' // Pixel transparente como demo
-                    };
-                    
-                    console.log('✅ EMISOR: Datos mock cargados:', {
-                        rfc: emisorData.rfc,
-                        nombre: emisorData.nombre,
-                        tiene_logo: !!emisorData.logo,
-                        color: emisorData.color
-                    });
+                    console.log('⚠️ EMISOR: No encontrado en BD para RFC:', rfcEmisor);
+                    // Continuar sin datos del emisor - el PDF se generará con datos básicos del XML
                 }
             } else {
                 console.log('⚠️ EMISOR: No se pudo extraer RFC del XML');
