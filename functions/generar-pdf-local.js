@@ -245,6 +245,15 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     let moneda = 'MXN';
     let usoCfdi = 'G03';
     
+    // Variables SAT oficiales (definidas fuera del try para estar disponibles en todo el scope)
+    let noCertificado = '';
+    let selloDigital = '';
+    let esTimbrado = false;
+    let uuidTimbre = '';
+    let fechaCertificacion = '';
+    let selloSAT = '';
+    let rfcProvCertif = '';
+    
     try {
         // Extraer conceptos del XML usando regex simple
         const xmlContent = xmlData.xml_content || '';
