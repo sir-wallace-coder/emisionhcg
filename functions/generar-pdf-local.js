@@ -306,6 +306,10 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             usoCfdi = usoCfdiMatch;
         }
         
+        // Extraer método y forma de pago
+        const metodoPago = xmlContent.match(/MetodoPago="([^"]*)"/)?.[1] || 'PUE';
+        const formaPago = xmlContent.match(/FormaPago="([^"]*)"/)?.[1] || '03';
+        
         // Extraer campos SAT oficiales
         const noCertificado = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || '';
         const selloDigital = xmlContent.match(/Sello="([^"]*)"/)?.[1] || '';
@@ -541,44 +545,123 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             font-size: 16px;
         }
         
-        /* Estilos SAT oficiales */
-        .total-letra {
+        /* Estilos SAT oficiales - Layout idéntico al PDF oficial */
+        .total-letra-oficial {
+            width: 100%;
             margin: 15px 0;
             padding: 10px;
             background: #f8f9fa;
-            border-left: 4px solid ${colorCorporativo};
+            border: 1px solid #ddd;
             font-size: 12px;
+            text-align: left;
         }
         
-        .campos-sat {
-            margin: 15px 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        .seccion-final-sat {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            gap: 30px;
         }
         
-        .campo-sat {
+        .columna-totales {
+            flex: 1;
+            max-width: 50%;
+        }
+        
+        .totales-sat {
+            margin-bottom: 15px;
+        }
+        
+        .total-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .total-item.total-final-sat {
+            background: ${colorCorporativo};
+            color: white;
+            padding: 8px 10px;
+            margin-top: 5px;
+            font-weight: bold;
+            border: none;
+        }
+        
+        .total-label {
+            font-weight: bold;
+        }
+        
+        .total-valor {
+            font-weight: bold;
+        }
+        
+        .metodos-pago {
+            margin-top: 15px;
+        }
+        
+        .metodo-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
             font-size: 11px;
-            padding: 5px;
-            background: #f8f9fa;
         }
         
-        .sellos-digitales {
+        .metodo-label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .metodo-valor {
+            color: #333;
+        }
+        
+        .columna-campos-sat {
+            flex: 1;
+            max-width: 45%;
+        }
+        
+        .campo-sat-oficial {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 11px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .campo-label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .campo-valor {
+            color: #333;
+            text-align: right;
+        }
+        
+        .sellos-digitales-oficiales {
+            margin: 30px 0 15px 0;
+        }
+        
+        .sello-oficial {
             margin: 15px 0;
         }
         
-        .sello {
-            margin: 10px 0;
-            font-size: 10px;
+        .sello-titulo {
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 5px;
+            color: #333;
         }
         
-        .sello-texto {
+        .sello-contenido {
             word-break: break-all;
             background: #f8f9fa;
             padding: 8px;
-            margin-top: 5px;
             border: 1px solid #ddd;
             font-family: monospace;
+            font-size: 9px;
+            line-height: 1.3;
         }
         
         /* Footer */
@@ -674,51 +757,78 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             </table>
         </div>
         
-        <!-- Totales -->
-        <div class="totales-section">
-            <table class="totales-tabla">
-                <tr>
-                    <td class="label">Subtotal:</td>
-                    <td class="valor">$${parseFloat(subtotal).toFixed(2)}</td>
-                </tr>
-                <tr>
-                    <td class="label">IVA (16%):</td>
-                    <td class="valor">$${(parseFloat(subtotal) * 0.16).toFixed(2)}</td>
-                </tr>
-                <tr class="total-final">
-                    <td class="label total-final">TOTAL:</td>
-                    <td class="valor total-final">$${parseFloat(xmlData.total).toFixed(2)} ${moneda}</td>
-                </tr>
-            </table>
-            
-            <!-- Total en letra (obligatorio SAT) -->
-            <div class="total-letra">
-                <strong>Importe con letra:</strong> ${totalEnLetra}
+        <!-- Total en letra a lo ancho (formato SAT oficial) -->
+        <div class="total-letra-oficial">
+            <strong>Importe con letra:</strong> ${totalEnLetra}
+        </div>
+        
+        <!-- Layout oficial SAT: Totales a la izquierda, campos SAT a la derecha -->
+        <div class="seccion-final-sat">
+            <!-- Columna izquierda: Totales y métodos de pago -->
+            <div class="columna-totales">
+                <div class="totales-sat">
+                    <div class="total-item">
+                        <span class="total-label">Subtotal:</span>
+                        <span class="total-valor">$${parseFloat(subtotal).toFixed(2)}</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-label">IVA (16%):</span>
+                        <span class="total-valor">$${(parseFloat(subtotal) * 0.16).toFixed(2)}</span>
+                    </div>
+                    <div class="total-item total-final-sat">
+                        <span class="total-label">TOTAL:</span>
+                        <span class="total-valor">$${parseFloat(xmlData.total).toFixed(2)} ${moneda}</span>
+                    </div>
+                </div>
+                
+                <!-- Métodos de pago (campos faltantes agregados) -->
+                <div class="metodos-pago">
+                    <div class="metodo-item">
+                        <span class="metodo-label">Método de pago:</span>
+                        <span class="metodo-valor">${metodoPago} - ${metodoPago === 'PUE' ? 'Pago en una sola exhibición' : 'Pago en parcialidades o diferido'}</span>
+                    </div>
+                    <div class="metodo-item">
+                        <span class="metodo-label">Forma de pago:</span>
+                        <span class="metodo-valor">${formaPago} - ${formaPago === '03' ? 'Transferencia electrónica de fondos' : formaPago === '01' ? 'Efectivo' : formaPago === '04' ? 'Tarjeta de crédito' : 'Otro método'}</span>
+                    </div>
+                </div>
             </div>
             
-            <!-- Campos SAT oficiales -->
-            <div class="campos-sat">
-                <div class="campo-sat"><strong>No. de certificado:</strong> ${noCertificado}</div>
-                ${esTimbrado ? `
-                <div class="campo-sat"><strong>Folio fiscal:</strong> ${uuidTimbre}</div>
-                <div class="campo-sat"><strong>Fecha y hora de certificación:</strong> ${fechaCertificacion}</div>
-                <div class="campo-sat"><strong>RFC Proveedor de certificación:</strong> ${rfcProvCertif}</div>
-                ` : ''}
-            </div>
-            
-            <!-- Sellos digitales -->
-            <div class="sellos-digitales">
-                <div class="sello">
-                    <strong>Sello digital del CFDI:</strong>
-                    <div class="sello-texto">${selloDigital}</div>
+            <!-- Columna derecha: Campos SAT oficiales -->
+            <div class="columna-campos-sat">
+                <div class="campo-sat-oficial">
+                    <span class="campo-label">No. de certificado:</span>
+                    <span class="campo-valor">${noCertificado}</span>
                 </div>
                 ${esTimbrado ? `
-                <div class="sello">
-                    <strong>Sello digital del SAT:</strong>
-                    <div class="sello-texto">${selloSAT}</div>
+                <div class="campo-sat-oficial">
+                    <span class="campo-label">Folio fiscal:</span>
+                    <span class="campo-valor">${uuidTimbre}</span>
+                </div>
+                <div class="campo-sat-oficial">
+                    <span class="campo-label">Fecha y hora de certificación:</span>
+                    <span class="campo-valor">${fechaCertificacion}</span>
+                </div>
+                <div class="campo-sat-oficial">
+                    <span class="campo-label">RFC Proveedor de certificación:</span>
+                    <span class="campo-valor">${rfcProvCertif}</span>
                 </div>
                 ` : ''}
             </div>
+        </div>
+        
+        <!-- Sellos digitales al final (formato SAT oficial) -->
+        <div class="sellos-digitales-oficiales">
+            <div class="sello-oficial">
+                <div class="sello-titulo">Sello digital del CFDI:</div>
+                <div class="sello-contenido">${selloDigital}</div>
+            </div>
+            ${esTimbrado ? `
+            <div class="sello-oficial">
+                <div class="sello-titulo">Sello digital del SAT:</div>
+                <div class="sello-contenido">${selloSAT}</div>
+            </div>
+            ` : ''}
         </div>
         
         <!-- Footer -->
