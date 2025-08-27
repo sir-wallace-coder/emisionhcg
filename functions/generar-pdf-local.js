@@ -23,65 +23,67 @@ console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
  * @returns {Buffer} - Buffer del PDF
  */
 /**
- * 🚀 CONVERTIR HTML REDOC A PDF
- * Usa servicios externos confiables con nuestro HTML idéntico a RedDoc
- * @param {string} html - HTML con formato RedDoc generado
- * @returns {Buffer} - Buffer del PDF
+ * 🔄 CONVERTIR HTML REDOC A PDF CON SERVICIOS EXTERNOS
+ * Intenta múltiples servicios para convertir HTML a PDF
+ * @param {string} html - HTML con formato RedDoc
+ * @returns {Buffer} - Buffer del PDF generado
  */
 async function convertirHtmlRedocAPdf(html) {
     console.log('🔄 PDF: Convirtiendo HTML RedDoc a PDF con servicios externos...');
     
-    // Servicios confiables que manejan HTML complejo
     const servicios = [
         {
-            nombre: 'htmlcsstoimage',
-            url: 'https://hcti.io/v1/image',
+            nombre: 'weasyprint-api',
+            url: 'https://weasyprint.org/api/pdf',
             headers: {
-                'Authorization': 'Basic ' + Buffer.from('demo:demo').toString('base64'),
-                'Content-Type': 'application/json'
+                'Content-Type': 'text/html; charset=utf-8'
             },
-            body: {
-                html: html,
-                format: 'pdf',
-                width: 794,  // A4 width
-                height: 1123, // A4 height
-                device_scale: 1,
-                ms_delay: 1000 // Esperar a que carguen los estilos
-            }
+            body: html,
+            method: 'POST'
         },
         {
-            nombre: 'pdfshift',
-            url: 'https://api.pdfshift.io/v3/convert/pdf',
+            nombre: 'html-pdf-api',
+            url: 'https://api.html-pdf-api.com/v1/generate',
             headers: {
-                'Authorization': 'Basic ' + Buffer.from('demo:demo').toString('base64'),
                 'Content-Type': 'application/json'
             },
-            body: {
-                source: html,
-                format: 'A4',
-                margin: '20mm 15mm',
-                print_background: true,
-                wait_for: 1000
-            }
+            body: JSON.stringify({
+                html: html,
+                options: {
+                    format: 'A4',
+                    margin: {
+                        top: '20mm',
+                        right: '15mm',
+                        bottom: '20mm',
+                        left: '15mm'
+                    },
+                    printBackground: true
+                }
+            }),
+            method: 'POST'
         },
         {
-            nombre: 'restpack',
-            url: 'https://restpack.io/api/html2pdf/v6/convert',
+            nombre: 'pdf-generator-api',
+            url: 'https://pdf-generator-api.com/api/v1/pdf',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: {
+            body: JSON.stringify({
                 html: html,
                 format: 'A4',
-                margin: {
-                    top: '20mm',
-                    right: '15mm',
-                    bottom: '20mm',
-                    left: '15mm'
-                },
-                print_background: true,
-                wait_for: 1000
-            }
+                orientation: 'portrait',
+                margin: '20mm'
+            }),
+            method: 'POST'
+        },
+        {
+            nombre: 'gotenberg-demo',
+            url: 'https://demo.gotenberg.dev/forms/chromium/convert/html',
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            isFormData: true,
+            method: 'POST'
         }
     ];
     
@@ -89,29 +91,32 @@ async function convertirHtmlRedocAPdf(html) {
         try {
             console.log(`🔄 PDF: Intentando con ${servicio.nombre}...`);
             
-            const response = await fetch(servicio.url, {
-                method: 'POST',
-                headers: servicio.headers,
-                body: JSON.stringify(servicio.body),
-                timeout: 30000 // 30 segundos timeout
-            });
+            let requestOptions = {
+                method: servicio.method,
+                headers: servicio.headers
+            };
+            
+            if (servicio.isFormData) {
+                // Para Gotenberg, usar FormData
+                const formData = new FormData();
+                formData.append('files', new Blob([html], { type: 'text/html' }), 'index.html');
+                requestOptions.body = formData;
+                delete requestOptions.headers['Content-Type']; // Dejar que el navegador establezca el boundary
+            } else {
+                requestOptions.body = servicio.body;
+            }
+            
+            const response = await fetch(servicio.url, requestOptions);
             
             if (response.ok) {
                 const pdfBuffer = Buffer.from(await response.arrayBuffer());
-                console.log(`✅ PDF: Conversión exitosa con ${servicio.nombre}`);
-                console.log(`📊 PDF: Tamaño: ${pdfBuffer.length} bytes`);
-                
-                // Verificar que es realmente un PDF
-                if (pdfBuffer.length > 100 && pdfBuffer.toString('ascii', 0, 4) === '%PDF') {
-                    console.log('✅ PDF: Archivo PDF válido confirmado');
-                    console.log('✅ PDF: HTML RedDoc convertido exitosamente a PDF');
-                    return pdfBuffer;
-                } else {
-                    console.log('❌ PDF: Respuesta no es un PDF válido');
-                }
+                console.log(`✅ PDF: ${servicio.nombre} exitoso - ${pdfBuffer.length} bytes`);
+                return pdfBuffer;
             } else {
-                console.log(`❌ PDF: ${servicio.nombre} respondió con status ${response.status}`);
+                const errorText = await response.text().catch(() => 'Error desconocido');
+                console.log(`❌ PDF: ${servicio.nombre} respondió con status ${response.status}: ${errorText}`);
             }
+            
         } catch (error) {
             console.error(`❌ PDF: Error con ${servicio.nombre}:`, error.message);
         }
