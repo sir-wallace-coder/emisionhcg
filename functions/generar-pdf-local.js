@@ -140,6 +140,49 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     const logoBase64 = emisorData.logo || '';
     const colorCorporativo = emisorData.color || '#2563eb';
     
+    // Parsear XML para extraer conceptos y otros datos
+    console.log('🔍 HTML: Parseando XML para extraer datos...');
+    let conceptos = [];
+    let subtotal = xmlData.total || '0.00';
+    let total = xmlData.total || '0.00';
+    
+    try {
+        // Extraer conceptos del XML usando regex simple
+        const xmlContent = xmlData.xml_content || '';
+        const conceptoMatches = xmlContent.match(/<cfdi:Concepto[^>]*>/g) || [];
+        
+        conceptos = conceptoMatches.map(match => {
+            const cantidad = (match.match(/Cantidad="([^"]*)"/)?.[1] || '1.00');
+            const claveUnidad = (match.match(/ClaveUnidad="([^"]*)"/)?.[1] || 'ACT');
+            const claveProdServ = (match.match(/ClaveProdServ="([^"]*)"/)?.[1] || '84111506');
+            const descripcion = (match.match(/Descripcion="([^"]*)"/)?.[1] || 'Servicio');
+            const valorUnitario = (match.match(/ValorUnitario="([^"]*)"/)?.[1] || '0.00');
+            const importe = (match.match(/Importe="([^"]*)"/)?.[1] || '0.00');
+            
+            return {
+                cantidad,
+                claveUnidad,
+                claveProdServ,
+                descripcion,
+                valorUnitario,
+                importe
+            };
+        });
+        
+        console.log('🔍 HTML: Conceptos extraidos:', conceptos.length);
+    } catch (parseError) {
+        console.error('❌ HTML: Error parseando XML:', parseError.message);
+        // Fallback: crear concepto básico
+        conceptos = [{
+            cantidad: '1.00',
+            claveUnidad: 'ACT',
+            claveProdServ: '84111506',
+            descripcion: 'Servicio',
+            valorUnitario: xmlData.total || '0.00',
+            importe: xmlData.total || '0.00'
+        }];
+    }
+    
     const html = `
 <!DOCTYPE html>
 <html lang="es">
@@ -410,7 +453,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${xmlData.conceptos.map(concepto => `
+                    ${conceptos.map(concepto => `
                         <tr>
                             <td>${concepto.cantidad}</td>
                             <td>${concepto.claveUnidad}</td>
@@ -864,7 +907,7 @@ function generarHtmlProfesional(xmlData, emisorData = {}) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${xmlData.conceptos.map(concepto => `
+                        ${conceptos.map(concepto => `
                             <tr>
                                 <td>${concepto.cantidad}</td>
                                 <td>${concepto.claveUnidad}</td>
