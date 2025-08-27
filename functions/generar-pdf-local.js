@@ -1080,7 +1080,7 @@ exports.handler = async (event, context) => {
         console.log('🎯 PDF: Generando PDF local idéntico a RedDoc...');
         
         // Generar HTML idéntico al de RedDoc
-        const htmlRedoc = generarHtmlRedoc(xmlData, emisorData);
+        const htmlRedoc = generarHtmlRedocIdentico(xmlData, emisorData);
         console.log('✅ PDF: HTML RedDoc generado exitosamente');
         console.log(`📊 PDF: Tamaño HTML: ${htmlRedoc.length} caracteres`);
         
