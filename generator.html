@@ -674,6 +674,86 @@
             }
         }
         
+        // Función para extraer todos los datos del XML content
+        function extraerDatosDelXML(xmlContent) {
+            console.log('🔍 Extrayendo todos los datos del XML...');
+            
+            const datos = {};
+            
+            try {
+                // Datos básicos del comprobante
+                datos.serie = xmlContent.match(/Serie="([^"]*)"/)?.[1] || '';
+                datos.folio = xmlContent.match(/Folio="([^"]*)"/)?.[1] || '';
+                datos.fecha = xmlContent.match(/Fecha="([^"]*)"/)?.[1] || '';
+                datos.formaPago = xmlContent.match(/FormaPago="([^"]*)"/)?.[1] || '';
+                datos.metodoPago = xmlContent.match(/MetodoPago="([^"]*)"/)?.[1] || '';
+                datos.moneda = xmlContent.match(/Moneda="([^"]*)"/)?.[1] || 'MXN';
+                datos.tipoCambio = xmlContent.match(/TipoCambio="([^"]*)"/)?.[1] || '';
+                datos.lugarExpedicion = xmlContent.match(/LugarExpedicion="([^"]*)"/)?.[1] || '';
+                datos.tipoDeComprobante = xmlContent.match(/TipoDeComprobante="([^"]*)"/)?.[1] || 'I';
+                
+                // Datos del emisor
+                const emisorMatch = xmlContent.match(/<cfdi:Emisor[^>]*>/)?.[0] || '';
+                datos.emisorRfc = emisorMatch.match(/Rfc="([^"]*)"/)?.[1] || xmlContent.match(/Rfc="([^"]*)"/)?.[1] || '';
+                datos.emisorNombre = emisorMatch.match(/Nombre="([^"]*)"/)?.[1] || '';
+                datos.emisorRegimenFiscal = emisorMatch.match(/RegimenFiscal="([^"]*)"/)?.[1] || '';
+                datos.emisorCodigoPostal = xmlContent.match(/DomicilioFiscal[^>]*CodigoPostal="([^"]*)"/)?.[1] || '';
+                
+                // Datos del receptor
+                const receptorMatch = xmlContent.match(/<cfdi:Receptor[^>]*>/)?.[0] || '';
+                datos.receptorRfc = receptorMatch.match(/Rfc="([^"]*)"/)?.[1] || '';
+                datos.receptorNombre = receptorMatch.match(/Nombre="([^"]*)"/)?.[1] || '';
+                
+                // Código postal del receptor (puede estar en diferentes lugares según versión)
+                datos.receptorCodigoPostal = receptorMatch.match(/DomicilioFiscalReceptor="([^"]*)"/)?.[1] || 
+                                           xmlContent.match(/DomicilioFiscalReceptor="([^"]*)"/)?.[1] || '';
+                
+                // Régimen fiscal del receptor (puede estar en diferentes lugares según versión)
+                datos.receptorRegimenFiscal = receptorMatch.match(/RegimenFiscalReceptor="([^"]*)"/)?.[1] || 
+                                            xmlContent.match(/RegimenFiscalReceptor="([^"]*)"/)?.[1] || '';
+                
+                // Uso CFDI
+                datos.usoCfdi = receptorMatch.match(/UsoCFDI="([^"]*)"/)?.[1] || 
+                               xmlContent.match(/UsoCFDI="([^"]*)"/)?.[1] || '';
+                
+                // Formatear fecha para input datetime-local
+                if (datos.fecha) {
+                    const fechaObj = new Date(datos.fecha);
+                    if (!isNaN(fechaObj.getTime())) {
+                        datos.fechaFormateada = fechaObj.toISOString().slice(0, 16);
+                    }
+                }
+                
+                console.log('✅ Datos extraídos del XML:', datos);
+                console.log('🔍 DEBUG: Datos básicos extraídos:', {
+                    serie: datos.serie,
+                    folio: datos.folio,
+                    fecha: datos.fecha,
+                    fechaFormateada: datos.fechaFormateada,
+                    formaPago: datos.formaPago,
+                    metodoPago: datos.metodoPago
+                });
+                console.log('🔍 DEBUG: Datos emisor extraídos:', {
+                    rfc: datos.emisorRfc,
+                    nombre: datos.emisorNombre,
+                    regimen: datos.emisorRegimenFiscal,
+                    codigoPostal: datos.emisorCodigoPostal
+                });
+                console.log('🔍 DEBUG: Datos receptor extraídos:', {
+                    rfc: datos.receptorRfc,
+                    nombre: datos.receptorNombre,
+                    regimen: datos.receptorRegimenFiscal,
+                    codigoPostal: datos.receptorCodigoPostal,
+                    usoCfdi: datos.usoCfdi
+                });
+                return datos;
+                
+            } catch (error) {
+                console.error('❌ Error extrayendo datos del XML:', error);
+                return {};
+            }
+        }
+        
         // Función para pre-poblar el formulario con datos del XML
         function prePopularFormulario(xmlData) {
             console.log('🔄 Pre-poblando formulario con datos:', xmlData);
@@ -682,28 +762,35 @@
             console.log('🔍 DEBUG: xml_content length:', xmlData.xml_content?.length || 0);
             
             try {
-                // Datos básicos del comprobante
-                if (xmlData.serie) document.getElementById('serie').value = xmlData.serie;
-                if (xmlData.folio) document.getElementById('folio').value = xmlData.folio;
-                if (xmlData.fecha) document.getElementById('fecha').value = xmlData.fecha;
-                if (xmlData.forma_pago) document.getElementById('formaPago').value = xmlData.forma_pago;
-                if (xmlData.metodo_pago) document.getElementById('metodoPago').value = xmlData.metodo_pago;
-                if (xmlData.moneda) document.getElementById('moneda').value = xmlData.moneda;
-                if (xmlData.tipo_cambio) document.getElementById('tipoCambio').value = xmlData.tipo_cambio;
-                if (xmlData.lugar_expedicion) document.getElementById('lugarExpedicion').value = xmlData.lugar_expedicion;
+                let datosExtraidos = {};
                 
-                // Datos del emisor
-                if (xmlData.emisor_rfc) document.getElementById('emisorRfc').value = xmlData.emisor_rfc;
-                if (xmlData.emisor_nombre) document.getElementById('emisorNombre').value = xmlData.emisor_nombre;
-                if (xmlData.emisor_regimen_fiscal) document.getElementById('emisorRegimenFiscal').value = xmlData.emisor_regimen_fiscal;
-                if (xmlData.emisor_codigo_postal) document.getElementById('emisorCodigoPostal').value = xmlData.emisor_codigo_postal;
+                // Si tenemos xml_content, extraer todos los datos del XML
+                if (xmlData.xml_content) {
+                    datosExtraidos = extraerDatosDelXML(xmlData.xml_content);
+                }
                 
-                // Datos del receptor
-                if (xmlData.receptor_rfc) document.getElementById('receptorRfc').value = xmlData.receptor_rfc;
-                if (xmlData.receptor_nombre) document.getElementById('receptorNombre').value = xmlData.receptor_nombre;
-                if (xmlData.receptor_codigo_postal) document.getElementById('receptorCodigoPostal').value = xmlData.receptor_codigo_postal;
-                if (xmlData.receptor_regimen_fiscal) document.getElementById('receptorRegimenFiscal').value = xmlData.receptor_regimen_fiscal;
-                if (xmlData.uso_cfdi) document.getElementById('usoCfdi').value = xmlData.uso_cfdi;
+                // Datos básicos del comprobante (priorizar datos extraídos del XML)
+                document.getElementById('serie').value = datosExtraidos.serie || xmlData.serie || '';
+                document.getElementById('folio').value = datosExtraidos.folio || xmlData.folio || '';
+                document.getElementById('fecha').value = datosExtraidos.fechaFormateada || xmlData.fecha || '';
+                document.getElementById('formaPago').value = datosExtraidos.formaPago || xmlData.forma_pago || '';
+                document.getElementById('metodoPago').value = datosExtraidos.metodoPago || xmlData.metodo_pago || '';
+                document.getElementById('moneda').value = datosExtraidos.moneda || xmlData.moneda || 'MXN';
+                document.getElementById('tipoCambio').value = datosExtraidos.tipoCambio || xmlData.tipo_cambio || '';
+                document.getElementById('lugarExpedicion').value = datosExtraidos.lugarExpedicion || xmlData.lugar_expedicion || '';
+                
+                // Datos del emisor (priorizar datos extraídos del XML)
+                document.getElementById('emisorRfc').value = datosExtraidos.emisorRfc || xmlData.emisor_rfc || '';
+                document.getElementById('emisorNombre').value = datosExtraidos.emisorNombre || xmlData.emisor_nombre || '';
+                document.getElementById('emisorRegimenFiscal').value = datosExtraidos.emisorRegimenFiscal || xmlData.emisor_regimen_fiscal || '';
+                document.getElementById('emisorCodigoPostal').value = datosExtraidos.emisorCodigoPostal || xmlData.emisor_codigo_postal || '';
+                
+                // Datos del receptor (priorizar datos extraídos del XML)
+                document.getElementById('receptorRfc').value = datosExtraidos.receptorRfc || xmlData.receptor_rfc || '';
+                document.getElementById('receptorNombre').value = datosExtraidos.receptorNombre || xmlData.receptor_nombre || '';
+                document.getElementById('receptorCodigoPostal').value = datosExtraidos.receptorCodigoPostal || xmlData.receptor_codigo_postal || '';
+                document.getElementById('receptorRegimenFiscal').value = datosExtraidos.receptorRegimenFiscal || xmlData.receptor_regimen_fiscal || '';
+                document.getElementById('usoCfdi').value = datosExtraidos.usoCfdi || xmlData.uso_cfdi || '';
                 
                 // Parsear y cargar conceptos del XML
                 if (xmlData.xml_content) {
