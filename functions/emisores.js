@@ -535,14 +535,25 @@ async function getEmisores(userId, headers, emisorId = null) {
       // Eliminar campos sensibles DESPUÉS de calcular propiedades
       const { certificado_key, password_key, ...safeEmisor } = emisor;
       
-      // Agregar propiedades calculadas para el frontend
-      return {
+      // 🔧 DEBUG TEMPORAL: Verificar qué devuelve el endpoint
+      const emisorParaFrontend = {
         ...safeEmisor,
         tiene_cer: tieneCer,
         tiene_key: tieneKey,
         certificado_cer_presente: tieneCer,
         certificado_key_presente: tieneKey
       };
+      
+      console.log('🔍 DEBUG ENDPOINT: Emisor que se envía al frontend:', {
+        id: emisorParaFrontend.id,
+        rfc: emisorParaFrontend.rfc,
+        tiene_id: !!emisorParaFrontend.id,
+        id_tipo: typeof emisorParaFrontend.id,
+        propiedades: Object.keys(emisorParaFrontend)
+      });
+      
+      // Agregar propiedades calculadas para el frontend
+      return emisorParaFrontend;
     });
 
     return {
