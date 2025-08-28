@@ -399,7 +399,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             width: 100%;
             max-width: 210mm;
             margin: 0 auto;
-            padding: 5mm 5mm;
+            padding: 3mm 3mm;
             background: white;
         }
         
