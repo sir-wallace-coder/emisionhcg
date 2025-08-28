@@ -3617,27 +3617,47 @@
         // Función para detectar el estado correcto del XML importado
         function detectarEstadoXML(xmlContent, xmlData) {
             console.log('🔍 Detectando estado del XML importado...');
+            console.log('🔍 xmlData recibido:', xmlData);
             
             try {
-                // Verificar si tiene timbre fiscal (timbrado)
-                const tieneTimbreFiscal = xmlContent.includes('<tfd:TimbreFiscalDigital') || 
-                                        xmlContent.includes('<TimbreFiscalDigital') ||
-                                        (xmlData.uuid && xmlData.uuid.length > 0);
+                // DETECCIÓN ROBUSTA DE TIMBRE FISCAL (múltiples métodos)
+                const tieneTimbreFiscalXML = xmlContent.includes('<tfd:TimbreFiscalDigital') || 
+                                           xmlContent.includes('<TimbreFiscalDigital') ||
+                                           xmlContent.includes('tfd:TimbreFiscalDigital') ||
+                                           xmlContent.includes('xmlns:tfd=');
                 
-                // Verificar si tiene sello digital del emisor (sellado)
-                const tieneSelloEmisor = xmlContent.includes('Sello="') && 
-                                       xmlContent.match(/Sello="[^"]{100,}"/); // Sello debe tener longitud mínima
+                const tieneUUID = xmlData.uuid && xmlData.uuid !== null && xmlData.uuid.length > 0;
+                
+                // Buscar UUID directamente en el XML como fallback
+                const uuidEnXML = xmlContent.match(/UUID="([^"]+)"/i)?.[1] || 
+                                xmlContent.match(/uuid="([^"]+)"/i)?.[1];
+                
+                const tieneTimbreFiscal = tieneTimbreFiscalXML || tieneUUID || (uuidEnXML && uuidEnXML.length > 0);
+                
+                // DETECCIÓN ROBUSTA DE SELLO DIGITAL
+                const selloMatch = xmlContent.match(/Sello="([^"]*)"/)?.[1] || 
+                                 xmlContent.match(/sello="([^"]*)"/)?.[1];
+                const tieneSelloEmisor = selloMatch && selloMatch.length > 100; // Sello debe tener longitud mínima
                 
                 // Extraer información adicional para logs
-                const selloMatch = xmlContent.match(/Sello="([^"]*)"/)?.[1];
-                const certificadoMatch = xmlContent.match(/Certificado="([^"]*)"/)?.[1];
-                const noCertificadoMatch = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1];
+                const certificadoMatch = xmlContent.match(/Certificado="([^"]*)"/)?.[1] || 
+                                        xmlContent.match(/certificado="([^"]*)"/)?.[1];
+                const noCertificadoMatch = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1] || 
+                                         xmlContent.match(/nocertificado="([^"]*)"/)?.[1];
                 
-                console.log('🔍 Análisis de estado XML:', {
+                console.log('🔍 Análisis DETALLADO de estado XML:', {
+                    // Timbre fiscal
+                    tieneTimbreFiscalXML,
+                    tieneUUID,
+                    uuidEnXML: uuidEnXML || 'No encontrado',
                     tieneTimbreFiscal,
+                    
+                    // Sello digital
                     tieneSelloEmisor,
-                    uuid: xmlData.uuid || 'No encontrado',
                     selloLength: selloMatch ? selloMatch.length : 0,
+                    
+                    // Otros datos
+                    uuid: xmlData.uuid || 'No encontrado en xmlData',
                     certificadoLength: certificadoMatch ? certificadoMatch.length : 0,
                     noCertificado: noCertificadoMatch || 'No encontrado'
                 });
@@ -3649,12 +3669,15 @@
                 
                 if (tieneTimbreFiscal) {
                     console.log('✅ XML detectado como TIMBRADO (tiene timbre fiscal)');
+                    console.log('   🔍 Evidencia: TimbreFiscalDigital=' + tieneTimbreFiscalXML + ', UUID=' + (xmlData.uuid || uuidEnXML));
                     return 'timbrado';
                 } else if (tieneSelloEmisor) {
                     console.log('✅ XML detectado como SELLADO (tiene sello pero no timbre)');
+                    console.log('   🔍 Evidencia: Sello longitud=' + (selloMatch ? selloMatch.length : 0));
                     return 'sellado';
                 } else {
                     console.log('✅ XML detectado como IMPORTADO (sin sello ni timbre)');
+                    console.log('   🔍 Evidencia: Sin timbre fiscal ni sello digital válido');
                     return 'importado';
                 }
                 
