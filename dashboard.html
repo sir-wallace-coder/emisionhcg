@@ -1906,7 +1906,7 @@
                         <td><strong>${xml.receptor_nombre || 'N/A'}</strong><br><small>${xml.receptor_rfc || 'N/A'}</small></td>
                         <td>$${total}</td>
                         <td>${fecha}</td>
-                        <td><span class="badge bg-secondary">${xml.estado || 'generado'}</span></td>
+                        <td><span class="badge bg-${getEstadoBadgeColor(xml.estado || 'generado')}">${xml.estado || 'generado'}</span></td>
                         <td>
                             <div class="btn-group" role="group">
                                 <button class="btn btn-sm btn-outline-primary" onclick="viewXMLSimple('${xml.id}')" title="Ver XML">
