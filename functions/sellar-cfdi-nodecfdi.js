@@ -69,6 +69,32 @@ async function obtenerDatosEmisor(userId, emisorId) {
             tienePassword: !!emisor.password_key
         });
         
+        // 🔬 DIAGNÓSTICO TÉCNICO DETALLADO: Analizar datos reales de BD
+        console.log('🔬 DIAGNÓSTICO TÉCNICO DETALLADO - DATOS REALES BD:');
+        console.log('📏 Certificado CER:');
+        console.log('  - Length:', emisor.certificado_cer ? emisor.certificado_cer.length : 'NULL');
+        console.log('  - Type:', typeof emisor.certificado_cer);
+        console.log('  - Es string:', typeof emisor.certificado_cer === 'string');
+        console.log('  - Primeros 50 chars:', emisor.certificado_cer ? emisor.certificado_cer.substring(0, 50) : 'NULL');
+        console.log('  - Últimos 50 chars:', emisor.certificado_cer ? emisor.certificado_cer.substring(emisor.certificado_cer.length - 50) : 'NULL');
+        console.log('  - Contiene BEGIN:', emisor.certificado_cer ? emisor.certificado_cer.includes('-----BEGIN') : false);
+        console.log('  - Contiene data:', emisor.certificado_cer ? emisor.certificado_cer.includes('data:') : false);
+        
+        console.log('🗝 Llave privada KEY:');
+        console.log('  - Length:', emisor.certificado_key ? emisor.certificado_key.length : 'NULL');
+        console.log('  - Type:', typeof emisor.certificado_key);
+        console.log('  - Es string:', typeof emisor.certificado_key === 'string');
+        console.log('  - Primeros 50 chars:', emisor.certificado_key ? emisor.certificado_key.substring(0, 50) : 'NULL');
+        console.log('  - Últimos 50 chars:', emisor.certificado_key ? emisor.certificado_key.substring(emisor.certificado_key.length - 50) : 'NULL');
+        console.log('  - Contiene BEGIN:', emisor.certificado_key ? emisor.certificado_key.includes('-----BEGIN') : false);
+        console.log('  - Contiene data:', emisor.certificado_key ? emisor.certificado_key.includes('data:') : false);
+        
+        console.log('🔑 Password:');
+        console.log('  - Length:', emisor.password_key ? emisor.password_key.length : 'NULL');
+        console.log('  - Type:', typeof emisor.password_key);
+        console.log('  - Es string:', typeof emisor.password_key === 'string');
+        console.log('  - Primeros 10 chars:', emisor.password_key ? emisor.password_key.substring(0, 10) + '...' : 'NULL');
+        
         // Verificar que tenga certificados
         if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.password_key) {
             console.error('❌ NODECFDI: Emisor sin certificados CSD completos');
