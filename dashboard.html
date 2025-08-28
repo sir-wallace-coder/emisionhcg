@@ -3045,11 +3045,22 @@
                             certificado_key_presente: emisorEncontrado.certificado_key_presente
                         });
                         
+                        // 🔧 DEBUG CRÍTICO: Verificar estructura completa del emisor
+                        console.log('🔍 DEBUG EMISOR COMPLETO:', {
+                            id: emisorEncontrado.id,
+                            rfc: emisorEncontrado.rfc,
+                            nombre: emisorEncontrado.nombre,
+                            tiene_id: !!emisorEncontrado.id,
+                            id_tipo: typeof emisorEncontrado.id,
+                            propiedades: Object.keys(emisorEncontrado)
+                        });
+                        
                         // 🔧 FIX CRÍTICO: Validar CSD usando campos correctos que existen
                         if (emisorEncontrado.certificado_cer_presente && emisorEncontrado.certificado_key_presente) {
                             emisorConCSD = emisorEncontrado;
                             console.log('✅ VALIDACIÓN CSD: Emisor tiene certificados completos');
                             console.log('📝 Estado CSD actual:', emisorEncontrado.estado_csd || 'no definido');
+                            console.log('🆔 ID del emisor asignado:', emisorConCSD.id);
                             
                             // NOTA: Aceptamos estado 'pending' si tiene certificados válidos
                             // Esto permite sellar mientras se corrige el backend para actualizar estado
