@@ -279,9 +279,14 @@ async function firmarConCredentials(cadenaOriginal, certificadoBase64, llavePriv
             }
         }
         
-        // Crear credencial con @nodecfdi/credentials usando llave desencriptada
-        console.log('🔧 Creando credencial NodeCfdi con llave desencriptada...');
-        const credential = Credential.create(certificadoPem, llavePrivadaDesencriptada, '');
+        // Crear credencial con @nodecfdi/credentials usando certificado DER binario
+        console.log('🔧 Creando credencial NodeCfdi con certificado DER binario...');
+        
+        // Convertir certificado PEM a DER binario para NodeCfdi
+        const certificadoDerBinary = Buffer.from(certificadoBase64, 'base64');
+        console.log('🔍 Certificado DER binary length:', certificadoDerBinary.length);
+        
+        const credential = Credential.create(certificadoDerBinary, llavePrivadaDesencriptada, '');
         
         console.log('✅ Credencial NodeCfdi creada exitosamente');
         

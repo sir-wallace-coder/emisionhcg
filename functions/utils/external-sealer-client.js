@@ -233,21 +233,25 @@ async function sellarConServicioExterno({
         throw new Error('No se pudo obtener token de autenticación');
     }
 
-    // Crear URLSearchParams para application/x-www-form-urlencoded (como Postman oficial)
-    const formData = new URLSearchParams();
+    // Convertir XML a Base64 según especificaciones del usuario
+    const xmlBase64 = Buffer.from(xmlSinSellar, 'utf8').toString('base64');
     
-    formData.append('xml', xmlSinSellar);
-    formData.append('certificado', certificadoBase64);
-    formData.append('key', llavePrivadaBase64);
-    formData.append('password', passwordLlave);
+    // Crear payload JSON según especificaciones del usuario
+    const payload = {
+        xml: xmlBase64,              // base64 file xml
+        certificado: certificadoBase64,  // base64 certificado
+        key: llavePrivadaBase64,     // base64 key private
+        password: passwordLlave      // string password
+    };
 
-    // 🔍 DEBUG: Verificar datos exactos enviados
-    console.log('📊 EXTERNAL SEALER: Datos enviados:');
-    console.log('  - XML length:', xmlSinSellar.length);
+    // 🔍 DEBUG: Verificar datos exactos enviados según especificaciones del usuario
+    console.log('📊 EXTERNAL SEALER: Payload JSON creado según especificaciones:');
+    console.log('  - XML original length:', xmlSinSellar.length);
+    console.log('  - XML base64 length:', xmlBase64.length);
     console.log('  - XML preview:', xmlSinSellar.substring(0, 100) + '...');
-    console.log('  - Certificado length:', certificadoBase64.length);
+    console.log('  - Certificado base64 length:', certificadoBase64.length);
     console.log('  - Certificado preview:', certificadoBase64.substring(0, 50) + '...');
-    console.log('  - Key length:', llavePrivadaBase64.length);
+    console.log('  - Key base64 length:', llavePrivadaBase64.length);
     console.log('  - Key preview:', llavePrivadaBase64.substring(0, 50) + '...');
     console.log('  - Password length:', passwordLlave.length);
     console.log('  - RFC:', rfc);
@@ -255,16 +259,16 @@ async function sellarConServicioExterno({
     // 🔍 DEBUG: Verificar token y headers antes del envío
     console.log('🔐 EXTERNAL SEALER: Token para Authorization:', token ? `${token.substring(0, 20)}...` : 'TOKEN VACIO');
     console.log('🔐 EXTERNAL SEALER: URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
-    console.log('🔄 EXTERNAL SEALER: Usando URLSearchParams (application/x-www-form-urlencoded) como Postman oficial');
+    console.log('🔄 EXTERNAL SEALER: Usando JSON según especificaciones del usuario');
     
-    // 🔍 DEBUG: Verificar FormData serializado
-    const formDataString = formData.toString();
-    console.log('📋 EXTERNAL SEALER: FormData serializado length:', formDataString.length);
-    console.log('📋 EXTERNAL SEALER: FormData preview (primeros 200 chars):', formDataString.substring(0, 200));
+    // 🔍 DEBUG: Verificar payload JSON serializado
+    const payloadString = JSON.stringify(payload);
+    console.log('📋 EXTERNAL SEALER: Payload JSON length:', payloadString.length);
+    console.log('📋 EXTERNAL SEALER: Payload preview (primeros 200 chars):', payloadString.substring(0, 200));
     
     const headers = {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json'
     };
     
     console.log('🔐 EXTERNAL SEALER: Headers completos:', {
@@ -273,12 +277,12 @@ async function sellarConServicioExterno({
         'Content-Length': 'AUTO'
     });
     
-    // Envío HTTP
-    console.log('🚀 EXTERNAL SEALER: Enviando request de sellado...');
+    // Envío HTTP con JSON según especificaciones del usuario
+    console.log('🚀 EXTERNAL SEALER: Enviando request de sellado con JSON...');
     const response = await fetch(EXTERNAL_SEALER_CONFIG.sellarUrl, {
         method: 'POST',
         headers,
-        body: formData,
+        body: payloadString,
         timeout: EXTERNAL_SEALER_CONFIG.timeout
     });
     
