@@ -3045,7 +3045,7 @@
                             certificado_key_presente: emisorEncontrado.certificado_key_presente
                         });
                         
-                        // 🔧 DEBUG CRÍTICO: Verificar estructura completa del emisor
+                            // 🔧 DEBUG CRÍTICO: Verificar estructura completa del emisor
                         console.log('🔍 DEBUG EMISOR COMPLETO:', {
                             id: emisorEncontrado.id,
                             rfc: emisorEncontrado.rfc,
@@ -3054,6 +3054,10 @@
                             id_tipo: typeof emisorEncontrado.id,
                             propiedades: Object.keys(emisorEncontrado)
                         });
+                        
+                        // 🔧 PRUEBA DIRECTA: Verificar si el problema es el id
+                        console.log('🔍 PRUEBA DIRECTA emisorEncontrado.id:', JSON.stringify(emisorEncontrado.id));
+                        console.log('🔍 PRUEBA DIRECTA emisorEncontrado completo:', JSON.stringify(emisorEncontrado, null, 2));
                         
                         // 🔧 FIX CRÍTICO: Validar CSD usando campos correctos que existen
                         if (emisorEncontrado.certificado_cer_presente && emisorEncontrado.certificado_key_presente) {
