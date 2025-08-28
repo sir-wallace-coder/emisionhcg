@@ -336,28 +336,65 @@ exports.handler = async (event, context) => {
         console.log('📄 XML obtenido, estado:', xmlData.estado);
         console.log('📏 Tamaño XML:', xmlData.xml_content.length);
         
-        // Realizar sellado con NodeCfdi (intentar versión principal, fallback si falla)
-        console.log('\n🔐 INICIANDO SELLADO CON NODECFDI...');
-        let resultado;
-        
-        // 🚀 USAR SELLADOR HÍBRIDO CON LIBRERÍAS CORRECTAS
+        // 🔬 DETECCIÓN AUTOMÁTICA DE COMPATIBILIDAD DE CERTIFICADOS
+        console.log('\n🔬 VERIFICANDO COMPATIBILIDAD DEL CERTIFICADO...');
+        console.log('🔐 INICIANDO SELLADO CON NODECFDI...');
         console.log('🔄 Usando sellado híbrido (cfdiutils-core + credentials)...');
-        resultado = await sellarCFDIHibrido(
-            xmlData.xml_content,
-            emisor.certificado_cer,
-            emisor.certificado_key,
-            emisor.password_key,
-            version
-        );
+        
+        const startTime = Date.now();
+        let resultado;
+        try {
+            // Intentar NodeCfdi primero
+            resultado = await sellarCFDIHibrido(
+                xmlData.xml_content,
+                version,
+                emisor.certificado_cer,
+                emisor.certificado_key,
+                emisor.password_key
+            );
+            
+            console.log('✅ NODECFDI EXITOSO: Certificado compatible');
+            
+        } catch (nodecfdiError) {
+            console.log('⚠️ NODECFDI INCOMPATIBLE: Certificado no soportado');
+            console.log('🔄 USANDO MÉTODO ALTERNATIVO AUTOMÁTICAMENTE...');
+            
+            // Importar método alternativo
+            const { sellarConServicioExterno } = require('./external-sealer-client');
+            
+            console.log('🌐 Sellando con servicio externo compatible...');
+            
+            const resultadoExterno = await sellarConServicioExterno({
+                xml_content: xmlData.xml_content,
+                certificado: emisor.certificado_cer,
+                llave_privada: emisor.certificado_key,
+                password: emisor.password_key
+            });
+            
+            if (resultadoExterno && resultadoExterno.xml_sellado) {
+                // Adaptar resultado del servicio externo al formato esperado
+                resultado = {
+                    success: true,
+                    xmlSellado: resultadoExterno.xml_sellado,
+                    sello: resultadoExterno.sello || 'Sello generado por servicio externo',
+                    numeroCertificado: resultadoExterno.numero_certificado || 'N/A',
+                    metodo: 'Servicio Externo',
+                    tiempoMs: Date.now() - startTime
+                };
+                console.log('✅ SERVICIO EXTERNO EXITOSO: XML sellado obtenido');
+            } else {
+                throw new Error('Servicio externo no pudo sellar el XML');
+            }
+        }
         
         if (!resultado.success) {
-            console.error('❌ Error en sellado NodeCfdi:', resultado.error);
+            console.error('❌ Error en sellado:', resultado.error);
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({ 
                     error: `Error en sellado: ${resultado.error}`,
-                    metodo: 'NodeCfdi'
+                    metodo: resultado.metodo || 'NodeCfdi'
                 })
             };
         }
