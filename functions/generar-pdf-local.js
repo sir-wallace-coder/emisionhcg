@@ -408,9 +408,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             border-bottom: 2px solid ${colorCorporativo};
-            padding-bottom: 6px;
+            padding-bottom: 3px;
         }
         
         .logo-section {
@@ -420,14 +420,14 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         
         .logo {
             max-width: 150px;
-            max-height: 80px;
+            max-height: 60px;
             object-fit: contain;
         }
         
         .emisor-info {
             flex: 2;
             text-align: left;
-            padding-left: 20px;
+            padding-left: 15px;
         }
         
         .emisor-nombre {
