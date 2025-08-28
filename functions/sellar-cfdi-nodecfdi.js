@@ -353,6 +353,13 @@ exports.handler = async (event, context) => {
                 emisor.password_key
             );
             
+            // 🚨 CORRECCIÓN CRÍTICA: Verificar si NodeCfdi falló
+            if (!resultado || !resultado.success) {
+                const errorMsg = resultado?.error || 'NodeCfdi falló sin mensaje de error';
+                console.log('❌ NODECFDI FALLÓ: Lanzando excepción para activar fallback');
+                throw new Error(`NodeCfdi falló: ${errorMsg}`);
+            }
+            
             console.log('✅ NODECFDI EXITOSO: Certificado compatible');
             
         } catch (nodecfdiError) {
