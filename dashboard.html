@@ -1918,20 +1918,21 @@
                                 <button class="btn btn-sm btn-outline-primary" onclick="generarPDF('${xml.id}')" title="Generar PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </button>
-                                ${xml.estado !== 'sellado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
                                     <button class="btn btn-sm btn-outline-warning" onclick="editarXML('${xml.id}')" title="Editar XML">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 ` : ''}
-                                ${xml.estado !== 'sellado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
                                     <button class="btn btn-sm btn-outline-info" onclick="sellarXML('${xml.id}')" title="Sellar XML">
                                         <i class="fas fa-stamp"></i>
                                     </button>
-                                ` : `
+                                ` : ''}
+                                ${xml.estado === 'sellado' ? `
                                     <button class="btn btn-sm btn-outline-warning" onclick="cancelarXML('${xml.id}')" title="Cancelar Sello">
                                         <i class="fas fa-undo"></i>
                                     </button>
-                                `}
+                                ` : ''}
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteXML('${xml.id}')" title="Eliminar XML">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -2047,10 +2048,12 @@
                                 <button type="button" class="btn btn-success" onclick="descargarXML('${xml.id}')">
                                     <i class="fas fa-download"></i> Descargar XML
                                 </button>
-                                <button type="button" class="btn btn-warning" onclick="editarXML('${xml.id}')">
-                                    <i class="fas fa-edit"></i> Editar
-                                </button>
-                                ${xml.estado !== 'sellado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
+                                    <button type="button" class="btn btn-warning" onclick="editarXML('${xml.id}')">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                ` : ''}
+                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
                                     <button type="button" class="btn btn-primary" onclick="sellarXML('${xml.id}')">
                                         <i class="fas fa-stamp"></i> Sellar
                                     </button>
@@ -2232,9 +2235,10 @@
                     return;
                 }
                 
-                // Verificar que el XML no esté sellado
-                if (xml.estado === 'sellado') {
-                    alert('⚠️ No se puede editar un XML que ya está sellado');
+                // Verificar que el XML no esté sellado ni timbrado
+                if (xml.estado === 'sellado' || xml.estado === 'timbrado') {
+                    const estadoTexto = xml.estado === 'sellado' ? 'sellado' : 'timbrado';
+                    alert(`⚠️ No se puede editar un XML que ya está ${estadoTexto}`);
                     return;
                 }
                 
