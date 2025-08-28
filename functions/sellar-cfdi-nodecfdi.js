@@ -398,10 +398,12 @@ exports.handler = async (event, context) => {
             console.log('🌐 Sellando con servicio externo compatible...');
             
             const resultadoExterno = await sellarConServicioExterno({
-                xml_content: xmlData.xml_content,
-                certificado: emisor.certificado_cer,
-                llave_privada: emisor.certificado_key,
-                password: emisor.password_key
+                xmlSinSellar: xmlData.xml_content,
+                certificadoBase64: emisor.certificado_cer,
+                llavePrivadaBase64: emisor.certificado_key,
+                passwordLlave: emisor.password_key,
+                rfc: emisor.rfc,
+                versionCfdi: version
             });
             
             if (resultadoExterno && resultadoExterno.xml_sellado) {
