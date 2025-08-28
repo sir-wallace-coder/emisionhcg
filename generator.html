@@ -769,28 +769,41 @@
                     datosExtraidos = extraerDatosDelXML(xmlData.xml_content);
                 }
                 
+                // Función helper para establecer valor de forma segura
+                const setValueSafely = (elementId, value) => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.value = value || '';
+                        console.log(`✅ ${elementId}: ${value || '(vacío)'}`);
+                    } else {
+                        console.warn(`⚠️ Elemento no encontrado: ${elementId}`);
+                    }
+                };
+                
+                console.log('🔄 Estableciendo valores en formulario...');
+                
                 // Datos básicos del comprobante (priorizar datos extraídos del XML)
-                document.getElementById('serie').value = datosExtraidos.serie || xmlData.serie || '';
-                document.getElementById('folio').value = datosExtraidos.folio || xmlData.folio || '';
-                document.getElementById('fecha').value = datosExtraidos.fechaFormateada || xmlData.fecha || '';
-                document.getElementById('formaPago').value = datosExtraidos.formaPago || xmlData.forma_pago || '';
-                document.getElementById('metodoPago').value = datosExtraidos.metodoPago || xmlData.metodo_pago || '';
-                document.getElementById('moneda').value = datosExtraidos.moneda || xmlData.moneda || 'MXN';
-                document.getElementById('tipoCambio').value = datosExtraidos.tipoCambio || xmlData.tipo_cambio || '';
-                document.getElementById('lugarExpedicion').value = datosExtraidos.lugarExpedicion || xmlData.lugar_expedicion || '';
+                setValueSafely('serie', datosExtraidos.serie || xmlData.serie);
+                setValueSafely('folio', datosExtraidos.folio || xmlData.folio);
+                setValueSafely('fecha', datosExtraidos.fechaFormateada || xmlData.fecha);
+                setValueSafely('formaPago', datosExtraidos.formaPago || xmlData.forma_pago);
+                setValueSafely('metodoPago', datosExtraidos.metodoPago || xmlData.metodo_pago);
+                setValueSafely('moneda', datosExtraidos.moneda || xmlData.moneda || 'MXN');
+                setValueSafely('tipoCambio', datosExtraidos.tipoCambio || xmlData.tipo_cambio);
+                setValueSafely('lugarExpedicion', datosExtraidos.lugarExpedicion || xmlData.lugar_expedicion);
                 
                 // Datos del emisor (priorizar datos extraídos del XML)
-                document.getElementById('emisorRfc').value = datosExtraidos.emisorRfc || xmlData.emisor_rfc || '';
-                document.getElementById('emisorNombre').value = datosExtraidos.emisorNombre || xmlData.emisor_nombre || '';
-                document.getElementById('emisorRegimenFiscal').value = datosExtraidos.emisorRegimenFiscal || xmlData.emisor_regimen_fiscal || '';
-                document.getElementById('emisorCodigoPostal').value = datosExtraidos.emisorCodigoPostal || xmlData.emisor_codigo_postal || '';
+                setValueSafely('emisorRfc', datosExtraidos.emisorRfc || xmlData.emisor_rfc);
+                setValueSafely('emisorNombre', datosExtraidos.emisorNombre || xmlData.emisor_nombre);
+                setValueSafely('emisorRegimenFiscal', datosExtraidos.emisorRegimenFiscal || xmlData.emisor_regimen_fiscal);
+                setValueSafely('emisorCodigoPostal', datosExtraidos.emisorCodigoPostal || xmlData.emisor_codigo_postal);
                 
                 // Datos del receptor (priorizar datos extraídos del XML)
-                document.getElementById('receptorRfc').value = datosExtraidos.receptorRfc || xmlData.receptor_rfc || '';
-                document.getElementById('receptorNombre').value = datosExtraidos.receptorNombre || xmlData.receptor_nombre || '';
-                document.getElementById('receptorCodigoPostal').value = datosExtraidos.receptorCodigoPostal || xmlData.receptor_codigo_postal || '';
-                document.getElementById('receptorRegimenFiscal').value = datosExtraidos.receptorRegimenFiscal || xmlData.receptor_regimen_fiscal || '';
-                document.getElementById('usoCfdi').value = datosExtraidos.usoCfdi || xmlData.uso_cfdi || '';
+                setValueSafely('receptorRfc', datosExtraidos.receptorRfc || xmlData.receptor_rfc);
+                setValueSafely('receptorNombre', datosExtraidos.receptorNombre || xmlData.receptor_nombre);
+                setValueSafely('receptorCodigoPostal', datosExtraidos.receptorCodigoPostal || xmlData.receptor_codigo_postal);
+                setValueSafely('receptorRegimenFiscal', datosExtraidos.receptorRegimenFiscal || xmlData.receptor_regimen_fiscal);
+                setValueSafely('usoCfdi', datosExtraidos.usoCfdi || xmlData.uso_cfdi);
                 
                 // Parsear y cargar conceptos del XML
                 if (xmlData.xml_content) {
