@@ -736,7 +736,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             background: #ffffff;
             border: 1px solid #dee2e6;
             border-radius: 4px;
-            padding: 8px;
+            padding: 4px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             transition: box-shadow 0.2s ease;
         }
@@ -752,7 +752,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .sello-titulo {
             font-weight: bold;
             font-size: 11px;
-            margin-bottom: 8px;
+            margin-bottom: 3px;
             color: #495057;
             text-align: left;
             text-transform: uppercase;
@@ -762,13 +762,13 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .sello-contenido {
             word-break: break-all;
             background: #f8f9fa;
-            padding: 8px;
+            padding: 4px;
             border: 1px solid #e9ecef;
             border-radius: 4px;
             font-family: 'Courier New', monospace;
             font-size: 8px;
-            line-height: 1.3;
-            max-height: 60px;
+            line-height: 1.2;
+            max-height: 50px;
             overflow: hidden;
             color: #495057;
         }
@@ -777,14 +777,14 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             background: #ffffff;
             border: 1px solid #dee2e6;
             border-radius: 4px;
-            padding: 8px;
+            padding: 4px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         .certificado-titulo {
             font-weight: bold;
             font-size: 11px;
-            margin-bottom: 8px;
+            margin-bottom: 3px;
             color: #495057;
             text-align: left;
             text-transform: uppercase;
