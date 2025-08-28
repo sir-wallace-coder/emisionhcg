@@ -687,8 +687,10 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         .columna-qr {
-            flex: 0 0 150px;
+            flex: 0 0 160px;
             text-align: center;
+            display: flex;
+            align-items: center;
         }
         
         .columna-sellos {
@@ -716,15 +718,15 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         .qr-placeholder {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             background: #e9ecef;
             border: 2px dashed #adb5bd;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
-            font-size: 9px;
+            font-size: 10px;
             color: #6c757d;
             text-align: center;
             border-radius: 4px;
