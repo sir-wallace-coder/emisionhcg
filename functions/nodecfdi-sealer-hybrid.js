@@ -220,8 +220,28 @@ async function firmarConCredentials(cadenaOriginal, certificadoBase64, llavePriv
         console.log('🔍 Certificado tiene headers PEM:', certificadoPem.includes('-----BEGIN'));
         console.log('🔍 Llave tiene headers PEM:', llavePrivadaPem.includes('-----BEGIN'));
         
+        // 🔬 DIAGNÓSTICO TÉCNICO DETALLADO DE LA LLAVE PRIVADA
+        console.log('🔬 INICIANDO DIAGNÓSTICO TÉCNICO DE LLAVE PRIVADA...');
+        console.log('📋 Contenido header llave:', llavePrivadaPem.substring(0, 50));
+        console.log('📋 Formato detectado:');
+        console.log('  - ENCRYPTED PRIVATE KEY:', llavePrivadaPem.includes('ENCRYPTED PRIVATE KEY'));
+        console.log('  - PRIVATE KEY (PKCS#8):', llavePrivadaPem.includes('-----BEGIN PRIVATE KEY-----'));
+        console.log('  - RSA PRIVATE KEY (PKCS#1):', llavePrivadaPem.includes('-----BEGIN RSA PRIVATE KEY-----'));
+        console.log('  - EC PRIVATE KEY:', llavePrivadaPem.includes('-----BEGIN EC PRIVATE KEY-----'));
+        
+        // Intentar analizar con node-forge para diagnóstico
+        try {
+            console.log('🔬 Analizando estructura ASN.1 con node-forge...');
+            const privateKeyObj = forge.pki.privateKeyFromPem(llavePrivadaPem);
+            console.log('✅ Node-forge puede leer la llave');
+            console.log('📋 Tipo de llave:', privateKeyObj.n ? 'RSA' : 'Otro');
+            console.log('📋 Bits:', privateKeyObj.n ? privateKeyObj.n.bitLength() : 'N/A');
+        } catch (forgeError) {
+            console.error('❌ Node-forge no puede leer la llave:', forgeError.message);
+        }
+        
         // 🚨 CORRECCIÓN CRÍTICA: Desencriptar llave privada antes de usar con NodeCfdi
-        console.log('🔧 Desencriptando llave privada...');
+        console.log('🔧 Procesando llave privada para NodeCfdi...');
         let llavePrivadaDesencriptada = llavePrivadaPem;
         
         if (llavePrivadaPem.includes('ENCRYPTED')) {
