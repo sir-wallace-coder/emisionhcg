@@ -99,12 +99,15 @@ async function firmarCadenaOriginal(cadenaOriginal, certificadoBase64, llavePriv
         // Usar @nodecfdi/credentials para el firmado (esto SÍ funciona)
         const { Credential } = require('@nodecfdi/credentials');
         
-        // Convertir certificado y llave de base64 a Buffer
-        const certificadoBuffer = Buffer.from(certificadoBase64, 'base64');
-        const llavePrivadaBuffer = Buffer.from(llavePrivadaBase64, 'base64');
+        // Convertir certificado y llave de base64 a string (formato esperado por @nodecfdi/credentials)
+        const certificadoString = Buffer.from(certificadoBase64, 'base64').toString('utf8');
+        const llavePrivadaString = Buffer.from(llavePrivadaBase64, 'base64').toString('utf8');
         
-        // Crear credencial
-        const credential = Credential.create(certificadoBuffer, llavePrivadaBuffer, password);
+        console.log('📋 Certificado formato:', certificadoString.substring(0, 50) + '...');
+        console.log('📋 Llave privada formato:', llavePrivadaString.substring(0, 50) + '...');
+        
+        // Crear credencial con strings
+        const credential = Credential.create(certificadoString, llavePrivadaString, password);
         console.log('✅ Credencial creada exitosamente');
         
         // Firmar cadena original directamente
