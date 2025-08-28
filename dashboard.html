@@ -3614,6 +3614,57 @@
             }
         }
         
+        // Función para detectar el estado correcto del XML importado
+        function detectarEstadoXML(xmlContent, xmlData) {
+            console.log('🔍 Detectando estado del XML importado...');
+            
+            try {
+                // Verificar si tiene timbre fiscal (timbrado)
+                const tieneTimbreFiscal = xmlContent.includes('<tfd:TimbreFiscalDigital') || 
+                                        xmlContent.includes('<TimbreFiscalDigital') ||
+                                        (xmlData.uuid && xmlData.uuid.length > 0);
+                
+                // Verificar si tiene sello digital del emisor (sellado)
+                const tieneSelloEmisor = xmlContent.includes('Sello="') && 
+                                       xmlContent.match(/Sello="[^"]{100,}"/); // Sello debe tener longitud mínima
+                
+                // Extraer información adicional para logs
+                const selloMatch = xmlContent.match(/Sello="([^"]*)"/)?.[1];
+                const certificadoMatch = xmlContent.match(/Certificado="([^"]*)"/)?.[1];
+                const noCertificadoMatch = xmlContent.match(/NoCertificado="([^"]*)"/)?.[1];
+                
+                console.log('🔍 Análisis de estado XML:', {
+                    tieneTimbreFiscal,
+                    tieneSelloEmisor,
+                    uuid: xmlData.uuid || 'No encontrado',
+                    selloLength: selloMatch ? selloMatch.length : 0,
+                    certificadoLength: certificadoMatch ? certificadoMatch.length : 0,
+                    noCertificado: noCertificadoMatch || 'No encontrado'
+                });
+                
+                // Lógica de detección según especificaciones del usuario:
+                // 1. Si tiene timbre fiscal → estado 'timbrado'
+                // 2. Si tiene sello pero no timbre → estado 'sellado'
+                // 3. Si no tiene ni sello ni timbre → estado 'importado'
+                
+                if (tieneTimbreFiscal) {
+                    console.log('✅ XML detectado como TIMBRADO (tiene timbre fiscal)');
+                    return 'timbrado';
+                } else if (tieneSelloEmisor) {
+                    console.log('✅ XML detectado como SELLADO (tiene sello pero no timbre)');
+                    return 'sellado';
+                } else {
+                    console.log('✅ XML detectado como IMPORTADO (sin sello ni timbre)');
+                    return 'importado';
+                }
+                
+            } catch (error) {
+                console.error('❌ Error detectando estado del XML:', error);
+                console.log('⚠️ Usando estado por defecto: importado');
+                return 'importado';
+            }
+        }
+        
         // Importar XMLs
         async function importarXMLs() {
             const files = document.getElementById('xmlFiles').files;
@@ -3662,7 +3713,7 @@
                         total: xmlData.total || '0.00',
                         uuid: xmlData.uuid || null,
                         sello: xmlData.sello || null,
-                        estado: 'importado'
+                        estado: detectarEstadoXML(xmlContent, xmlData)
                     };
                     
                     console.log('📦 Enviando al backend:', dataToSend);
