@@ -141,6 +141,22 @@ exports.handler = async (event, context) => {
         // Verificar autenticación
         const userData = verificarToken(event.headers.authorization);
         console.log('👤 Usuario autenticado:', userData.email);
+        console.log('🔍 DEBUG NODECFDI: userData completo:', JSON.stringify(userData, null, 2));
+        
+        // Extraer userId del token JWT
+        const userId = userData.id || userData.userId || userData.sub;
+        console.log('🔍 DEBUG NODECFDI: userId extraído:', userId);
+        
+        if (!userId) {
+            console.error('❌ NODECFDI: No se pudo extraer userId del token JWT');
+            return {
+                statusCode: 401,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Token JWT inválido: no se pudo extraer userId' 
+                })
+            };
+        }
         
         // 🔧 DEBUG CRÍTICO: Verificar qué recibe el endpoint NodeCfdi
         console.log('🔍 DEBUG NODECFDI: event.body RAW:', event.body);
@@ -193,7 +209,7 @@ exports.handler = async (event, context) => {
         });
         
         // Obtener datos del emisor
-        const emisor = await obtenerDatosEmisor(userData.id, emisorId);
+        const emisor = await obtenerDatosEmisor(userId, emisorId);
         
         // Obtener o usar datos del XML
         let xmlData;
@@ -212,7 +228,7 @@ exports.handler = async (event, context) => {
                 .from('xmls_generados')
                 .select('xml_content, estado, version_cfdi')
                 .eq('id', xmlId)
-                .eq('usuario_id', userData.id)
+                .eq('usuario_id', userId)
                 .single();
             
             if (xmlError || !xmlFromDB) {
