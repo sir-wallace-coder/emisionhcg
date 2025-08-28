@@ -306,7 +306,8 @@
             <div class="actions">
                 <button type="button" class="btn btn-success" onclick="generarXML()">🚀 Generar XML</button>
                 <button type="button" class="btn btn-secondary" onclick="limpiarFormulario()">🧹 Limpiar</button>
-                <button type="button" class="btn btn-primary" onclick="descargarXML()" id="btnDescargar" style="display: none;">📥 Descargar XML</button>
+                <button type="button" class="btn btn-danger" onclick="cancelarEdicion()">❌ Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="descargarXML()" id="btnDescargar" style="display: none;">📅 Descargar XML</button>
             </div>
 
             <!-- Salida XML -->
@@ -1741,6 +1742,45 @@
             inicializarFecha();
             
             showAlert('🧹 Formulario limpiado', 'info');
+        }
+        
+        // Función para cancelar edición y regresar al dashboard
+        function cancelarEdicion() {
+            // Verificar si estamos en modo edición
+            const urlParams = new URLSearchParams(window.location.search);
+            const modo = urlParams.get('modo');
+            
+            if (modo === 'edicion') {
+                // Confirmar cancelación si hay cambios
+                const confirmar = confirm('⚠️ ¿Estás seguro de que deseas cancelar la edición?\n\nSe perderán todos los cambios no guardados.');
+                
+                if (confirmar) {
+                    console.log('❌ Cancelando edición y regresando al dashboard');
+                    
+                    // Limpiar sessionStorage
+                    sessionStorage.removeItem('xml_editando');
+                    
+                    // Mostrar mensaje de cancelación
+                    showAlert('❌ Edición cancelada', 'warning');
+                    
+                    // Regresar al dashboard después de un breve delay
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                }
+            } else {
+                // Si no estamos en modo edición, simplemente regresar al dashboard
+                const confirmar = confirm('⚠️ ¿Deseas regresar al dashboard?\n\nSe perderán todos los datos no guardados.');
+                
+                if (confirmar) {
+                    console.log('❌ Regresando al dashboard');
+                    showAlert('❌ Regresando al dashboard', 'info');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                }
+            }
         }
     </script>
 </body>
