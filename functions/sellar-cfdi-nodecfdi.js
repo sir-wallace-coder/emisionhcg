@@ -84,15 +84,45 @@ async function obtenerDatosEmisor(userId, emisorId) {
 }
 
 /**
- * Limpia caracteres problemáticos para PostgreSQL
+ * Analiza y limpia caracteres problemáticos para PostgreSQL
  */
-function limpiarXMLParaBD(xmlContent) {
-    if (!xmlContent) return xmlContent;
+function analizarYLimpiarXML(xmlContent) {
+    if (!xmlContent) return { xmlLimpio: xmlContent, analisis: {} };
     
-    // Eliminar caracteres nulos y otros caracteres problemáticos
-    return xmlContent
-        .replace(/\u0000/g, '') // Eliminar caracteres nulos
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Eliminar caracteres de control
+    // Análisis detallado de caracteres problemáticos
+    const caracteresNulos = (xmlContent.match(/\u0000/g) || []).length;
+    const caracteresControl = (xmlContent.match(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g) || []).length;
+    
+    // Encontrar posiciones de caracteres nulos para debug
+    const posicionesNulos = [];
+    for (let i = 0; i < xmlContent.length; i++) {
+        if (xmlContent.charCodeAt(i) === 0) {
+            posicionesNulos.push({
+                posicion: i,
+                contexto: xmlContent.substring(Math.max(0, i-20), Math.min(xmlContent.length, i+20))
+            });
+        }
+    }
+    
+    const analisis = {
+        longitud_original: xmlContent.length,
+        caracteres_nulos: caracteresNulos,
+        caracteres_control: caracteresControl,
+        posiciones_nulos: posicionesNulos.slice(0, 5), // Solo primeras 5 para logs
+        tiene_sello: xmlContent.includes('Sello="'),
+        tiene_certificado: xmlContent.includes('NoCertificado="')
+    };
+    
+    // Solo limpiar si hay caracteres problemáticos
+    let xmlLimpio = xmlContent;
+    if (caracteresNulos > 0 || caracteresControl > 0) {
+        console.log('⚠️ CARACTERES PROBLEMÁTICOS DETECTADOS:', analisis);
+        xmlLimpio = xmlContent
+            .replace(/\u0000/g, '') // Eliminar caracteres nulos
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Eliminar caracteres de control
+    }
+    
+    return { xmlLimpio, analisis };
 }
 
 /**
@@ -101,13 +131,14 @@ function limpiarXMLParaBD(xmlContent) {
 async function actualizarXMLSellado(xmlId, xmlSellado, sello, numeroCertificado) {
     console.log('💾 Actualizando XML sellado en BD...');
     
-    // Limpiar XML antes de guardar en BD
-    const xmlLimpio = limpiarXMLParaBD(xmlSellado);
-    console.log('🧹 XML limpiado para BD:', {
-        original_length: xmlSellado ? xmlSellado.length : 0,
-        limpio_length: xmlLimpio ? xmlLimpio.length : 0,
-        caracteres_removidos: (xmlSellado ? xmlSellado.length : 0) - (xmlLimpio ? xmlLimpio.length : 0)
-    });
+    // Analizar y limpiar XML antes de guardar en BD
+    const { xmlLimpio, analisis } = analizarYLimpiarXML(xmlSellado);
+    console.log('🔍 ANÁLISIS XML PARA BD:', analisis);
+    
+    if (analisis.caracteres_nulos > 0) {
+        console.log('⚠️ ALERTA: XML contiene', analisis.caracteres_nulos, 'caracteres nulos');
+        console.log('🔍 Posiciones de caracteres nulos:', analisis.posiciones_nulos);
+    }
     
     const { error } = await supabase
         .from('xmls_generados')
