@@ -399,7 +399,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             width: 100%;
             max-width: 210mm;
             margin: 0 auto;
-            padding: 10mm 15mm;
+            padding: 5mm 15mm;
             background: white;
         }
         
@@ -408,9 +408,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             border-bottom: 2px solid ${colorCorporativo};
-            padding-bottom: 10px;
+            padding-bottom: 6px;
         }
         
         .logo-section {
@@ -586,8 +586,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         /* Estilos SAT oficiales - Layout idéntico al PDF oficial */
         .total-letra-oficial {
             width: 100%;
-            margin: 15px 0;
-            padding: 10px;
+            margin: 8px 0;
+            padding: 6px;
             background: #f8f9fa;
             border: 1px solid #ddd;
             font-size: 12px;
@@ -597,7 +597,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .seccion-final-sat {
             display: flex;
             justify-content: space-between;
-            margin: 20px 0;
+            margin: 10px 0;
             gap: 30px;
         }
         
@@ -680,9 +680,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         .sellos-digitales-oficiales {
-            margin: 20px 0 15px 0;
+            margin: 12px 0 8px 0;
             display: flex;
-            gap: 20px;
+            gap: 15px;
             align-items: flex-start;
         }
         
@@ -697,7 +697,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
         }
         
         .qr-validacion {
@@ -735,9 +735,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .elemento-sello {
             background: #ffffff;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            padding: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             transition: box-shadow 0.2s ease;
         }
         
@@ -776,9 +776,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         .certificado-oficial {
             background: #ffffff;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            padding: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         .certificado-titulo {
