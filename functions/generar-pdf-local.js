@@ -497,12 +497,12 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         
         .logo-section {
             flex: 1;
-            max-width: 200px;
+            max-width: 250px;
         }
         
         .logo {
-            max-width: 150px;
-            max-height: 60px;
+            max-width: 200px;
+            max-height: 100px;
             object-fit: contain;
         }
         
