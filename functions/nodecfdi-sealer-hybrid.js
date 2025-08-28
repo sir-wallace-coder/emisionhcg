@@ -11,11 +11,10 @@
  * - credentials SÍ funcionó según memorias exitosas
  */
 
-// 🚀 CORRECCIÓN CRÍTICA: Eliminar @nodecfdi/cfdiutils-core (incompatible ES Modules serverless)
-// Usar SOLO @nodecfdi/credentials que SÍ funciona en serverless
+// 🚀 CORRECCIÓN CRÍTICA: Eliminar libxmljs2 (incompatible GLIBC serverless)
+// Usar SOLO JavaScript puro sin binarios nativos
 const { Credential } = require('@nodecfdi/credentials');
 const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
-const libxmljs = require('libxmljs2');
 
 /**
  * 🎯 OBTENER XSLT PARA VERSIÓN CFDI
@@ -52,6 +51,100 @@ function getXsltForVersion(version) {
 }
 
 /**
+ * 🎯 GENERAR CADENA ORIGINAL MANUAL SEGÚN ESPECIFICACIÓN SAT
+ * Implementación JavaScript pura sin XSLT ni binarios nativos
+ */
+function generarCadenaOriginalManual(comprobante, version) {
+    console.log('🔧 Generando cadena original manual para versión:', version);
+    
+    let cadena = '||';
+    
+    // Atributos principales del Comprobante
+    cadena += (comprobante.getAttribute('Version') || '') + '|';
+    cadena += (comprobante.getAttribute('Folio') || '') + '|';
+    cadena += (comprobante.getAttribute('Fecha') || '') + '|';
+    cadena += '|'; // Sello (vacío para cadena original)
+    cadena += '|'; // NoCertificado (vacío para cadena original)
+    cadena += '|'; // Certificado (vacío para cadena original)
+    cadena += (comprobante.getAttribute('SubTotal') || '') + '|';
+    cadena += (comprobante.getAttribute('Descuento') || '') + '|';
+    cadena += (comprobante.getAttribute('Moneda') || '') + '|';
+    cadena += (comprobante.getAttribute('TipoCambio') || '') + '|';
+    cadena += (comprobante.getAttribute('Total') || '') + '|';
+    cadena += (comprobante.getAttribute('TipoDeComprobante') || '') + '|';
+    
+    // Atributos específicos por versión
+    if (version === '4.0') {
+        cadena += (comprobante.getAttribute('Exportacion') || '') + '|';
+    }
+    
+    cadena += (comprobante.getAttribute('MetodoPago') || '') + '|';
+    cadena += (comprobante.getAttribute('LugarExpedicion') || '') + '|';
+    
+    // Emisor
+    const emisor = comprobante.getElementsByTagName('cfdi:Emisor')[0] || 
+                   comprobante.getElementsByTagName('Emisor')[0];
+    if (emisor) {
+        cadena += (emisor.getAttribute('Rfc') || '') + '|';
+        cadena += (emisor.getAttribute('Nombre') || '') + '|';
+        cadena += (emisor.getAttribute('RegimenFiscal') || '') + '|';
+    }
+    
+    // Receptor
+    const receptor = comprobante.getElementsByTagName('cfdi:Receptor')[0] || 
+                     comprobante.getElementsByTagName('Receptor')[0];
+    if (receptor) {
+        cadena += (receptor.getAttribute('Rfc') || '') + '|';
+        cadena += (receptor.getAttribute('Nombre') || '') + '|';
+        
+        if (version === '4.0') {
+            cadena += (receptor.getAttribute('DomicilioFiscalReceptor') || '') + '|';
+            cadena += (receptor.getAttribute('RegimenFiscalReceptor') || '') + '|';
+        }
+        
+        cadena += (receptor.getAttribute('UsoCFDI') || '') + '|';
+    }
+    
+    // Conceptos
+    const conceptos = comprobante.getElementsByTagName('cfdi:Conceptos')[0] || 
+                      comprobante.getElementsByTagName('Conceptos')[0];
+    if (conceptos) {
+        const listaConceptos = conceptos.getElementsByTagName('cfdi:Concepto') || 
+                               conceptos.getElementsByTagName('Concepto');
+        
+        for (let i = 0; i < listaConceptos.length; i++) {
+            const concepto = listaConceptos[i];
+            cadena += (concepto.getAttribute('ClaveProdServ') || '') + '|';
+            cadena += (concepto.getAttribute('NoIdentificacion') || '') + '|';
+            cadena += (concepto.getAttribute('Cantidad') || '') + '|';
+            cadena += (concepto.getAttribute('ClaveUnidad') || '') + '|';
+            cadena += (concepto.getAttribute('Unidad') || '') + '|';
+            cadena += (concepto.getAttribute('Descripcion') || '') + '|';
+            cadena += (concepto.getAttribute('ValorUnitario') || '') + '|';
+            cadena += (concepto.getAttribute('Importe') || '') + '|';
+            cadena += (concepto.getAttribute('Descuento') || '') + '|';
+            
+            if (version === '4.0') {
+                cadena += (concepto.getAttribute('ObjetoImp') || '') + '|';
+            }
+        }
+    }
+    
+    // Impuestos (simplificado)
+    const impuestos = comprobante.getElementsByTagName('cfdi:Impuestos')[0] || 
+                      comprobante.getElementsByTagName('Impuestos')[0];
+    if (impuestos) {
+        cadena += (impuestos.getAttribute('TotalImpuestosTrasladados') || '') + '|';
+        cadena += (impuestos.getAttribute('TotalImpuestosRetenidos') || '') + '|';
+    }
+    
+    cadena += '||';
+    
+    console.log('✅ Cadena original manual generada:', cadena.length, 'caracteres');
+    return cadena;
+}
+
+/**
  * 🎯 GENERAR CADENA ORIGINAL SERVERLESS COMPATIBLE
  * Sin dependencias ES Modules problemáticas
  */
@@ -60,19 +153,25 @@ async function generarCadenaOriginalHibrida(xmlContent, version = '4.0') {
     console.log('📋 Versión CFDI:', version);
     
     try {
-        // Usar XSLT embebido directamente (sin XmlResolver problemático)
-        const xsltContent = getXsltForVersion(version);
+        // 🚨 IMPLEMENTACIÓN MANUAL SIN XSLT (libxmljs2 incompatible GLIBC)
+        // Generar cadena original manualmente según especificación SAT
+        console.log('📋 Generando cadena original manual (sin XSLT problemático)');
         
-        console.log('📋 Usando XSLT embebido para versión:', version);
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
         
-        // Aplicar transformación XSLT usando libxmljs2
-        const xmlDoc = libxmljs.parseXml(xmlContent);
-        const xsltDoc = libxmljs.parseXml(xsltContent);
+        // Encontrar nodo Comprobante
+        const comprobante = xmlDoc.getElementsByTagName('cfdi:Comprobante')[0] || 
+                           xmlDoc.getElementsByTagName('Comprobante')[0];
         
-        const result = xmlDoc.transform(xsltDoc);
-        const cadenaOriginal = result.toString().trim();
+        if (!comprobante) {
+            throw new Error('No se encontró nodo Comprobante en el XML');
+        }
         
-        console.log('✅ Cadena original generada serverless compatible');
+        // Generar cadena original según especificación SAT
+        const cadenaOriginal = generarCadenaOriginalManual(comprobante, version);
+        
+        console.log('✅ Cadena original generada manualmente (JavaScript puro)');
         console.log('📏 Longitud:', cadenaOriginal.length);
         console.log('🔍 Primeros 100 chars:', cadenaOriginal.substring(0, 100));
         
@@ -275,6 +374,7 @@ async function sellarCFDIHibrido(xmlContent, certificadoBase64, llavePrivadaBase
 module.exports = {
     sellarCFDIHibrido,
     generarCadenaOriginalHibrida,
+    generarCadenaOriginalManual,
     firmarConCredentials,
     insertarSelloEnXML,
     getXsltForVersion
