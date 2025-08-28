@@ -2844,6 +2844,112 @@
             }
         }
         
+        // Función para mostrar opciones de sellado
+        async function mostrarOpcionesSellado(xml) {
+            return new Promise((resolve) => {
+                // Crear modal para selección de método
+                const modalHtml = `
+                    <div class="modal fade" id="metodoSellado" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-stamp"></i> Seleccionar Método de Sellado
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <h6>XML a sellar:</h6>
+                                        <div class="alert alert-light">
+                                            <strong>Emisor:</strong> ${xml.emisor_rfc}<br>
+                                            <strong>Serie-Folio:</strong> ${xml.serie || 'A'}-${xml.folio}<br>
+                                            <strong>Total:</strong> $${parseFloat(xml.total || 0).toFixed(2)}<br>
+                                            <strong>Versión:</strong> CFDI ${xml.version_cfdi || '4.0'}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Selecciona el método de sellado:</h6>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="metodoSellado" id="metodoExterno" value="externo" checked>
+                                            <label class="form-check-label" for="metodoExterno">
+                                                <strong>🌐 Servicio Externo (Recomendado)</strong>
+                                                <div class="text-muted small mt-1">
+                                                    • Método actual y probado<br>
+                                                    • Usa servicio externo de sellado<br>
+                                                    • Compatible con todos los certificados<br>
+                                                    • Más estable y confiable
+                                                </div>
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="metodoSellado" id="metodoNodeCfdi" value="nodecfdi">
+                                            <label class="form-check-label" for="metodoNodeCfdi">
+                                                <strong>⚡ NodeCfdi (Experimental)</strong>
+                                                <div class="text-muted small mt-1">
+                                                    • Método local con @nodecfdi/credentials<br>
+                                                    • Procesamiento más rápido<br>
+                                                    • Cumple estándares oficiales SAT<br>
+                                                    • En fase de pruebas
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Importante:</strong> Esta acción no se puede deshacer. Asegúrate de tener respaldos.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-primary" onclick="confirmarSellado()">
+                                        <i class="fas fa-stamp"></i> Sellar XML
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Agregar modal al DOM
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Función para confirmar sellado
+                window.confirmarSellado = function() {
+                    const metodoSeleccionado = document.querySelector('input[name="metodoSellado"]:checked')?.value;
+                    
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('metodoSellado'));
+                    modal.hide();
+                    
+                    // Limpiar modal del DOM después de cerrar
+                    setTimeout(() => {
+                        document.getElementById('metodoSellado')?.remove();
+                        delete window.confirmarSellado;
+                    }, 300);
+                    
+                    resolve(metodoSeleccionado);
+                };
+                
+                // Mostrar modal
+                const modal = new bootstrap.Modal(document.getElementById('metodoSellado'));
+                modal.show();
+                
+                // Manejar cierre del modal (cancelar)
+                document.getElementById('metodoSellado').addEventListener('hidden.bs.modal', function() {
+                    if (!document.querySelector('input[name="metodoSellado"]:checked')) {
+                        resolve(null); // Usuario canceló
+                    }
+                    document.getElementById('metodoSellado')?.remove();
+                    delete window.confirmarSellado;
+                });
+            });
+        }
+        
         // Función para sellar XML
         async function sellarXML(xmlId) {
             console.log('🔐 Sellando XML:', xmlId);
@@ -2992,11 +3098,11 @@
                     return;
                 }
                 
-                // Confirmar sellado
-                const confirmar = confirm(`¿¿Estás seguro de que deseas sellar este XML?\n\nEmisor: ${xml.emisor_rfc}\nSerie-Folio: ${xml.serie || 'A'}-${xml.folio}\nTotal: $${parseFloat(xml.total || 0).toFixed(2)}\n\nEsta acción no se puede deshacer.`);
+                // Mostrar opciones de método de sellado
+                const metodoSellado = await mostrarOpcionesSellado(xml);
                 
-                if (!confirmar) {
-                    return;
+                if (!metodoSellado) {
+                    return; // Usuario canceló
                 }
                 
                 // IMPLEMENTACIÓN REAL DE SELLADO
@@ -3015,7 +3121,15 @@
                         throw new Error('No hay sesión activa. Inicia sesión para sellar XMLs.');
                     }
                     
-                    const response = await fetch('/.netlify/functions/sellar-cfdi', {
+                    // Determinar endpoint según método seleccionado
+                    const endpoint = metodoSellado === 'nodecfdi' ? 
+                        '/.netlify/functions/sellar-cfdi-nodecfdi' : 
+                        '/.netlify/functions/sellar-cfdi';
+                    
+                    console.log('📋 Método de sellado seleccionado:', metodoSellado);
+                    console.log('📋 Endpoint a usar:', endpoint);
+                    
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
