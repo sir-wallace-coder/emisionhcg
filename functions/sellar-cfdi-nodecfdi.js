@@ -117,9 +117,28 @@ function analizarYLimpiarXML(xmlContent) {
     let xmlLimpio = xmlContent;
     if (caracteresNulos > 0 || caracteresControl > 0) {
         console.log('⚠️ CARACTERES PROBLEMÁTICOS DETECTADOS:', analisis);
-        xmlLimpio = xmlContent
-            .replace(/\u0000/g, '') // Eliminar caracteres nulos
-            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Eliminar caracteres de control
+        
+        // Método más robusto para eliminar caracteres nulos
+        const chars = [];
+        for (let i = 0; i < xmlContent.length; i++) {
+            const charCode = xmlContent.charCodeAt(i);
+            // Mantener solo caracteres válidos para XML y PostgreSQL
+            if (charCode !== 0 && // No carácter nulo
+                (charCode === 9 || charCode === 10 || charCode === 13 || // Tab, LF, CR válidos
+                 (charCode >= 32 && charCode <= 126) || // Caracteres ASCII imprimibles
+                 charCode > 126)) { // Caracteres Unicode válidos
+                chars.push(xmlContent.charAt(i));
+            }
+        }
+        xmlLimpio = chars.join('');
+        
+        console.log('🧹 LIMPIEZA APLICADA:', {
+            longitud_original: xmlContent.length,
+            longitud_limpia: xmlLimpio.length,
+            caracteres_removidos: xmlContent.length - xmlLimpio.length,
+            sigue_teniendo_sello: xmlLimpio.includes('Sello="'),
+            sigue_teniendo_certificado: xmlLimpio.includes('NoCertificado="')
+        });
     }
     
     return { xmlLimpio, analisis };
