@@ -790,7 +790,9 @@
                 setValueSafely('metodoPago', datosExtraidos.metodoPago || xmlData.metodo_pago);
                 setValueSafely('moneda', datosExtraidos.moneda || xmlData.moneda || 'MXN');
                 setValueSafely('tipoCambio', datosExtraidos.tipoCambio || xmlData.tipo_cambio);
-                setValueSafely('lugarExpedicion', datosExtraidos.lugarExpedicion || xmlData.lugar_expedicion);
+                // Lugar de expedición es el código postal del emisor (no hay campo separado)
+                // setValueSafely('lugarExpedicion', datosExtraidos.lugarExpedicion || xmlData.lugar_expedicion);
+                console.log('ℹ️ Lugar de expedición será el código postal del emisor:', datosExtraidos.emisorCodigoPostal || xmlData.emisor_codigo_postal);
                 
                 // Datos del emisor (priorizar datos extraídos del XML)
                 setValueSafely('emisorRfc', datosExtraidos.emisorRfc || xmlData.emisor_rfc);
