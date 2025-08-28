@@ -4,243 +4,480 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏢 Sistema Completo CFDI - Gestión Profesional</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            min-height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%, #f093fb 100%); 
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .hero-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
-            padding: 60px;
+        
+        /* Particles Background Animation */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 800px;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        /* Main Container */
+        .main-container {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        
+        .hero-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+            padding: 80px 60px;
+            width: 100%;
+            max-width: 1200px;
             text-align: center;
+            animation: slideUp 1s ease-out;
         }
-        .logo {
-            font-size: 4rem;
-            margin-bottom: 20px;
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+        
+        .hero-logo {
+            font-size: 5rem;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
         .hero-title {
-            color: #2c3e50;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 25px;
             line-height: 1.2;
         }
+        
         .hero-subtitle {
-            color: #7f8c8d;
-            font-size: 1.2rem;
-            margin-bottom: 40px;
+            color: #5a6c7d;
+            font-size: 1.4rem;
+            margin-bottom: 50px;
             line-height: 1.6;
+            font-weight: 300;
         }
+        
+        /* Features Grid */
+        .features-section {
+            margin: 60px 0;
+        }
+        
+        .features-title {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
         }
-        .feature {
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 15px;
-            transition: transform 0.3s ease;
+        
+        .feature-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transition: all 0.4s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
         }
-        .feature:hover {
-            transform: translateY(-5px);
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s ease;
         }
+        
+        .feature-card:hover::before {
+            left: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        
         .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
+            font-size: 3.5rem;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+        
         .feature-title {
-            font-weight: 600;
+            font-weight: 700;
             color: #2c3e50;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
         }
+        
         .feature-desc {
             color: #6c757d;
-            font-size: 0.9rem;
+            font-size: 1rem;
+            line-height: 1.6;
         }
+        
+        /* CTA Buttons */
+        .cta-section {
+            margin: 60px 0;
+        }
+        
         .cta-buttons {
             display: flex;
-            gap: 20px;
+            gap: 30px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 40px;
         }
+        
         .btn {
-            padding: 15px 30px;
+            padding: 20px 40px;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             text-decoration: none;
-            display: inline-block;
-            min-width: 180px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 220px;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
         .btn-primary {
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             color: white;
+            box-shadow: 0 10px 30px rgba(0, 123, 255, 0.3);
         }
+        
         .btn-secondary {
             background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
             color: white;
+            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
         }
+        
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
-        .comparison {
-            margin-top: 50px;
-            padding-top: 40px;
-            border-top: 2px solid #e9ecef;
+        
+        /* Stats Section */
+        .stats-section {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            border: 1px solid rgba(255,255,255,0.2);
         }
-        .comparison-title {
-            color: #2c3e50;
-            font-size: 1.5rem;
-            margin-bottom: 30px;
-        }
-        .comparison-grid {
+        
+        .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 30px;
-            text-align: left;
         }
-        .comparison-item {
-            padding: 25px;
-            border-radius: 15px;
-            border: 2px solid #e9ecef;
+        
+        .stat-item {
+            text-align: center;
         }
-        .comparison-item.basic {
-            background: #f8f9fa;
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 10px;
         }
-        .comparison-item.complete {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            border-color: #007bff;
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 1rem;
+            font-weight: 500;
         }
-        .comparison-header {
-            font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .comparison-features {
-            list-style: none;
-        }
-        .comparison-features li {
-            padding: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .check { color: #28a745; }
-        .cross { color: #dc3545; }
+        
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .hero-container { padding: 40px 30px; }
+            .hero-content { 
+                padding: 50px 30px; 
+                margin: 20px;
+            }
+            .hero-title { font-size: 2.5rem; }
+            .hero-subtitle { font-size: 1.2rem; }
+            .cta-buttons { 
+                flex-direction: column; 
+                align-items: center; 
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            .btn {
+                min-width: 100%;
+                max-width: 300px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-logo { font-size: 3.5rem; }
             .hero-title { font-size: 2rem; }
-            .cta-buttons { flex-direction: column; align-items: center; }
-            .comparison-grid { grid-template-columns: 1fr; }
+            .hero-subtitle { font-size: 1rem; }
+            .feature-card { padding: 30px 20px; }
         }
     </style>
 </head>
 <body>
-    <div class="hero-container">
-        <div class="logo">🏢</div>
-        <h1 class="hero-title">Sistema Completo CFDI</h1>
-        <h1>🏢 Sistema Completo CFDI</h1>
-        <p class="subtitle">Gestión Profesional de Comprobantes Fiscales Digitales - Actualizado desde Windows</p>
-        <p class="hero-subtitle">
-            Incluye autenticación, almacenamiento seguro, gestión de emisores y certificados digitales.
-        </p>
+    <!-- Animated Background Particles -->
+    <div class="particles"></div>
+    
+    <div class="main-container">
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="hero-logo">🏢</div>
+                <h1 class="hero-title">Sistema Completo CFDI</h1>
+                <p class="hero-subtitle">
+                    La plataforma más avanzada para la gestión profesional de Comprobantes Fiscales Digitales.
+                    <br>Incluye autenticación, almacenamiento seguro, gestión de emisores y certificados digitales.
+                </p>
 
-        <div class="features-grid">
-            <div class="feature">
-                <div class="feature-icon">🔐</div>
-                <div class="feature-title">Acceso Seguro</div>
-                <div class="feature-desc">Sistema de login con JWT y encriptación de datos</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🏢</div>
-                <div class="feature-title">Gestión de Emisores</div>
-                <div class="feature-desc">CRUD completo con almacenamiento de CSDs</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">📄</div>
-                <div class="feature-title">Historial de XMLs</div>
-                <div class="feature-desc">Almacenamiento y gestión de todos tus CFDIs</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🔑</div>
-                <div class="feature-title">Certificados CSD</div>
-                <div class="feature-desc">Subida y almacenamiento seguro de certificados</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">📊</div>
-                <div class="feature-title">Dashboard</div>
-                <div class="feature-desc">Estadísticas y análisis de tu actividad</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🔮</div>
-                <div class="feature-title">Sellado Digital</div>
-                <div class="feature-desc">Próximamente: Firma automática con CSD</div>
-            </div>
-        </div>
-
-        <div class="cta-buttons">
-            <a href="/login" class="btn btn-primary">🚀 Acceder al Sistema</a>
-            <a href="/generator" class="btn btn-secondary">⚡ Generador Rápido</a>
-        </div>
-
-        <div class="comparison">
-            <h2 class="comparison-title">Comparación de Versiones</h2>
-            <div class="comparison-grid">
-                <div class="comparison-item basic">
-                    <div class="comparison-header">
-                        ⚡ Generador Básico
+                <!-- Stats Section -->
+                <div class="stats-section">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">100%</div>
+                            <div class="stat-label">Cumplimiento SAT</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">24/7</div>
+                            <div class="stat-label">Disponibilidad</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">SSL</div>
+                            <div class="stat-label">Seguridad</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">∞</div>
+                            <div class="stat-label">XMLs Generados</div>
+                        </div>
                     </div>
-                    <ul class="comparison-features">
-                        <li><span class="check">✅</span> Generación de XML CFDI 3.3 y 4.0</li>
-                        <li><span class="check">✅</span> Catálogos oficiales SAT</li>
-                        <li><span class="check">✅</span> Descarga inmediata</li>
-                        <li><span class="check">✅</span> Sin registro requerido</li>
-                        <li><span class="cross">❌</span> Sin almacenamiento</li>
-                        <li><span class="cross">❌</span> Sin gestión de emisores</li>
-                        <li><span class="cross">❌</span> Sin certificados CSD</li>
-                        <li><span class="cross">❌</span> Sin sellado digital</li>
-                    </ul>
                 </div>
-                <div class="comparison-item complete">
-                    <div class="comparison-header">
-                        🏢 Sistema Completo
+
+                <!-- Features Section -->
+                <div class="features-section">
+                    <h2 class="features-title">🎆 Características Principales</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                            <div class="feature-title">Acceso Seguro</div>
+                            <div class="feature-desc">Sistema de autenticación con JWT, encriptación de datos y protección avanzada</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-building"></i></div>
+                            <div class="feature-title">Gestión de Emisores</div>
+                            <div class="feature-desc">CRUD completo para emisores con almacenamiento seguro de certificados CSD</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="feature-title">Historial Completo</div>
+                            <div class="feature-desc">Almacenamiento y gestión de todos tus CFDIs con búsqueda avanzada</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-certificate"></i></div>
+                            <div class="feature-title">Certificados CSD</div>
+                            <div class="feature-desc">Subida, validación y almacenamiento seguro de certificados digitales</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="feature-title">Dashboard Inteligente</div>
+                            <div class="feature-desc">Estadísticas detalladas, análisis y reportes de tu actividad fiscal</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-stamp"></i></div>
+                            <div class="feature-title">Sellado Digital</div>
+                            <div class="feature-desc">Firma automática de CFDIs con certificados CSD y validación SAT</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-file-pdf"></i></div>
+                            <div class="feature-title">Generación PDF</div>
+                            <div class="feature-desc">Representación gráfica oficial con logo corporativo y personalización</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                            <div class="feature-title">Importación Inteligente</div>
+                            <div class="feature-desc">Detección automática de estado de XMLs importados (sellado/timbrado)</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
+                            <div class="feature-title">Responsive Design</div>
+                            <div class="feature-desc">Interfaz adaptativa que funciona perfectamente en cualquier dispositivo</div>
+                        </div>
                     </div>
-                    <ul class="comparison-features">
-                        <li><span class="check">✅</span> Todo lo del generador básico</li>
-                        <li><span class="check">✅</span> Cuentas de usuario seguras</li>
-                        <li><span class="check">✅</span> Historial completo de XMLs</li>
-                        <li><span class="check">✅</span> Gestión de múltiples emisores</li>
-                        <li><span class="check">✅</span> Almacenamiento de CSDs</li>
-                        <li><span class="check">✅</span> Dashboard con estadísticas</li>
-                        <li><span class="check">✅</span> Sellado digital (próximamente)</li>
-                        <li><span class="check">✅</span> Timbrado SAT (futuro)</li>
-                    </ul>
+                </div>
+
+                <!-- CTA Section -->
+                <div class="cta-section">
+                    <div class="cta-buttons">
+                        <a href="/login.html" class="btn btn-primary">
+                            <i class="fas fa-rocket"></i>
+                            Acceder al Sistema
+                        </a>
+                        <a href="/generator.html" class="btn btn-secondary">
+                            <i class="fas fa-bolt"></i>
+                            Generador Rápido
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Create animated particles
+        function createParticles() {
+            const particlesContainer = document.querySelector('.particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random size between 2px and 8px
+                const size = Math.random() * 6 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Random position
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                
+                // Random animation delay
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                
+                // Random animation duration
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Initialize particles when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            
+            // Add smooth scroll behavior to CTA buttons
+            document.querySelectorAll('.btn').forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.05)';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Add intersection observer for feature cards animation
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe all feature cards
+            document.querySelectorAll('.feature-card').forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(50px)';
+                card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+                observer.observe(card);
+            });
+        });
+        
         // Verificar si ya está logueado
         const token = localStorage.getItem('cfdi_token');
         if (token) {
@@ -256,16 +493,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.valid) {
-                    // Mostrar botón para ir al dashboard
-                    const ctaButtons = document.querySelector('.cta-buttons');
-                    ctaButtons.innerHTML = `
-                        <a href="/dashboard" class="btn btn-primary">📊 Ir al Dashboard</a>
-                        <a href="/generator" class="btn btn-secondary">⚡ Generador Rápido</a>
-                    `;
+                    // Redirigir al dashboard si ya está logueado
+                    window.location.href = '/dashboard.html';
                 }
             })
-            .catch(() => {
-                // Token inválido, limpiar
+            .catch(error => {
+                console.log('Token inválido, permaneciendo en landing page');
                 localStorage.removeItem('cfdi_token');
                 localStorage.removeItem('cfdi_user');
             });
