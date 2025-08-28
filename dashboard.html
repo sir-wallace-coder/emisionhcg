@@ -3301,11 +3301,9 @@
                         }
                     }
                     
-                    // Recargar datos
-                    if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
-                        await window.dashboardMain.loadInitialData();
-                        await window.dashboardMain.renderAllData();
-                    }
+                    // 🎯 ACTUALIZAR VISTA - Usar función correcta como en eliminación
+                    console.log('🔄 Actualizando vista después de sellar XML...');
+                    await cargarXMLsDesdeBackend();
                     
                     // Mostrar resultado exitoso
                     const successMessage = `✅ XML sellado exitosamente\n\n` +
@@ -4414,11 +4412,9 @@
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalImportXML'));
                     modal.hide();
                     
-                    // Recargar datos
-                    if (window.dashboardMain && typeof window.dashboardMain.loadInitialData === 'function') {
-                        await window.dashboardMain.loadInitialData();
-                        await window.dashboardMain.renderAllData();
-                    }
+                    // 🎯 ACTUALIZAR VISTA - Usar función correcta como en eliminación
+                    console.log('🔄 Actualizando vista después de importar XMLs...');
+                    await cargarXMLsDesdeBackend();
                 } else {
                     alert('❌ No se pudieron importar los XMLs');
                 }
