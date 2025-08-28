@@ -697,7 +697,11 @@
                 datos.emisorRfc = emisorMatch.match(/Rfc="([^"]*)"/)?.[1] || xmlContent.match(/Rfc="([^"]*)"/)?.[1] || '';
                 datos.emisorNombre = emisorMatch.match(/Nombre="([^"]*)"/)?.[1] || '';
                 datos.emisorRegimenFiscal = emisorMatch.match(/RegimenFiscal="([^"]*)"/)?.[1] || '';
-                datos.emisorCodigoPostal = xmlContent.match(/DomicilioFiscal[^>]*CodigoPostal="([^"]*)"/)?.[1] || '';
+                
+                // Código postal del emisor (LugarExpedicion ES el código postal del emisor)
+                datos.emisorCodigoPostal = xmlContent.match(/LugarExpedicion="([^"]*)"/)?.[1] || 
+                                         xmlContent.match(/DomicilioFiscal[^>]*CodigoPostal="([^"]*)"/)?.[1] || 
+                                         emisorMatch.match(/CodigoPostal="([^"]*)"/)?.[1] || '';
                 
                 // Datos del receptor
                 const receptorMatch = xmlContent.match(/<cfdi:Receptor[^>]*>/)?.[0] || '';
@@ -837,8 +841,8 @@
                 // Limpiar conceptos existentes
                 conceptos = [];
                 
-                // Extraer conceptos usando regex
-                const conceptoMatches = xmlContent.match(/<cfdi:Concepto[^>]*>/g) || [];
+                // Buscar todos los conceptos en el XML (solo elementos <cfdi:Concepto>, no <cfdi:Conceptos>)
+                const conceptoMatches = xmlContent.match(/<cfdi:Concepto\s[^>]*>/g) || [];
                 console.log('🔍 DEBUG: conceptoMatches encontrados:', conceptoMatches.length);
                 console.log('🔍 DEBUG: conceptoMatches array:', conceptoMatches);
                 
