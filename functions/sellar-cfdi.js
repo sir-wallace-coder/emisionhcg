@@ -149,10 +149,12 @@ exports.handler = async (event, context) => {
       
       console.log('✅ SELLADO: Cliente externo listo, procesando sellado...');
       
-      if (resultadoExterno && resultadoExterno.xml_sellado) {
+      if (resultadoExterno && (resultadoExterno.xml || resultadoExterno.xml_sellado)) {
         console.log('✅ SELLADO EXTERNO: XML sellado obtenido exitosamente');
+        console.log('📋 SELLADO EXTERNO: Campo XML encontrado:', resultadoExterno.xml ? 'xml' : 'xml_sellado');
       } else {
         console.error('❌ SELLADO EXTERNO: No se obtuvo XML sellado');
+        console.error('🔍 SELLADO EXTERNO: Campos disponibles:', Object.keys(resultadoExterno || {}));
         throw new Error('El servicio externo no devolvió XML sellado');
       }
       

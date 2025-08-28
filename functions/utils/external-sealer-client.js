@@ -367,7 +367,7 @@ async function sellarConServicioExterno({
     }
     return {
         exito: true,
-        xmlSellado: result.xmlSellado || result.xml_sellado,
+        xml_sellado: result.xml || result.xmlSellado || result.xml_sellado,
         sello: result.sello,
         cadenaOriginal: result.cadenaOriginal || result.cadena_original,
         numeroCertificado: result.numeroCertificado || result.numero_certificado
