@@ -128,7 +128,7 @@ async function firmarCadenaOriginal(cadenaOriginal, certificadoBase64, llavePriv
         console.log('- Tipo sello:', typeof signature);
         console.log('- Es Buffer:', Buffer.isBuffer(signature));
         console.log('- Longitud:', signature.length);
-        console.log('- Primeros 10 bytes:', signature.subarray(0, 10));
+        console.log('- Primeros 10 chars:', signature.substring(0, 10));
         
         // Convertir sello binario a Base64 (formato requerido para XML)
         const selloBase64 = Buffer.isBuffer(signature) ? signature.toString('base64') : signature;
