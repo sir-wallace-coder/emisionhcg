@@ -1961,11 +1961,10 @@
                     
                     // 🎯 ACTUALIZAR VISTA - Renderizar XMLs actualizados
                     console.log('🔄 Actualizando vista con XMLs cargados...');
-                    if (typeof mostrarXMLs === 'function') {
-                        await mostrarXMLs();
+                    if (typeof displayXMLsSimple === 'function') {
+                        displayXMLsSimple(xmls);
                     } else {
-                        console.warn('⚠️ Función mostrarXMLs no encontrada, recargando página...');
-                        window.location.reload();
+                        console.error('❌ Función displayXMLsSimple no encontrada');
                     }
                     
                     return xmls;
