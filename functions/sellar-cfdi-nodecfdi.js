@@ -119,43 +119,72 @@ exports.handler = async (event, context) => {
         const userData = verificarToken(event.headers.authorization);
         console.log('👤 Usuario autenticado:', userData.email);
         
-        // Parsear body
-        const { xmlId, emisorId, version = '4.0' } = JSON.parse(event.body);
+        // Parsear body - compatible con ambos formatos
+        const requestBody = JSON.parse(event.body);
+        const { xmlContent, xmlId, emisorId, version = '4.0' } = requestBody;
         
-        if (!xmlId || !emisorId) {
+        // Verificar que tenemos los parámetros necesarios
+        if (!emisorId) {
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ 
-                    error: 'xmlId y emisorId son requeridos' 
+                    error: 'emisorId es requerido' 
                 })
             };
         }
         
-        console.log('📋 XML ID:', xmlId);
-        console.log('📋 Emisor ID:', emisorId);
-        console.log('📋 Versión CFDI:', version);
+        if (!xmlContent && !xmlId) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'xmlContent o xmlId son requeridos' 
+                })
+            };
+        }
+        
+        console.log('📋 Parámetros recibidos:', {
+            tieneXmlContent: !!xmlContent,
+            tieneXmlId: !!xmlId,
+            emisorId,
+            version
+        });
         
         // Obtener datos del emisor
         const emisor = await obtenerDatosEmisor(userData.id, emisorId);
         
-        // Obtener XML de la base de datos
-        console.log('📄 Obteniendo XML de la BD...');
-        const { data: xmlData, error: xmlError } = await supabase
-            .from('xmls_generados')
-            .select('xml_content, estado')
-            .eq('id', xmlId)
-            .eq('usuario_id', userData.id)
-            .single();
-        
-        if (xmlError || !xmlData) {
-            return {
-                statusCode: 404,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'XML no encontrado' 
-                })
+        // Obtener o usar datos del XML
+        let xmlData;
+        if (xmlContent) {
+            // Usar XML proporcionado directamente
+            console.log('📄 Usando XML proporcionado directamente');
+            xmlData = {
+                xml_content: xmlContent,
+                estado: 'generado',
+                version_cfdi: version
             };
+        } else {
+            // Obtener XML de la base de datos
+            console.log('📄 Obteniendo XML de la base de datos:', xmlId);
+            const { data: xmlFromDB, error: xmlError } = await supabase
+                .from('xmls_generados')
+                .select('xml_content, estado, version_cfdi')
+                .eq('id', xmlId)
+                .eq('usuario_id', userData.id)
+                .single();
+            
+            if (xmlError || !xmlFromDB) {
+                return {
+                    statusCode: 404,
+                    headers,
+                    body: JSON.stringify({ 
+                        error: 'XML no encontrado' 
+                    })
+                };
+            }
+            
+            xmlData = xmlFromDB;
         }
         
         if (xmlData.estado === 'sellado' || xmlData.estado === 'timbrado') {
