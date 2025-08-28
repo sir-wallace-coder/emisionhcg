@@ -2,7 +2,7 @@
  * 🎯 SELLADOR CFDI CON CSD - IMPLEMENTACIÓN CORRECTA
  * 
  * Implementación profesional que replica exactamente el flujo Python funcional:
- * 1. Usa @nodecfdi/cfdiutils-core para generar cadena original con XSLT oficial
+ * 1. Usa procesador XSLT local para generar cadena original con XSLT oficial
  * 2. Usa Node.js crypto nativo para sellado con CSD (no FIEL)
  * 3. Replica el método "DER con contraseña" de Python cryptography
  * 4. PKCS#1 v1.5, SHA256, sin DigestInfo manual
@@ -64,7 +64,7 @@ async function sellarCFDIConCSD(xmlContent, certificadoCer, llavePrivadaKey, pas
         comprobante.setAttribute('NoCertificado', numeroSerie);
         console.log('✅ CSD: NoCertificado asignado');
         
-        // 5. Generar cadena original con NodeCFDI cfdiutils-core (XSLT oficial)
+        // 5. Generar cadena original con procesador XSLT local (XSLT oficial)
         console.log('🔗 CSD: Generando cadena original con XSLT oficial NodeCFDI...');
         const cadenaOriginal = await generarCadenaOriginalConNodeCFDI(xmlDoc, version);
         

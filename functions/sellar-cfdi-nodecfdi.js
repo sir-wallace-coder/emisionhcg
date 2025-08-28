@@ -1,6 +1,6 @@
 /**
  * Endpoint serverless para sellado CFDI usando NodeCfdi
- * Netlify Function para sellado local con @nodecfdi/cfdiutils-core y @nodecfdi/credentials
+ * Netlify Function para sellado local con @nodecfdi/credentials
  */
 
 // const { sellarCFDINodeCfdi } = require('./nodecfdi-sealer'); // Deshabilitado por incompatibilidad ES Modules
