@@ -3140,6 +3140,18 @@
                     console.log('📋 Método de sellado seleccionado:', metodoSellado);
                     console.log('📋 Endpoint a usar:', endpoint);
                     
+                    // 🔧 VALIDACIÓN CRÍTICA: Verificar que emisorConCSD.id no sea undefined
+                    if (!emisorConCSD.id || emisorConCSD.id === 'undefined' || emisorConCSD.id === undefined) {
+                        console.error('❌ VALIDACIÓN CRÍTICA: emisorConCSD.id es undefined:', {
+                            emisorConCSD_id: emisorConCSD.id,
+                            tipo: typeof emisorConCSD.id,
+                            emisorConCSD_completo: emisorConCSD
+                        });
+                        throw new Error('Error: No se pudo obtener el ID del emisor. Verifica que el emisor tenga certificados CSD válidos.');
+                    }
+                    
+                    console.log('✅ VALIDACIÓN CRÍTICA: emisorConCSD.id válido:', emisorConCSD.id);
+                    
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
