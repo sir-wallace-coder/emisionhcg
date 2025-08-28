@@ -15,6 +15,7 @@
 // Usar SOLO JavaScript puro sin binarios nativos
 const { Credential } = require('@nodecfdi/credentials');
 const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
+const forge = require('node-forge');
 
 /**
  * 🎯 OBTENER XSLT PARA VERSIÓN CFDI
@@ -219,9 +220,28 @@ async function firmarConCredentials(cadenaOriginal, certificadoBase64, llavePriv
         console.log('🔍 Certificado tiene headers PEM:', certificadoPem.includes('-----BEGIN'));
         console.log('🔍 Llave tiene headers PEM:', llavePrivadaPem.includes('-----BEGIN'));
         
-        // Crear credencial con @nodecfdi/credentials
-        console.log('🔧 Creando credencial NodeCfdi...');
-        const credential = Credential.create(certificadoPem, llavePrivadaPem, password);
+        // 🚨 CORRECCIÓN CRÍTICA: Desencriptar llave privada antes de usar con NodeCfdi
+        console.log('🔧 Desencriptando llave privada...');
+        let llavePrivadaDesencriptada = llavePrivadaPem;
+        
+        if (llavePrivadaPem.includes('ENCRYPTED')) {
+            try {
+                // Desencriptar llave privada usando node-forge
+                const privateKeyEncrypted = forge.pki.decryptRsaPrivateKey(llavePrivadaPem, password);
+                llavePrivadaDesencriptada = forge.pki.privateKeyToPem(privateKeyEncrypted);
+                console.log('✅ Llave privada desencriptada exitosamente');
+                console.log('🔍 Llave desencriptada length:', llavePrivadaDesencriptada.length);
+            } catch (decryptError) {
+                console.error('❌ Error desencriptando llave privada:', decryptError.message);
+                throw new Error(`Error desencriptando llave privada: ${decryptError.message}`);
+            }
+        } else {
+            console.log('ℹ️ Llave privada no está encriptada, usando directamente');
+        }
+        
+        // Crear credencial con @nodecfdi/credentials usando llave desencriptada
+        console.log('🔧 Creando credencial NodeCfdi con llave desencriptada...');
+        const credential = Credential.create(certificadoPem, llavePrivadaDesencriptada, '');
         
         console.log('✅ Credencial NodeCfdi creada exitosamente');
         
