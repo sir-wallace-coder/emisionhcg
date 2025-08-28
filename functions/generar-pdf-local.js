@@ -399,7 +399,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             width: 100%;
             max-width: 210mm;
             margin: 0 auto;
-            padding: 15mm;
+            padding: 10mm 15mm;
             background: white;
         }
         
@@ -408,9 +408,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 2px solid ${colorCorporativo};
-            padding-bottom: 15px;
+            padding-bottom: 10px;
         }
         
         .logo-section {
@@ -680,44 +680,67 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         }
         
         .sellos-digitales-oficiales {
-            margin: 30px 0 15px 0;
+            margin: 20px 0 15px 0;
             display: flex;
-            gap: 15px;
+            gap: 20px;
             align-items: flex-start;
         }
         
-        .columna-sello {
+        .columna-qr {
+            flex: 0 0 150px;
+            text-align: center;
+        }
+        
+        .columna-sellos {
             flex: 1;
-            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         
         .qr-validacion {
             text-align: center;
-            padding: 10px;
+            padding: 15px;
             background: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .qr-titulo {
             font-weight: bold;
-            font-size: 10px;
-            margin-bottom: 8px;
-            color: #333;
+            font-size: 11px;
+            margin-bottom: 10px;
+            color: #495057;
+            text-transform: uppercase;
         }
         
         .qr-placeholder {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             background: #e9ecef;
             border: 2px dashed #adb5bd;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
-            font-size: 8px;
+            font-size: 9px;
             color: #6c757d;
             text-align: center;
+            border-radius: 4px;
+        }
+        
+        .elemento-sello {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: box-shadow 0.2s ease;
+        }
+        
+        .elemento-sello:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
         
         .sello-oficial {
@@ -726,44 +749,55 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         
         .sello-titulo {
             font-weight: bold;
-            font-size: 10px;
-            margin-bottom: 5px;
-            color: #333;
-            text-align: center;
+            font-size: 11px;
+            margin-bottom: 8px;
+            color: #495057;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .sello-contenido {
             word-break: break-all;
             background: #f8f9fa;
-            padding: 6px;
-            border: 1px solid #ddd;
-            font-family: monospace;
+            padding: 8px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
             font-size: 8px;
-            line-height: 1.2;
-            max-height: 80px;
+            line-height: 1.3;
+            max-height: 60px;
             overflow: hidden;
+            color: #495057;
         }
         
         .certificado-oficial {
-            text-align: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
         .certificado-titulo {
             font-weight: bold;
-            font-size: 10px;
+            font-size: 11px;
             margin-bottom: 8px;
-            color: #333;
+            color: #495057;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .certificado-numero {
-            font-family: monospace;
-            font-size: 9px;
-            color: #495057;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            color: #212529;
             word-break: break-all;
+            background: #f8f9fa;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
         }
         
         .campo-certificado-final .campo-label {
@@ -929,10 +963,10 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             </div>
         </div>
         
-        <!-- Sellos digitales en 4 columnas (formato SAT oficial) -->
+        <!-- Sellos digitales en 2 columnas (formato SAT oficial) -->
         <div class="sellos-digitales-oficiales">
-            <!-- Columna 1: QR de validación CFDI -->
-            <div class="columna-sello">
+            <!-- Columna Izquierda: QR de validación CFDI -->
+            <div class="columna-qr">
                 <div class="qr-validacion">
                     <div class="qr-titulo">QR Validación SAT</div>
                     <div class="qr-placeholder">
@@ -942,34 +976,32 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 </div>
             </div>
             
-            <!-- Columna 2: Sello digital del CFDI -->
-            <div class="columna-sello">
-                <div class="sello-oficial">
-                    <div class="sello-titulo">Sello Digital CFDI</div>
-                    <div class="sello-contenido">${selloDigital}</div>
-                </div>
-            </div>
-            
-            <!-- Columna 3: Sello digital del SAT (solo si está timbrado) -->
-            <div class="columna-sello">
-                ${esTimbrado ? `
-                <div class="sello-oficial">
-                    <div class="sello-titulo">Sello Digital SAT</div>
-                    <div class="sello-contenido">${selloSAT}</div>
-                </div>
-                ` : `
-                <div class="sello-oficial">
-                    <div class="sello-titulo">Sello Digital SAT</div>
-                    <div class="sello-contenido" style="color: #999; font-style: italic;">No timbrado</div>
-                </div>
-                `}
-            </div>
-            
-            <!-- Columna 4: Número de certificado -->
-            <div class="columna-sello">
+            <!-- Columna Derecha: Sellos y certificado apilados -->
+            <div class="columna-sellos">
+                <!-- Número de certificado -->
                 <div class="certificado-oficial">
-                    <div class="certificado-titulo">No. Certificado</div>
+                    <div class="certificado-titulo">No. de Certificado</div>
                     <div class="certificado-numero">${noCertificado}</div>
+                </div>
+                
+                <!-- Sello digital del CFDI -->
+                <div class="elemento-sello">
+                    <div class="sello-oficial">
+                        <div class="sello-titulo">Sello Digital del CFDI</div>
+                        <div class="sello-contenido">${selloDigital}</div>
+                    </div>
+                </div>
+                
+                <!-- Sello digital del SAT (solo si está timbrado) -->
+                <div class="elemento-sello">
+                    <div class="sello-oficial">
+                        <div class="sello-titulo">Sello Digital del SAT</div>
+                        ${esTimbrado ? `
+                        <div class="sello-contenido">${selloSAT}</div>
+                        ` : `
+                        <div class="sello-contenido" style="color: #6c757d; font-style: italic; text-align: center;">No timbrado</div>
+                        `}
+                    </div>
                 </div>
             </div>
         </div>
