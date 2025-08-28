@@ -382,7 +382,11 @@ exports.handler = async (event, context) => {
                 metodo: resultado.metodo || 'NodeCfdi',
                 tiempoMs: resultado.tiempoMs,
                 numeroCertificado: resultado.numeroCertificado,
-                xmlId: xmlId
+                xmlId: xmlId,
+                // ✅ DATOS FALTANTES AGREGADOS PARA FRONTEND
+                xmlSellado: resultado.xmlSellado,
+                selloDigital: resultado.sello,
+                cadenaOriginal: resultado.cadenaOriginal || 'Generada con NodeCfdi'
             })
         };
         
