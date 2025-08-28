@@ -160,10 +160,25 @@ exports.handler = async (event, context) => {
       
       console.log('✅ SELLADO DIRECTO: Sellado completado exitosamente');
       
+      // Decodificar XML Base64 del servicio externo
+      const xmlBase64 = resultadoExterno.xml || resultadoExterno.xml_sellado;
+      let xmlDecodificado;
+      
+      try {
+        // El servicio externo devuelve XML en Base64, necesitamos decodificarlo
+        xmlDecodificado = Buffer.from(xmlBase64, 'base64').toString('utf-8');
+        console.log('✅ SELLADO: XML decodificado correctamente desde Base64');
+        console.log('📄 SELLADO: Primeros 200 caracteres del XML:', xmlDecodificado.substring(0, 200));
+      } catch (errorDecodificacion) {
+        console.error('❌ SELLADO: Error al decodificar XML Base64:', errorDecodificacion.message);
+        // Si falla la decodificación, usar el valor original
+        xmlDecodificado = xmlBase64;
+      }
+      
       // Adaptar respuesta del servicio externo al formato esperado
       resultado = {
         exito: true,
-        xmlSellado: resultadoExterno.xml || resultadoExterno.xml_sellado,
+        xmlSellado: xmlDecodificado,
         sello: resultadoExterno.sello,
         cadenaOriginal: resultadoExterno.cadenaOriginal,
         numeroCertificado: resultadoExterno.numeroCertificado || emisor.numero_certificado,
