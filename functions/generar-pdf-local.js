@@ -17,6 +17,82 @@ const chromium = require('@sparticuz/chromium');
 console.log('🎯 PDF GENERATOR: Modo LOCAL ÚNICAMENTE - Sin RedDoc');
 
 /**
+ * 🔗 GENERAR QR CFDI OFICIAL SEGÚN ANEXO 20 SAT
+ * Genera el código QR con los datos requeridos por el SAT para CFDI
+ * @param {Object} xmlData - Datos del XML CFDI
+ * @param {string} selloEmisor - Sello digital del emisor
+ * @returns {string} - URL del QR para generar código
+ */
+function generarQrCfdi(xmlData, selloEmisor) {
+    try {
+        // URL base del servicio de verificación SAT
+        const urlVerificacion = 'https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx';
+        
+        // Extraer datos requeridos según Anexo 20 SAT
+        const folioFiscal = xmlData.folio_fiscal || xmlData.uuid || '';
+        const rfcEmisor = xmlData.emisor_rfc || '';
+        const rfcReceptor = xmlData.receptor_rfc || '';
+        const total = xmlData.total || '0.00';
+        
+        // Últimos 8 caracteres del sello digital del emisor
+        const ultimosCaracteresSello = selloEmisor ? selloEmisor.slice(-8) : '';
+        
+        // Construir la cadena del QR según especificación SAT
+        // Formato: URL?id=UUID&re=RFC_EMISOR&rr=RFC_RECEPTOR&tt=TOTAL&fe=ULTIMOS_8_SELLO
+        const parametrosQr = [
+            `id=${encodeURIComponent(folioFiscal)}`,
+            `re=${encodeURIComponent(rfcEmisor)}`,
+            `rr=${encodeURIComponent(rfcReceptor)}`,
+            `tt=${encodeURIComponent(total)}`,
+            `fe=${encodeURIComponent(ultimosCaracteresSello)}`
+        ].join('&');
+        
+        const urlCompleta = `${urlVerificacion}?${parametrosQr}`;
+        
+        console.log('🔗 QR CFDI generado:', {
+            folioFiscal: folioFiscal.substring(0, 8) + '...',
+            rfcEmisor,
+            rfcReceptor,
+            total,
+            ultimosCaracteresSello,
+            longitudUrl: urlCompleta.length
+        });
+        
+        return urlCompleta;
+        
+    } catch (error) {
+        console.error('❌ Error generando QR CFDI:', error);
+        return '';
+    }
+}
+
+/**
+ * 🎨 GENERAR HTML DEL QR CFDI
+ * Genera el HTML con el QR usando una librería de QR codes
+ * @param {string} urlQr - URL completa para el QR
+ * @returns {string} - HTML del QR code
+ */
+function generarHtmlQr(urlQr) {
+    if (!urlQr) {
+        return `
+            <div class="qr-placeholder">
+                QR CODE<br>CFDI<br>
+                <small style="color: #999; font-size: 8px;">No disponible</small>
+            </div>
+        `;
+    }
+    
+    // Usar API de QR code online para generar la imagen
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(urlQr)}`;
+    
+    return `
+        <div class="qr-cfdi-oficial">
+            <img src="${qrApiUrl}" alt="QR CFDI" style="width: 120px; height: 120px; border: 1px solid #ddd;" />
+        </div>
+    `;
+}
+
+/**
  * 🚀 CONVERTIR HTML A PDF ULTRA-LIGERO
  * Usa servicio externo simple solo para HTML→PDF (sin dependencias pesadas)
  * @param {string} html - HTML generado localmente
@@ -366,6 +442,12 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         console.log('🏷️ SAT: Es timbrado:', esTimbrado);
         console.log('🏷️ SAT: UUID timbre:', uuidTimbre || 'N/A');
         console.log('🔐 SAT: Certificado:', noCertificado);
+        
+        // Generar QR CFDI oficial según Anexo 20 SAT
+        const urlQrCfdi = generarQrCfdi(xmlData, selloDigital);
+        const htmlQrCfdi = generarHtmlQr(urlQrCfdi);
+        console.log('🔗 QR CFDI: URL generada:', urlQrCfdi ? 'Sí' : 'No');
+        console.log('🎨 QR CFDI: HTML generado:', htmlQrCfdi ? 'Sí' : 'No');
         
         // Generar total en letra (obligatorio SAT)
         totalEnLetra = convertirNumeroALetras(parseFloat(total || '0'), moneda);
@@ -971,10 +1053,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             <div class="columna-qr">
                 <div class="qr-validacion">
                     <div class="qr-titulo">QR Validación SAT</div>
-                    <div class="qr-placeholder">
-                        QR CODE
-                        <br>CFDI
-                    </div>
+                    ${htmlQrCfdi}
                 </div>
             </div>
             
