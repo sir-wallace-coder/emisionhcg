@@ -32,31 +32,54 @@ function verificarToken(authHeader) {
  * Obtiene los datos del emisor desde la base de datos
  */
 async function obtenerDatosEmisor(userId, emisorId) {
-    console.log('📋 Obteniendo datos del emisor:', emisorId);
+    console.log('📋 NODECFDI: Obteniendo datos del emisor...');
+    console.log('📋 NODECFDI: userId:', userId);
+    console.log('📋 NODECFDI: emisorId:', emisorId);
     
-    const { data: emisor, error } = await supabase
-        .from('emisores')
-        .select('*')
-        .eq('id', emisorId)
-        .eq('usuario_id', userId)
-        .single();
-    
-    if (error) {
-        console.error('❌ Error obteniendo emisor:', error);
-        throw new Error('Error obteniendo datos del emisor');
+    try {
+        const { data: emisor, error } = await supabase
+            .from('emisores')
+            .select('*')
+            .eq('id', emisorId)
+            .eq('usuario_id', userId)
+            .single();
+        
+        console.log('📋 NODECFDI: Resultado consulta emisor:');
+        console.log('📋 NODECFDI: error:', error);
+        console.log('📋 NODECFDI: emisor encontrado:', !!emisor);
+        
+        if (error) {
+            console.error('❌ NODECFDI: Error Supabase obteniendo emisor:', JSON.stringify(error, null, 2));
+            throw new Error(`Error Supabase: ${error.message || error.code || 'Error desconocido'}`);
+        }
+        
+        if (!emisor) {
+            console.error('❌ NODECFDI: Emisor no encontrado en BD');
+            throw new Error('Emisor no encontrado');
+        }
+        
+        console.log('📋 NODECFDI: Emisor encontrado:', {
+            id: emisor.id,
+            nombre: emisor.nombre,
+            rfc: emisor.rfc,
+            tieneCertificadoCer: !!emisor.certificado_cer,
+            tieneCertificadoKey: !!emisor.certificado_key,
+            tienePassword: !!emisor.password_key
+        });
+        
+        // Verificar que tenga certificados
+        if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.password_key) {
+            console.error('❌ NODECFDI: Emisor sin certificados CSD completos');
+            throw new Error('El emisor no tiene certificados CSD configurados');
+        }
+        
+        console.log('✅ NODECFDI: Emisor obtenido exitosamente:', emisor.nombre);
+        return emisor;
+        
+    } catch (error) {
+        console.error('❌ NODECFDI: Error en obtenerDatosEmisor:', error);
+        throw error;
     }
-    
-    if (!emisor) {
-        throw new Error('Emisor no encontrado');
-    }
-    
-    // Verificar que tenga certificados
-    if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.password_key) {
-        throw new Error('El emisor no tiene certificados CSD configurados');
-    }
-    
-    console.log('✅ Emisor obtenido:', emisor.nombre);
-    return emisor;
 }
 
 /**
