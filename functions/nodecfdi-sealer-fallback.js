@@ -3,7 +3,7 @@
  * Versión fallback sin dependencia de Saxon-B para serverless
  */
 
-const { Credential } = require('@nodecfdi/credentials/node');
+const { Credential } = require('@nodecfdi/credentials');
 const { generarCadenaOriginal } = require('./xslt-processor');
 
 /**

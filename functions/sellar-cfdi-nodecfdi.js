@@ -3,7 +3,7 @@
  * Netlify Function para sellado local con @nodecfdi/cfdiutils-core y @nodecfdi/credentials
  */
 
-const { sellarCFDINodeCfdi } = require('./nodecfdi-sealer');
+// const { sellarCFDINodeCfdi } = require('./nodecfdi-sealer'); // Deshabilitado por incompatibilidad ES Modules
 const { sellarCFDINodeCfdiFallback } = require('./nodecfdi-sealer-fallback');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
@@ -175,29 +175,15 @@ exports.handler = async (event, context) => {
         console.log('\n🔐 INICIANDO SELLADO CON NODECFDI...');
         let resultado;
         
-        try {
-            // Intentar con la versión principal (Saxon-B)
-            console.log('🔄 Intentando sellado con Saxon-B...');
-            resultado = await sellarCFDINodeCfdi(
-                xmlData.xml_content,
-                emisor.certificado,
-                emisor.llave_privada,
-                emisor.password_key,
-                version
-            );
-        } catch (saxonError) {
-            console.warn('⚠️ Saxon-B falló, usando fallback:', saxonError.message);
-            
-            // Usar versión fallback sin Saxon-B
-            console.log('🔄 Intentando sellado con fallback (sin Saxon-B)...');
-            resultado = await sellarCFDINodeCfdiFallback(
-                xmlData.xml_content,
-                emisor.certificado,
-                emisor.llave_privada,
-                emisor.password_key,
-                version
-            );
-        }
+        // Usar directamente la versión fallback (compatible serverless)
+        console.log('🔄 Usando sellado NodeCfdi (versión serverless compatible)...');
+        resultado = await sellarCFDINodeCfdiFallback(
+            xmlData.xml_content,
+            emisor.certificado,
+            emisor.llave_privada,
+            emisor.password_key,
+            version
+        );
         
         if (!resultado.success) {
             console.error('❌ Error en sellado NodeCfdi:', resultado.error);
