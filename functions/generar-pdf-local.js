@@ -343,6 +343,10 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
     let receptorCodigoPostal = '';
     let tipoComprobante = '';
     
+    // Variables QR CFDI (definidas fuera del try para estar disponibles en todo el scope)
+    let urlQrCfdi = '';
+    let htmlQrCfdi = '';
+    
     try {
         // Extraer conceptos del XML usando regex simple
         const xmlContent = xmlData.xml_content || '';
@@ -444,8 +448,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         console.log('🔐 SAT: Certificado:', noCertificado);
         
         // Generar QR CFDI oficial según Anexo 20 SAT
-        const urlQrCfdi = generarQrCfdi(xmlData, selloDigital);
-        const htmlQrCfdi = generarHtmlQr(urlQrCfdi);
+        urlQrCfdi = generarQrCfdi(xmlData, selloDigital);
+        htmlQrCfdi = generarHtmlQr(urlQrCfdi);
         console.log('🔗 QR CFDI: URL generada:', urlQrCfdi ? 'Sí' : 'No');
         console.log('🎨 QR CFDI: HTML generado:', htmlQrCfdi ? 'Sí' : 'No');
         
@@ -453,6 +457,17 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         totalEnLetra = convertirNumeroALetras(parseFloat(total || '0'), moneda);
     } catch (parseError) {
         console.error('❌ HTML: Error parseando XML:', parseError.message);
+        // Fallback para QR CFDI en caso de error
+        if (!htmlQrCfdi) {
+            htmlQrCfdi = generarHtmlQr(''); // Genera placeholder
+            console.log('⚠️ QR CFDI: Usando fallback por error de parsing');
+        }
+    }
+    
+    // Asegurar que htmlQrCfdi siempre tenga un valor válido
+    if (!htmlQrCfdi) {
+        htmlQrCfdi = generarHtmlQr(''); // Genera placeholder
+        console.log('⚠️ QR CFDI: Usando fallback final');
     }
     
     const html = `
