@@ -697,7 +697,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
         
         .qr-validacion {
