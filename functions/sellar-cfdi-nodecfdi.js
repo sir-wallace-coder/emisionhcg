@@ -84,15 +84,35 @@ async function obtenerDatosEmisor(userId, emisorId) {
 }
 
 /**
+ * Limpia caracteres problemáticos para PostgreSQL
+ */
+function limpiarXMLParaBD(xmlContent) {
+    if (!xmlContent) return xmlContent;
+    
+    // Eliminar caracteres nulos y otros caracteres problemáticos
+    return xmlContent
+        .replace(/\u0000/g, '') // Eliminar caracteres nulos
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Eliminar caracteres de control
+}
+
+/**
  * Actualiza el XML en la base de datos con el sello
  */
 async function actualizarXMLSellado(xmlId, xmlSellado, sello, numeroCertificado) {
     console.log('💾 Actualizando XML sellado en BD...');
     
+    // Limpiar XML antes de guardar en BD
+    const xmlLimpio = limpiarXMLParaBD(xmlSellado);
+    console.log('🧹 XML limpiado para BD:', {
+        original_length: xmlSellado ? xmlSellado.length : 0,
+        limpio_length: xmlLimpio ? xmlLimpio.length : 0,
+        caracteres_removidos: (xmlSellado ? xmlSellado.length : 0) - (xmlLimpio ? xmlLimpio.length : 0)
+    });
+    
     const { error } = await supabase
         .from('xmls_generados')
         .update({
-            xml_content: xmlSellado,
+            xml_content: xmlLimpio,
             estado: 'sellado',
             sello: sello,
             updated_at: new Date().toISOString()
