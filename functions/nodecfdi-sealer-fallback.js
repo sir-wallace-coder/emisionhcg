@@ -4,7 +4,7 @@
  */
 
 const { Credential } = require('@nodecfdi/credentials');
-const { generarCadenaOriginal } = require('./xslt-processor');
+const { generarCadenaOriginalXSLT } = require('./xslt-processor');
 
 /**
  * Genera la cadena original usando nuestro procesador XSLT existente
@@ -18,7 +18,7 @@ async function generarCadenaOriginalFallback(xmlContent, version = '4.0') {
     
     try {
         // Usar nuestro procesador XSLT existente
-        const cadenaOriginal = generarCadenaOriginal(xmlContent, version);
+        const cadenaOriginal = generarCadenaOriginalXSLT(xmlContent, version);
         
         console.log('✅ Cadena original generada exitosamente (fallback)');
         console.log('📏 Longitud cadena original:', cadenaOriginal.length);
