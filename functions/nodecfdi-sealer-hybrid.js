@@ -191,13 +191,33 @@ async function firmarConCredentials(cadenaOriginal, certificadoBase64, llavePriv
     console.log('🔐 HÍBRIDO: Firmando con @nodecfdi/credentials');
     
     try {
-        // Convertir certificado y llave de base64 a PEM
-        const certificadoPem = Buffer.from(certificadoBase64, 'base64').toString('utf-8');
-        const llavePrivadaPem = Buffer.from(llavePrivadaBase64, 'base64').toString('utf-8');
+        // 🚨 CORRECCIÓN CRÍTICA: Convertir Base64 a PEM con headers correctos
+        console.log('🔍 Certificado Base64 length:', certificadoBase64.length);
+        console.log('🔍 Llave Base64 length:', llavePrivadaBase64.length);
         
-        console.log('📋 Certificado PEM length:', certificadoPem.length);
-        console.log('📋 Llave privada PEM length:', llavePrivadaPem.length);
+        // Decodificar Base64 y agregar headers PEM
+        const certificadoRaw = Buffer.from(certificadoBase64, 'base64').toString('utf-8');
+        const llavePrivadaRaw = Buffer.from(llavePrivadaBase64, 'base64').toString('utf-8');
+        
+        // Agregar headers PEM si no los tienen
+        let certificadoPem = certificadoRaw;
+        if (!certificadoRaw.includes('-----BEGIN CERTIFICATE-----')) {
+            // Es Base64 puro, agregar headers PEM
+            certificadoPem = `-----BEGIN CERTIFICATE-----\n${certificadoBase64.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
+        }
+        
+        let llavePrivadaPem = llavePrivadaRaw;
+        if (!llavePrivadaRaw.includes('-----BEGIN')) {
+            // Es Base64 puro, agregar headers PEM (detectar tipo)
+            const tipoLlave = llavePrivadaBase64.includes('ENCRYPTED') ? 'ENCRYPTED PRIVATE KEY' : 'PRIVATE KEY';
+            llavePrivadaPem = `-----BEGIN ${tipoLlave}-----\n${llavePrivadaBase64.match(/.{1,64}/g).join('\n')}\n-----END ${tipoLlave}-----`;
+        }
+        
+        console.log('✅ Certificado PEM length:', certificadoPem.length);
+        console.log('✅ Llave privada PEM length:', llavePrivadaPem.length);
         console.log('📋 Password length:', password.length);
+        console.log('🔍 Certificado tiene headers PEM:', certificadoPem.includes('-----BEGIN'));
+        console.log('🔍 Llave tiene headers PEM:', llavePrivadaPem.includes('-----BEGIN'));
         
         // Crear credencial con @nodecfdi/credentials
         console.log('🔧 Creando credencial NodeCfdi...');
