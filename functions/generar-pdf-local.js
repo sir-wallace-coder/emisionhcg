@@ -505,9 +505,9 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             border-bottom: 2px solid ${colorCorporativo};
-            padding-bottom: 3px;
+            padding-bottom: 2px;
         }
         
         .logo-section {
@@ -531,31 +531,43 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             font-size: 18px;
             font-weight: bold;
             color: ${colorCorporativo};
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .emisor-rfc {
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .emisor-regimen {
             font-size: 12px;
             color: #666;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
+        }
+        
+        .emisor-direccion {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .emisor-estado {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
         }
         
         .emisor-cp {
             font-size: 12px;
             color: #666;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         
         .emisor-expedicion {
             font-size: 12px;
             color: #666;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         .factura-info {
@@ -584,10 +596,10 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         
         /* Sección del receptor */
         .receptor-section {
-            margin: 20px 0;
+            margin: 12px 0;
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 6px;
             border-left: 4px solid ${colorCorporativo};
         }
         
@@ -595,7 +607,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
             font-size: 14px;
             font-weight: bold;
             color: ${colorCorporativo};
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         
         .receptor-datos {
@@ -947,6 +959,8 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
                 <div class="emisor-nombre">${emisorSafe.nombre || xmlData.emisor_nombre}</div>
                 <div class="emisor-rfc">RFC: ${emisorSafe.rfc || xmlData.emisor_rfc}</div>
                 ${emisorRegimenFiscal ? `<div class="emisor-regimen">Régimen Fiscal: ${emisorRegimenFiscal}</div>` : ''}
+                ${emisorSafe.direccion ? `<div class="emisor-direccion">Dirección: ${emisorSafe.direccion}</div>` : ''}
+                ${emisorSafe.estado ? `<div class="emisor-estado">Estado: ${emisorSafe.estado}</div>` : ''}
                 ${lugarExpedicion ? `<div class="emisor-expedicion">Lugar de Expedición: ${lugarExpedicion}</div>` : ''}
             </div>
             
@@ -1726,7 +1740,7 @@ exports.handler = async (event, context) => {
                 
                 const { data: emisor, error: emisorError } = await supabase
                     .from('emisores')
-                    .select('id, rfc, nombre, logo, color')
+                    .select('id, rfc, nombre, logo, color, direccion, estado')
                     .eq('rfc', rfcEmisor)
                     .single();
                 
@@ -1736,7 +1750,9 @@ exports.handler = async (event, context) => {
                         rfc: emisor.rfc,
                         nombre: emisor.nombre,
                         tiene_logo: !!emisor.logo,
-                        color: emisor.color
+                        color: emisor.color,
+                        direccion: emisor.direccion,
+                        estado: emisor.estado
                     });
                 } else {
                     console.log('⚠️ EMISOR: No encontrado en BD para RFC:', rfcEmisor);
