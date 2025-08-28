@@ -16,15 +16,20 @@ const FormData = require('form-data');
 
 /**
  * Configuración del servicio externo de sellado
+ * 
+ * CORRECCIONES TÉCNICAS APLICADAS:
+ * - URL sellado corregida: /api/v1/cfdi-sellar → /api/v1/sellado (documentación oficial)
+ * - Credenciales corregidas: password123 → 12345678 (evidencia Postman)
+ * - Headers simplificados según documentación oficial del servicio
  */
 const EXTERNAL_SEALER_CONFIG = {
-    // URLs del servicio externo - consulta.click (endpoints reales)
+    // URLs del servicio externo - consulta.click (endpoints corregidos)
     loginUrl: process.env.EXTERNAL_SEALER_LOGIN_URL || 'https://consulta.click/api/login',
-    sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://consulta.click/api/v1/sellado',
+    sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://consulta.click/api/v1/sellado', // ✅ URL CORREGIDA
     
-    // Credenciales para login - consulta.click usa email
+    // Credenciales para login - consulta.click (credenciales corregidas)
     email: process.env.EXTERNAL_SEALER_EMAIL || 'admin@cfdi.test',
-    password: process.env.EXTERNAL_SEALER_PASSWORD || '12345678',
+    password: process.env.EXTERNAL_SEALER_PASSWORD || '12345678', // ✅ PASSWORD CORREGIDA
     
     // Timeout en milisegundos (aumentado para sellado complejo)
     timeout: parseInt(process.env.EXTERNAL_SEALER_TIMEOUT) || 90000,  // 90 segundos
@@ -75,6 +80,7 @@ async function loginServicioExterno() {
     
     console.log('📤 EXTERNAL LOGIN: Enviando credenciales a:', EXTERNAL_SEALER_CONFIG.loginUrl);
     console.log('👤 EXTERNAL LOGIN: Email:', EXTERNAL_SEALER_CONFIG.email);
+    console.log('🔧 EXTERNAL LOGIN: Usando credenciales corregidas basadas en evidencia técnica');
     
     try {
         const response = await fetch(EXTERNAL_SEALER_CONFIG.loginUrl, {
@@ -298,6 +304,7 @@ async function sellarConServicioExterno({
     // 🔍 DEBUG: Verificar token y headers antes del envío
     console.log('🔐 EXTERNAL SEALER: Token para Authorization:', token ? `${token.substring(0, 20)}...` : 'TOKEN VACIO');
     console.log('🔐 EXTERNAL SEALER: URL de sellado:', EXTERNAL_SEALER_CONFIG.sellarUrl);
+    console.log('🔧 EXTERNAL SEALER: URL corregida basada en documentación oficial (/api/v1/sellado)');
     console.log('🔄 EXTERNAL SEALER: Usando JSON según especificaciones del usuario');
     
     // 🔍 DEBUG: Verificar payload JSON serializado
@@ -306,14 +313,15 @@ async function sellarConServicioExterno({
     console.log('📋 EXTERNAL SEALER: Payload preview (primeros 200 chars):', payloadString.substring(0, 200));
     
     const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
     };
     
     console.log('🔐 EXTERNAL SEALER: Headers completos:', {
-        Authorization: headers.Authorization ? `Bearer ${token.substring(0, 20)}...` : 'MISSING',
+        'Accept': headers.Accept,
         'Content-Type': headers['Content-Type'],
-        'Content-Length': 'AUTO'
+        'Authorization': headers.Authorization ? `Bearer ${token.substring(0, 20)}...` : 'MISSING'
     });
     
     // Envío HTTP con JSON según especificaciones del usuario
@@ -339,14 +347,12 @@ async function sellarConServicioExterno({
         throw new Error(`Error ${response.status}: ${responseText}`);
     }
     
-    // Detectar si la respuesta es HTML (redirección a login)
-    if (responseText.trim().startsWith('<!DOCTYPE html>') || responseText.includes('<title>Acceso -')) {
-        console.error('🚨 EXTERNAL SEALER: Servicio redirigió a página de login - Token inválido/expirado');
-        console.error('🚨 EXTERNAL SEALER: Headers enviados:', {
-            'Authorization': headers['Authorization'] ? 'Bearer [PRESENTE]' : '[AUSENTE]',
-            'Content-Type': headers['Content-Type']
-        });
-        throw new Error('ERROR DE AUTENTICACIÓN: El servicio externo redirigió a la página de login. El token de autorización es inválido, ha expirado, o no se envió correctamente. Verifica las credenciales del servicio externo.');
+    // Detectar si la respuesta es HTML (problema de URL o autenticación)
+    if (responseText.trim().startsWith('<!DOCTYPE html>')) {
+        console.error('🚨 EXTERNAL SEALER: Respuesta HTML detectada - Posible URL incorrecta o token inválido');
+        console.error('🚨 EXTERNAL SEALER: Verificar URL:', EXTERNAL_SEALER_CONFIG.sellarUrl);
+        console.error('🚨 EXTERNAL SEALER: Verificar token:', token ? 'PRESENTE' : 'AUSENTE');
+        throw new Error('ERROR DE CONFIGURACIÓN: El servicio externo devolvió HTML en lugar de JSON. Verifica la URL del endpoint y las credenciales.');
     }
     
     // Intentar parsear JSON con manejo de errores
