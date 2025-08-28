@@ -97,7 +97,8 @@ async function firmarCadenaOriginal(cadenaOriginal, certificadoBase64, llavePriv
     
     try {
         // Usar EXACTAMENTE la misma implementación que @nodecfdi/cfdiutils-core
-        const { Credential } = require('@nodecfdi/cfdiutils-core/node_modules/@nodecfdi/credentials');
+        // Importar directamente la librería que usa cfdiutils-core
+        const { Credential } = require('@nodecfdi/credentials');
         
         // Convertir de base64 a binary (formato esperado por Credential.create según README)
         const certFile = Buffer.from(certificadoBase64, 'base64').toString('binary');
