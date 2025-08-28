@@ -133,149 +133,28 @@ exports.handler = async (event, context) => {
     try {
       console.log('🔐 SELLADO EXTERNO: Iniciando sellado con autenticación automática...');
       
-      // Llamar directamente al servicio externo
-
+      // Usar cliente externo corregido con todas las correcciones técnicas aplicadas
+      const { sellarConServicioExterno } = require('./utils/external-sealer-client');
       
-      // 🔍 DEBUG COMPLETO DEL OBJETO EMISOR
-      console.log('🔍 SELLADO DIRECTO: Objeto emisor completo:', JSON.stringify(emisor, null, 2));
-      console.log('🔍 SELLADO DIRECTO: Campos disponibles en emisor:', Object.keys(emisor));
-      console.log('🔍 SELLADO DIRECTO: emisor.certificado_cer:', emisor.certificado_cer ? 'EXISTE' : 'UNDEFINED');
-      console.log('🔍 SELLADO DIRECTO: emisor.certificado_key:', emisor.certificado_key ? 'EXISTE' : 'UNDEFINED');
+      console.log('🔧 SELLADO: Usando cliente externo corregido con credenciales y URL correctas');
       
-      // ⚠️ CRÍTICO: Usar certificado y llave SIN MANIPULACIÓN (tal como están almacenados)
-      const certificadoBase64Puro = emisor.certificado_cer;
-      const llavePrivadaBase64Pura = emisor.certificado_key;
-      
-      console.log('🔍 SELLADO DIRECTO: certificadoBase64Puro:', certificadoBase64Puro ? 'EXISTE' : 'UNDEFINED');
-      console.log('🔍 SELLADO DIRECTO: llavePrivadaBase64Pura:', llavePrivadaBase64Pura ? 'EXISTE' : 'UNDEFINED');
-      
-
-      
-      // 🚀 SELLADO DIRECTO CON SERVICIO EXTERNO consulta.click
-      console.log('🚀 SELLADO DIRECTO: Iniciando sellado externo...');
-      
-      console.log('🚀 SELLADO DIRECTO: Parámetros:', {
-        xmlLength: xmlContent?.length || 0,
-        certificadoLength: certificadoBase64Puro?.length || 0,
-        llaveLength: llavePrivadaBase64Pura?.length || 0,
-        passwordLength: emisor.password_key?.length || 0,
+      const resultadoExterno = await sellarConServicioExterno({
+        xmlSinSellar: xmlContent,
+        certificadoBase64: emisor.certificado_cer,
+        llavePrivadaBase64: emisor.certificado_key,
+        passwordLlave: emisor.password_key,
         rfc: emisor.rfc,
-        version: version || '4.0'
+        versionCfdi: version
       });
-
-      // Función para realizar login y obtener token
-      const realizarLogin = async () => {
-        const email = process.env.EXTERNAL_SEALER_EMAIL || 'hcgmexico@gmail.com';
-        const password = process.env.EXTERNAL_SEALER_PASSWORD || '12345678';
-        
-        console.log('🔐 SELLADO DIRECTO: Credenciales:', {
-          email: email,
-          passwordLength: password?.length || 0
-        });
-
-        console.log('🔑 SELLADO DIRECTO: Realizando login...');
-        const loginResponse = await fetch('https://consulta.click/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email,
-            password: password
-          })
-        });
-        
-        console.log('🔑 SELLADO DIRECTO: Login status:', loginResponse.status);
-        
-        if (!loginResponse.ok) {
-          const loginError = await loginResponse.text();
-          console.log('❌ SELLADO DIRECTO: Error en login:', loginError.substring(0, 500));
-          throw new Error(`Error en login: ${loginResponse.status} ${loginResponse.statusText}`);
-        }
-        
-        const loginData = await loginResponse.json();
-        const token = loginData.access_token;
-        
-        console.log('✅ SELLADO DIRECTO: Token obtenido:', token ? `${token.substring(0, 20)}...` : 'VACIO');
-        
-        if (!token) {
-          throw new Error('No se obtuvo token de acceso del login');
-        }
-
-        return token;
-      };
-
-      // Función para realizar sellado con token
-      const realizarSellado = async (token, intento = 1) => {
-        console.log(`🔒 SELLADO DIRECTO: Intento ${intento} - Enviando request de sellado...`);
-        
-        // Convertir base64 a buffers
-        const certificadoBuffer = Buffer.from(certificadoBase64Puro, 'base64');
-        const llaveBuffer = Buffer.from(llavePrivadaBase64Pura, 'base64');
-        
-        console.log('📦 SELLADO DIRECTO: Buffers creados:', {
-          certificadoBufferLength: certificadoBuffer.length,
-          llaveBufferLength: llaveBuffer.length,
-          xmlLength: xmlContent.length,
-          password: emisor.password_key
-        });
-        
-        const FormData = require('form-data');
-        const formData = new FormData();
-        
-        formData.append('xml', xmlContent);
-        formData.append('certificado', certificadoBuffer, { filename: 'certificado.cer', contentType: 'application/octet-stream' });
-        formData.append('key', llaveBuffer, { filename: 'llave.key', contentType: 'application/octet-stream' });
-        formData.append('password', emisor.password_key);
-        
-        console.log('📦 SELLADO DIRECTO: FormData preparado');
-
-        const selladoResponse = await fetch('https://consulta.click/api/v1/sellado', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            ...formData.getHeaders()
-          },
-          body: formData
-        });
-        
-        console.log('🔒 SELLADO DIRECTO: Response status:', selladoResponse.status);
-        console.log('🔒 SELLADO DIRECTO: Response headers:', Object.fromEntries(selladoResponse.headers.entries()));
-        
-        const responseText = await selladoResponse.text();
-        console.log('📄 SELLADO DIRECTO: Response length:', responseText.length);
-        console.log('📄 SELLADO DIRECTO: Response preview (500 chars):', responseText.substring(0, 500));
-        
-        // Verificar si la respuesta es HTML (página de login)
-        if (responseText.trim().startsWith('<!DOCTYPE html>')) {
-          console.log('❌ SELLADO DIRECTO: Recibida página de login - token inválido o expirado');
-          
-          if (intento === 1) {
-            console.log('🔄 SELLADO DIRECTO: Reintentando con nuevo token...');
-            const nuevoToken = await realizarLogin();
-            return await realizarSellado(nuevoToken, 2);
-          } else {
-            throw new Error('Token de autenticación inválido después de reintento');
-          }
-        }
-        
-        // Parsear como JSON
-        try {
-          const resultadoExterno = JSON.parse(responseText);
-          console.log('✅ SELLADO DIRECTO: JSON parseado:', {
-            success: resultadoExterno.success || (resultadoExterno.mensaje ? true : false),
-            hasXml: !!(resultadoExterno.xml || resultadoExterno.xml_sellado),
-            message: resultadoExterno.mensaje || resultadoExterno.message
-          });
-          return resultadoExterno;
-        } catch (parseError) {
-          console.log('❌ SELLADO DIRECTO: Error parseando JSON:', parseError.message);
-          console.log('📝 SELLADO DIRECTO: Response text:', responseText.substring(0, 1000));
-          throw new Error(`Respuesta inválida del servicio: ${parseError.message}`);
-        }
-      };
-
-      // Realizar login y sellado con reintentos automáticos
-      const token = await realizarLogin();
-      const resultadoExterno = await realizarSellado(token);
+      
+      console.log('✅ SELLADO: Cliente externo listo, procesando sellado...');
+      
+      if (resultadoExterno && resultadoExterno.xml_sellado) {
+        console.log('✅ SELLADO EXTERNO: XML sellado obtenido exitosamente');
+      } else {
+        console.error('❌ SELLADO EXTERNO: No se obtuvo XML sellado');
+        throw new Error('El servicio externo no devolvió XML sellado');
+      }
       
       console.log('✅ SELLADO DIRECTO: Sellado completado exitosamente');
       
