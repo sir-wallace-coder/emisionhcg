@@ -5,7 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏢 Sistema Completo CFDI - Gestión Profesional</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #1e40af;
+            --secondary-color: #3b82f6;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
         * { 
             margin: 0; 
             padding: 0; 
@@ -13,14 +33,102 @@
         }
         
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%, #f093fb 100%); 
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--gradient-secondary);
             min-height: 100vh;
             overflow-x: hidden;
+            line-height: 1.6;
         }
         
-        /* Particles Background Animation */
-        .particles {
+        /* Corporate Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .header.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 80px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--dark-color);
+            letter-spacing: -0.025em;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .btn-header {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        
+        .btn-header-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-header-secondary {
+            background: transparent;
+            color: var(--dark-color);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .btn-header:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        /* Geometric Background */
+        .geometric-bg {
             position: fixed;
             top: 0;
             left: 0;
@@ -28,18 +136,18 @@
             height: 100%;
             pointer-events: none;
             z-index: 1;
+            overflow: hidden;
         }
         
-        .particle {
+        .geometric-shape {
             position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
+            opacity: 0.1;
+            animation: geometricFloat 8s ease-in-out infinite;
         }
         
-        @keyframes float {
+        @keyframes geometricFloat {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
         }
         
         /* Main Container */
@@ -47,64 +155,124 @@
             position: relative;
             z-index: 2;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            padding-top: 80px;
         }
         
         /* Hero Section */
         .hero-section {
-            flex: 1;
+            position: relative;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px 20px;
+            padding: 2rem;
+            overflow: hidden;
         }
         
         .hero-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 30px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
-            padding: 80px 60px;
-            width: 100%;
-            max-width: 1200px;
-            text-align: center;
-            animation: slideUp 1s ease-out;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 10;
         }
         
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
+        .hero-text {
+            text-align: left;
         }
         
-        .hero-logo {
-            font-size: 5rem;
-            margin-bottom: 30px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            animation: slideInLeft 1s ease-out;
         }
         
         .hero-title {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 4.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-primary);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 25px;
-            line-height: 1.2;
+            animation: slideInLeft 1s ease-out 0.2s both;
         }
         
         .hero-subtitle {
-            color: #5a6c7d;
-            font-size: 1.4rem;
-            margin-bottom: 50px;
-            line-height: 1.6;
-            font-weight: 300;
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+            font-weight: 400;
+            animation: slideInLeft 1s ease-out 0.4s both;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            animation: slideInLeft 1s ease-out 0.6s both;
+        }
+        
+        .hero-visual {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: slideInRight 1s ease-out 0.3s both;
+        }
+        
+        .hero-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 2rem;
+            padding: 3rem;
+            box-shadow: var(--shadow-2xl);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
         }
         
         /* Features Grid */
@@ -181,31 +349,19 @@
         }
         
         /* CTA Buttons */
-        .cta-section {
-            margin: 60px 0;
-        }
-        
-        .cta-buttons {
-            display: flex;
-            gap: 30px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
         .btn {
-            padding: 20px 40px;
+            padding: 1rem 2rem;
             border: none;
-            border-radius: 15px;
-            font-size: 18px;
-            font-weight: 700;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.4s ease;
+            transition: all 0.3s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            min-width: 220px;
-            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
             position: relative;
             overflow: hidden;
         }
@@ -226,20 +382,27 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            background: var(--gradient-primary);
             color: white;
-            box-shadow: 0 10px 30px rgba(0, 123, 255, 0.3);
+            box-shadow: var(--shadow-lg);
         }
         
         .btn-secondary {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
-            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
         }
         
         .btn:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-2xl);
+        }
+        
+        .btn-large {
+            padding: 1.25rem 2.5rem;
+            font-size: 1.125rem;
+            font-weight: 700;
         }
         
         /* Stats Section */
@@ -306,18 +469,91 @@
     </style>
 </head>
 <body>
-    <!-- Animated Background Particles -->
-    <div class="particles"></div>
+    <!-- Corporate Header -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon">🏢</div>
+                <div class="logo-text">CFDI Pro</div>
+            </div>
+            <nav class="nav-buttons">
+                <a href="/generator.html" class="btn-header btn-header-secondary">
+                    <i class="fas fa-bolt"></i>
+                    Generador Rápido
+                </a>
+                <a href="/login.html" class="btn-header btn-header-primary">
+                    <i class="fas fa-rocket"></i>
+                    Acceder al Sistema
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Geometric Background -->
+    <div class="geometric-bg"></div>
     
     <div class="main-container">
-        <div class="hero-section">
+        <section class="hero-section">
             <div class="hero-content">
-                <div class="hero-logo">🏢</div>
-                <h1 class="hero-title">Sistema Completo CFDI</h1>
-                <p class="hero-subtitle">
-                    La plataforma más avanzada para la gestión profesional de Comprobantes Fiscales Digitales.
-                    <br>Incluye autenticación, almacenamiento seguro, gestión de emisores y certificados digitales.
-                </p>
+                <div class="hero-text">
+                    <div class="hero-badge">
+                        <i class="fas fa-star"></i>
+                        <span>Plataforma Líder en México</span>
+                    </div>
+                    <h1 class="hero-title">
+                        Sistema Completo
+                        <br>CFDI Profesional
+                    </h1>
+                    <p class="hero-subtitle">
+                        La solución más avanzada y confiable para la gestión integral de Comprobantes Fiscales Digitales. 
+                        Potencia tu negocio con tecnología de vanguardia, seguridad empresarial y cumplimiento total SAT.
+                    </p>
+                    <div class="hero-cta">
+                        <a href="/login.html" class="btn btn-primary btn-large">
+                            <i class="fas fa-rocket"></i>
+                            Comenzar Ahora
+                        </a>
+                        <a href="/generator.html" class="btn btn-secondary btn-large">
+                            <i class="fas fa-play"></i>
+                            Ver Demo
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-card">
+                        <div style="text-align: center; padding: 2rem 0;">
+                            <div style="font-size: 4rem; margin-bottom: 1.5rem; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                🏢
+                            </div>
+                            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--dark-color); margin-bottom: 1rem;">
+                                Tecnología Empresarial
+                            </h3>
+                            <p style="color: #6b7280; line-height: 1.6; margin-bottom: 2rem;">
+                                Autenticación JWT, almacenamiento seguro, gestión de emisores, certificados CSD y sellado digital profesional.
+                            </p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                                <div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color);">100%</div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">SAT</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--success-color);">24/7</div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">Soporte</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-color);">SSL</div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">Seguro</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning-color);">∞</div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">XMLs</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
                 <!-- Stats Section -->
                 <div class="stats-section">
@@ -393,68 +629,78 @@
                     </div>
                 </div>
 
-                <!-- CTA Section -->
-                <div class="cta-section">
-                    <div class="cta-buttons">
-                        <a href="/login.html" class="btn btn-primary">
-                            <i class="fas fa-rocket"></i>
-                            Acceder al Sistema
-                        </a>
-                        <a href="/generator.html" class="btn btn-secondary">
-                            <i class="fas fa-bolt"></i>
-                            Generador Rápido
-                        </a>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Create animated particles
-        function createParticles() {
-            const particlesContainer = document.querySelector('.particles');
-            const particleCount = 50;
+        // Create animated geometric shapes
+        function createGeometricShapes() {
+            const geometricContainer = document.querySelector('.geometric-bg');
+            const shapes = ['◆', '▲', '●', '■', '◇', '△', '○', '□'];
+            const shapeCount = 20;
             
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
+            for (let i = 0; i < shapeCount; i++) {
+                const shape = document.createElement('div');
+                shape.className = 'geometric-shape';
+                shape.textContent = shapes[Math.floor(Math.random() * shapes.length)];
                 
-                // Random size between 2px and 8px
-                const size = Math.random() * 6 + 2;
-                particle.style.width = size + 'px';
-                particle.style.height = size + 'px';
+                // Random size between 20px and 60px
+                const size = Math.random() * 40 + 20;
+                shape.style.fontSize = size + 'px';
                 
                 // Random position
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
+                shape.style.left = Math.random() * 100 + '%';
+                shape.style.top = Math.random() * 100 + '%';
+                
+                // Random color from our palette
+                const colors = ['var(--primary-color)', 'var(--secondary-color)', 'var(--accent-color)', 'var(--success-color)'];
+                shape.style.color = colors[Math.floor(Math.random() * colors.length)];
                 
                 // Random animation delay
-                particle.style.animationDelay = Math.random() * 6 + 's';
+                shape.style.animationDelay = Math.random() * 8 + 's';
                 
                 // Random animation duration
-                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                shape.style.animationDuration = (Math.random() * 6 + 6) + 's';
                 
-                particlesContainer.appendChild(particle);
+                geometricContainer.appendChild(shape);
             }
         }
         
-        // Initialize particles when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            createParticles();
+        // Header scroll effect
+        function handleHeaderScroll() {
+            const header = document.getElementById('header');
+            const scrolled = window.scrollY > 50;
             
-            // Add smooth scroll behavior to CTA buttons
-            document.querySelectorAll('.btn').forEach(button => {
-                button.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px) scale(1.05)';
-                });
-                
-                button.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0) scale(1)';
+            if (scrolled) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        }
+        
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createGeometricShapes();
+            
+            // Add scroll listener for header
+            window.addEventListener('scroll', handleHeaderScroll);
+            
+            // Add smooth scrolling to all anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
                 });
             });
             
-            // Add intersection observer for feature cards animation
+            // Add intersection observer for animations
             const observerOptions = {
                 threshold: 0.1,
                 rootMargin: '0px 0px -50px 0px'
@@ -469,12 +715,23 @@
                 });
             }, observerOptions);
             
-            // Observe all feature cards
-            document.querySelectorAll('.feature-card').forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(50px)';
-                card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
-                observer.observe(card);
+            // Observe all feature cards and stats
+            document.querySelectorAll('.feature-card, .stat-item').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(el);
+            });
+            
+            // Add parallax effect to geometric shapes
+            window.addEventListener('scroll', () => {
+                const scrolled = window.pageYOffset;
+                const shapes = document.querySelectorAll('.geometric-shape');
+                
+                shapes.forEach((shape, index) => {
+                    const speed = 0.5 + (index % 3) * 0.2;
+                    shape.style.transform = `translateY(${scrolled * speed}px)`;
+                });
             });
         });
         
