@@ -51,7 +51,7 @@ async function obtenerDatosEmisor(userId, emisorId) {
     }
     
     // Verificar que tenga certificados
-    if (!emisor.certificado || !emisor.llave_privada) {
+    if (!emisor.certificado_cer || !emisor.certificado_key || !emisor.password_key) {
         throw new Error('El emisor no tiene certificados CSD configurados');
     }
     
@@ -208,8 +208,8 @@ exports.handler = async (event, context) => {
         console.log('🔄 Usando sellado NodeCfdi (versión serverless compatible)...');
         resultado = await sellarCFDINodeCfdiFallback(
             xmlData.xml_content,
-            emisor.certificado,
-            emisor.llave_privada,
+            emisor.certificado_cer,
+            emisor.certificado_key,
             emisor.password_key,
             version
         );
