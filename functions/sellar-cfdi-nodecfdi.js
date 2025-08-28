@@ -4,7 +4,8 @@
  */
 
 // const { sellarCFDINodeCfdi } = require('./nodecfdi-sealer'); // Deshabilitado por incompatibilidad ES Modules
-const { sellarCFDINodeCfdiFallback } = require('./nodecfdi-sealer-fallback');
+// const { sellarCFDINodeCfdiFallback } = require('./nodecfdi-sealer-fallback'); // Reemplazado por implementación correcta
+const { sellarCFDIConCfdiUtilsCore } = require('./nodecfdi-sealer-proper');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
 
@@ -261,9 +262,9 @@ exports.handler = async (event, context) => {
         console.log('\n🔐 INICIANDO SELLADO CON NODECFDI...');
         let resultado;
         
-        // Usar directamente la versión fallback (compatible serverless)
-        console.log('🔄 Usando sellado NodeCfdi (versión serverless compatible)...');
-        resultado = await sellarCFDINodeCfdiFallback(
+        // Usar @nodecfdi/cfdiutils-core correctamente (compatible serverless)
+        console.log('🔄 Usando sellado con @nodecfdi/cfdiutils-core (versión correcta)...');
+        resultado = await sellarCFDIConCfdiUtilsCore(
             xmlData.xml_content,
             emisor.certificado_cer,
             emisor.certificado_key,

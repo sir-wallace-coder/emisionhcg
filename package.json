@@ -9,6 +9,8 @@
     "start": "netlify dev"
   },
   "dependencies": {
+    "@nodecfdi/cfdiutils-common": "^2.0.1",
+    "@nodecfdi/cfdiutils-core": "^0.7.1",
     "@nodecfdi/credentials": "^2.0.3",
     "@redocmx/client": "^0.0.4",
     "@sparticuz/chromium": "^138.0.2",
