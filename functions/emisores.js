@@ -565,7 +565,9 @@ async function createEmisor(userId, data, headers) {
     const {
       rfc,
       nombre,
+      direccion,
       codigo_postal,
+      estado,
       regimen_fiscal,
       certificado_cer,
       certificado_key,
@@ -578,7 +580,7 @@ async function createEmisor(userId, data, headers) {
     // === VALIDACIONES OBLIGATORIAS ===
     
     // 1. Validar campos obligatorios
-    const camposObligatorios = ['rfc', 'nombre', 'codigo_postal', 'regimen_fiscal'];
+    const camposObligatorios = ['rfc', 'nombre', 'direccion', 'codigo_postal', 'estado', 'regimen_fiscal'];
     const camposFaltantes = camposObligatorios.filter(campo => !data[campo] || data[campo].toString().trim() === '');
     
     if (camposFaltantes.length > 0) {
@@ -671,6 +673,51 @@ async function createEmisor(userId, data, headers) {
           error: 'Código postal fuera del rango válido para México (01000-99999)',
           tipo: 'CODIGO_POSTAL_FUERA_RANGO',
           codigo_postal_proporcionado: codigo_postal
+        })
+      };
+    }
+
+    // 4.5. Validar dirección
+    const direccionClean = direccion.trim();
+    if (direccionClean.length < 10) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'La dirección debe tener al menos 10 caracteres (calle, número, colonia)',
+          tipo: 'DIRECCION_MUY_CORTA'
+        })
+      };
+    }
+    
+    if (direccionClean.length > 500) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'La dirección no puede exceder 500 caracteres',
+          tipo: 'DIRECCION_MUY_LARGA'
+        })
+      };
+    }
+
+    // 4.6. Validar estado (catálogo de estados de México)
+    const estadosValidos = [
+      'AGU', 'BCN', 'BCS', 'CAM', 'CHP', 'CHH', 'CMX', 'COA', 'COL', 'DUR',
+      'GUA', 'GRO', 'HID', 'JAL', 'MEX', 'MIC', 'MOR', 'NAY', 'NLE', 'OAX',
+      'PUE', 'QUE', 'ROO', 'SLP', 'SIN', 'SON', 'TAB', 'TAM', 'TLA', 'VER',
+      'YUC', 'ZAC'
+    ];
+    
+    if (!estadosValidos.includes(estado)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Estado inválido. Debe ser uno de los códigos de estados de México',
+          tipo: 'ESTADO_INVALIDO',
+          estado_proporcionado: estado,
+          estados_validos: estadosValidos
         })
       };
     }
@@ -1000,7 +1047,9 @@ async function createEmisor(userId, data, headers) {
       usuario_id: userId,
       rfc: rfcClean,
       nombre: nombre.trim(),
+      direccion: direccionClean,
       codigo_postal: codigo_postal,
+      estado: estado,
       regimen_fiscal: regimen_fiscal,
       logo: data.logo || null, // Logo del emisor en base64
       activo: true,
@@ -1218,7 +1267,9 @@ async function updateEmisor(userId, emisorId, data, headers) {
     const {
       rfc,
       nombre,
+      direccion,
       codigo_postal,
+      estado,
       regimen_fiscal,
       logo,
       certificado_cer,
@@ -1234,7 +1285,9 @@ async function updateEmisor(userId, emisorId, data, headers) {
     // Actualizar campos básicos si se proporcionan
     if (rfc) updateData.rfc = rfc.toUpperCase().trim();
     if (nombre) updateData.nombre = nombre.trim();
+    if (direccion) updateData.direccion = direccion.trim();
     if (codigo_postal) updateData.codigo_postal = codigo_postal;
+    if (estado) updateData.estado = estado;
     if (regimen_fiscal) updateData.regimen_fiscal = regimen_fiscal;
     if (logo !== undefined) updateData.logo = logo; // Permitir null para eliminar logo
 

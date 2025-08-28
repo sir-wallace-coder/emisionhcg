@@ -706,12 +706,64 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Nuevos campos: Dirección y Estado -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="emisorDireccion" class="form-label">Dirección *</label>
+                                    <input type="text" class="form-control" id="emisorDireccion" maxlength="500" placeholder="Calle, número, colonia" required>
+                                    <div class="form-text">Dirección completa: calle, número y colonia</div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="emisorCP" class="form-label">Código Postal *</label>
                                     <input type="text" class="form-control" id="emisorCP" maxlength="5" pattern="[0-9]{5}" required>
                                     <div class="form-text">5 dígitos numéricos</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="emisorEstado" class="form-label">Estado *</label>
+                                    <select class="form-select" id="emisorEstado" required>
+                                        <option value="">Seleccionar estado...</option>
+                                        <option value="AGU">Aguascalientes</option>
+                                        <option value="BCN">Baja California</option>
+                                        <option value="BCS">Baja California Sur</option>
+                                        <option value="CAM">Campeche</option>
+                                        <option value="CHP">Chiapas</option>
+                                        <option value="CHH">Chihuahua</option>
+                                        <option value="CMX">Ciudad de México</option>
+                                        <option value="COA">Coahuila</option>
+                                        <option value="COL">Colima</option>
+                                        <option value="DUR">Durango</option>
+                                        <option value="GUA">Guanajuato</option>
+                                        <option value="GRO">Guerrero</option>
+                                        <option value="HID">Hidalgo</option>
+                                        <option value="JAL">Jalisco</option>
+                                        <option value="MEX">México</option>
+                                        <option value="MIC">Michoacán</option>
+                                        <option value="MOR">Morelos</option>
+                                        <option value="NAY">Nayarit</option>
+                                        <option value="NLE">Nuevo León</option>
+                                        <option value="OAX">Oaxaca</option>
+                                        <option value="PUE">Puebla</option>
+                                        <option value="QUE">Querétaro</option>
+                                        <option value="ROO">Quintana Roo</option>
+                                        <option value="SLP">San Luis Potosí</option>
+                                        <option value="SIN">Sinaloa</option>
+                                        <option value="SON">Sonora</option>
+                                        <option value="TAB">Tabasco</option>
+                                        <option value="TAM">Tamaulipas</option>
+                                        <option value="TLA">Tlaxcala</option>
+                                        <option value="VER">Veracruz</option>
+                                        <option value="YUC">Yucatán</option>
+                                        <option value="ZAC">Zacatecas</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -915,11 +967,62 @@
                             </div>
                         </div>
                         
+                        <!-- Nuevos campos: Dirección y Estado -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="editEmisorDireccion" class="form-label">Dirección *</label>
+                                    <input type="text" class="form-control" id="editEmisorDireccion" maxlength="500" placeholder="Calle, número, colonia" required>
+                                    <div class="form-text">Dirección completa: calle, número y colonia</div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="editEmisorCP" class="form-label">Código Postal *</label>
                                     <input type="text" class="form-control" id="editEmisorCP" maxlength="5" pattern="[0-9]{5}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editEmisorEstado" class="form-label">Estado *</label>
+                                    <select class="form-select" id="editEmisorEstado" required>
+                                        <option value="">Seleccionar estado...</option>
+                                        <option value="AGU">Aguascalientes</option>
+                                        <option value="BCN">Baja California</option>
+                                        <option value="BCS">Baja California Sur</option>
+                                        <option value="CAM">Campeche</option>
+                                        <option value="CHP">Chiapas</option>
+                                        <option value="CHH">Chihuahua</option>
+                                        <option value="CMX">Ciudad de México</option>
+                                        <option value="COA">Coahuila</option>
+                                        <option value="COL">Colima</option>
+                                        <option value="DUR">Durango</option>
+                                        <option value="GUA">Guanajuato</option>
+                                        <option value="GRO">Guerrero</option>
+                                        <option value="HID">Hidalgo</option>
+                                        <option value="JAL">Jalisco</option>
+                                        <option value="MEX">México</option>
+                                        <option value="MIC">Michoacán</option>
+                                        <option value="MOR">Morelos</option>
+                                        <option value="NAY">Nayarit</option>
+                                        <option value="NLE">Nuevo León</option>
+                                        <option value="OAX">Oaxaca</option>
+                                        <option value="PUE">Puebla</option>
+                                        <option value="QUE">Querétaro</option>
+                                        <option value="ROO">Quintana Roo</option>
+                                        <option value="SLP">San Luis Potosí</option>
+                                        <option value="SIN">Sinaloa</option>
+                                        <option value="SON">Sonora</option>
+                                        <option value="TAB">Tabasco</option>
+                                        <option value="TAM">Tamaulipas</option>
+                                        <option value="TLA">Tlaxcala</option>
+                                        <option value="VER">Veracruz</option>
+                                        <option value="YUC">Yucatán</option>
+                                        <option value="ZAC">Zacatecas</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -3401,7 +3504,9 @@
                 const emisorData = {
                     rfc: document.getElementById('emisorRFC').value.toUpperCase(),
                     nombre: document.getElementById('emisorNombre').value,
+                    direccion: document.getElementById('emisorDireccion').value,
                     codigo_postal: document.getElementById('emisorCP').value,
+                    estado: document.getElementById('emisorEstado').value,
                     regimen_fiscal: document.getElementById('emisorRegimen').value,
                     password_key: document.getElementById('passwordKey').value,
                     color: document.getElementById('emisorColorText').value || '#2563eb' // Color corporativo
@@ -4163,7 +4268,9 @@
                 document.getElementById('editEmisorId').value = emisor.id;
                 document.getElementById('editEmisorRFC').value = emisor.rfc || '';
                 document.getElementById('editEmisorNombre').value = emisor.nombre || '';
+                document.getElementById('editEmisorDireccion').value = emisor.direccion || '';
                 document.getElementById('editEmisorCP').value = emisor.codigo_postal || '';
+                document.getElementById('editEmisorEstado').value = emisor.estado || '';
                 document.getElementById('editEmisorRegimen').value = emisor.regimen_fiscal || '';
                 
                 // Mostrar logo actual si existe
@@ -4491,7 +4598,9 @@
                 const datosActualizacion = {
                     rfc: document.getElementById('editEmisorRFC').value || '',
                     nombre: nombre,
+                    direccion: document.getElementById('editEmisorDireccion').value || '',
                     codigo_postal: codigoPostal,
+                    estado: document.getElementById('editEmisorEstado').value || '',
                     regimen_fiscal: regimenFiscal,
                     color: document.getElementById('editEmisorColorText')?.value || '#2563eb' // Color corporativo
                 };
