@@ -154,6 +154,14 @@ async function actualizarXMLSellado(xmlId, xmlSellado, sello, numeroCertificado)
     const { xmlLimpio, analisis } = analizarYLimpiarXML(xmlSellado);
     console.log('🔍 ANÁLISIS XML PARA BD:', analisis);
     
+    // TAMBIÉN limpiar el sello digital (puede contener caracteres nulos)
+    const { xmlLimpio: selloLimpio } = analizarYLimpiarXML(sello || '');
+    console.log('🔍 SELLO ORIGINAL vs LIMPIO:', {
+        sello_original_length: sello ? sello.length : 0,
+        sello_limpio_length: selloLimpio ? selloLimpio.length : 0,
+        sello_caracteres_removidos: (sello ? sello.length : 0) - (selloLimpio ? selloLimpio.length : 0)
+    });
+    
     if (analisis.caracteres_nulos > 0) {
         console.log('⚠️ ALERTA: XML contiene', analisis.caracteres_nulos, 'caracteres nulos');
         console.log('🔍 Posiciones de caracteres nulos:', analisis.posiciones_nulos);
@@ -164,7 +172,7 @@ async function actualizarXMLSellado(xmlId, xmlSellado, sello, numeroCertificado)
         .update({
             xml_content: xmlLimpio,
             estado: 'sellado',
-            sello: sello,
+            sello: selloLimpio,
             updated_at: new Date().toISOString()
         })
         .eq('id', xmlId);
