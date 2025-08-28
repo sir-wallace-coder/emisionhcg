@@ -94,9 +94,8 @@ async function actualizarXMLSellado(xmlId, xmlSellado, sello, numeroCertificado)
         .update({
             xml_content: xmlSellado,
             estado: 'sellado',
-            sello_digital: sello,
-            numero_certificado: numeroCertificado,
-            fecha_sellado: new Date().toISOString()
+            sello: sello,
+            updated_at: new Date().toISOString()
         })
         .eq('id', xmlId);
     
