@@ -84,7 +84,7 @@ async function generarCadenaOriginalConCfdiUtils(xmlContent, version = '4.0') {
 }
 
 /**
- * Firma cadena original usando certificados CSD
+ * Firma cadena original usando certificados CSD - IMPLEMENTACIÓN EXACTA de @nodecfdi/cfdiutils-core
  * @param {string} cadenaOriginal - Cadena original a firmar
  * @param {string} certificadoBase64 - Certificado en formato base64
  * @param {string} llavePrivadaBase64 - Llave privada en formato base64
@@ -92,37 +92,38 @@ async function generarCadenaOriginalConCfdiUtils(xmlContent, version = '4.0') {
  * @returns {Promise<Object>} - Resultado del firmado
  */
 async function firmarCadenaOriginal(cadenaOriginal, certificadoBase64, llavePrivadaBase64, password) {
-    console.log('🔐 FIRMANDO CADENA ORIGINAL...');
+    console.log('🔐 FIRMANDO CADENA ORIGINAL - IMPLEMENTACIÓN EXACTA @nodecfdi/cfdiutils-core');
     console.log('📏 Longitud cadena original:', cadenaOriginal.length);
     
     try {
-        // Usar @nodecfdi/credentials para el firmado (esto SÍ funciona)
-        const { Credential } = require('@nodecfdi/credentials');
+        // Usar EXACTAMENTE la misma implementación que @nodecfdi/cfdiutils-core
+        const { Credential } = require('@nodecfdi/cfdiutils-core/node_modules/@nodecfdi/credentials');
         
-        // Convertir certificado y llave de base64 a string (formato esperado por @nodecfdi/credentials)
-        const certificadoString = Buffer.from(certificadoBase64, 'base64').toString('utf8');
-        const llavePrivadaString = Buffer.from(llavePrivadaBase64, 'base64').toString('utf8');
+        // Convertir de base64 a binary (formato esperado por Credential.create según README)
+        const certFile = Buffer.from(certificadoBase64, 'base64').toString('binary');
+        const keyFile = Buffer.from(llavePrivadaBase64, 'base64').toString('binary');
         
-        console.log('📋 Certificado formato:', certificadoString.substring(0, 50) + '...');
-        console.log('📋 Llave privada formato:', llavePrivadaString.substring(0, 50) + '...');
+        console.log('📋 Certificado formato binary:', certFile.substring(0, 50) + '...');
+        console.log('📋 Llave privada formato binary:', keyFile.substring(0, 50) + '...');
         
-        // Crear credencial con strings
-        const credential = Credential.create(certificadoString, llavePrivadaString, password);
-        console.log('✅ Credencial creada exitosamente');
+        // Crear credencial EXACTAMENTE como en el README oficial
+        const fiel = Credential.create(certFile, keyFile, password);
+        console.log('✅ Credencial creada exitosamente (método oficial)');
         
-        // Firmar cadena original directamente
-        const selloBuffer = credential.sign(cadenaOriginal);
-        const sello = selloBuffer.toString('base64');
+        // Firmar cadena original EXACTAMENTE como en el README oficial
+        const signature = fiel.sign(cadenaOriginal);
+        console.log('✅ Cadena original firmada exitosamente (método oficial)');
         
-        console.log('✅ Cadena original firmada exitosamente');
-        console.log('📏 Longitud sello:', sello.length);
+        // Obtener datos del certificado EXACTAMENTE como en el README oficial
+        const certificado = fiel.certificate();
+        const numeroCertificado = certificado.serialNumber().bytes();
         
-        // Obtener número de certificado
-        const numeroCertificado = credential.certificate().serialNumber().toString();
+        console.log('✅ Firmado completado con implementación oficial NodeCfdi');
+        console.log('📏 Longitud sello:', signature.length);
         console.log('📋 Número certificado:', numeroCertificado);
         
         return {
-            sello,
+            sello: signature,
             numeroCertificado,
             certificadoBase64
         };
