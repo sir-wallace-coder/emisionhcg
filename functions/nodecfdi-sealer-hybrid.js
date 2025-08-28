@@ -236,7 +236,27 @@ async function firmarConCredentials(cadenaOriginal, certificadoBase64, llavePriv
                 throw new Error(`Error desencriptando llave privada: ${decryptError.message}`);
             }
         } else {
-            console.log('ℹ️ Llave privada no está encriptada, usando directamente');
+            console.log('ℹ️ Llave privada no está encriptada, convirtiendo formato...');
+            
+            try {
+                // 🚨 CORRECCIÓN CRÍTICA: Convertir PKCS#8 a PKCS#1 RSA
+                console.log('🔧 Convirtiendo formato PKCS#8 a PKCS#1 RSA...');
+                
+                // Leer llave privada con node-forge
+                const privateKey = forge.pki.privateKeyFromPem(llavePrivadaPem);
+                
+                // Convertir a formato RSA PKCS#1 (que espera NodeCfdi)
+                llavePrivadaDesencriptada = forge.pki.privateKeyToPem(privateKey);
+                
+                console.log('✅ Llave convertida a formato RSA exitosamente');
+                console.log('🔍 Llave RSA length:', llavePrivadaDesencriptada.length);
+                
+            } catch (convertError) {
+                console.error('❌ Error convirtiendo formato llave:', convertError.message);
+                // Fallback: usar llave original si la conversión falla
+                llavePrivadaDesencriptada = llavePrivadaPem;
+                console.log('⚠️ Usando llave original como fallback');
+            }
         }
         
         // Crear credencial con @nodecfdi/credentials usando llave desencriptada
