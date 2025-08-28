@@ -766,7 +766,13 @@
                     const baseImponible = (concepto.importe || 0) - (concepto.descuento || 0);
                     concepto.impuesto.importe = baseImponible * (concepto.impuesto.tasa || 0.16);
                     
-                    conceptos.push(concepto);
+                    // VALIDACIÓN: Solo agregar conceptos válidos (con importe > 0 y descripción)
+                    if (concepto.importe > 0 && concepto.descripcion && concepto.descripcion.trim() !== '') {
+                        conceptos.push(concepto);
+                        console.log(`✅ Concepto válido agregado: ${concepto.descripcion} - $${concepto.importe}`);
+                    } else {
+                        console.log(`⚠️ Concepto inválido omitido: importe=${concepto.importe}, descripcion='${concepto.descripcion}'`);
+                    }
                 });
                 
                 console.log(`✅ ${conceptos.length} conceptos extraídos del XML`);
