@@ -3163,6 +3163,7 @@
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
+                            xmlId: xmlId,
                             xmlContent: xml.xml_content,
                             emisorId: emisorConCSD.id,
                             version: xml.version_cfdi || '4.0'

@@ -170,6 +170,8 @@ exports.handler = async (event, context) => {
         console.log('🔍 DEBUG NODECFDI: Parámetros extraídos:', {
             xmlContent_presente: !!xmlContent,
             xmlId_presente: !!xmlId,
+            xmlId_valor: xmlId,
+            xmlId_tipo: typeof xmlId,
             emisorId_valor: emisorId,
             emisorId_tipo: typeof emisorId,
             version_valor: version
@@ -284,6 +286,7 @@ exports.handler = async (event, context) => {
         }
         
         // Actualizar XML en base de datos
+        console.log('💾 Actualizando XML en BD con ID:', xmlId);
         await actualizarXMLSellado(
             xmlId,
             resultado.xmlSellado,
