@@ -1,44 +1,51 @@
-const fs = require('fs');
-const path = require('path');
 const { DOMParser } = require('xmldom');
 
 /**
- * Procesador XSLT oficial SAT para generación de cadena original CFDI
- * Utiliza los archivos XSLT oficiales descargados del SAT
+ * Procesador XSLT para generación de cadena original CFDI
+ * Versión serverless con archivos XSLT embebidos
  */
 class XSLTProcessor {
     constructor() {
         this.xsltCache = new Map();
-        this.loadXSLTFiles();
+        this.loadEmbeddedXSLT();
     }
 
     /**
-     * Carga los archivos XSLT oficiales del SAT
+     * Carga los archivos XSLT embebidos para compatibilidad serverless
      */
-    loadXSLTFiles() {
+    loadEmbeddedXSLT() {
         try {
-            const xsltDir = path.join(__dirname, '..', 'xslt');
+            // XSLT Utilerías embebido
+            const utileriasXSLT = `<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fn="http://www.w3.org/2005/xpath-functions">
+
+	<!-- Manejador de datos requeridos -->
+	<xsl:template name="Requerido">
+		<xsl:param name="valor"/>|<xsl:call-template name="ManejaEspacios">
+			<xsl:with-param name="s" select="$valor"/>
+		</xsl:call-template>
+	</xsl:template>
+
+	<!-- Manejador de datos opcionales -->
+	<xsl:template name="Opcional">
+		<xsl:param name="valor"/>
+		<xsl:if test="$valor">|<xsl:call-template name="ManejaEspacios"><xsl:with-param name="s" select="$valor"/></xsl:call-template></xsl:if>
+	</xsl:template>
+	
+	<!-- Normalizador de espacios en blanco -->
+	<xsl:template name="ManejaEspacios">
+		<xsl:param name="s"/>
+		<xsl:value-of select="normalize-space(string($s))"/>
+	</xsl:template>
+</xsl:stylesheet>`;
             
-            // Cargar utilidades
-            const utileriasPath = path.join(xsltDir, 'utilerias.xslt');
-            const utileriasContent = fs.readFileSync(utileriasPath, 'utf8');
-            this.xsltCache.set('utilerias', utileriasContent);
+            this.xsltCache.set('utilerias', utileriasXSLT);
             
-            // Cargar XSLT CFDI 4.0
-            const xslt40Path = path.join(xsltDir, 'cadenaoriginal_4_0.xslt');
-            const xslt40Content = fs.readFileSync(xslt40Path, 'utf8');
-            this.xsltCache.set('4.0', xslt40Content);
+            console.log('✅ Archivos XSLT embebidos cargados exitosamente');
             
-            // Cargar XSLT CFDI 3.3
-            const xslt33Path = path.join(xsltDir, 'cadenaoriginal_3_3.xslt');
-            const xslt33Content = fs.readFileSync(xslt33Path, 'utf8');
-            this.xsltCache.set('3.3', xslt33Content);
-            
-            console.log('✅ Archivos XSLT oficiales SAT cargados correctamente');
         } catch (error) {
-            console.error('❌ Error cargando archivos XSLT:', error);
+            console.error('❌ Error cargando XSLT embebidos:', error);
             console.log('🔄 Continuando con implementación manual de reglas XSLT');
-            // No lanzar error - continuar con implementación manual
         }
     }
 
