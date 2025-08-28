@@ -220,27 +220,34 @@ async function sellarCFDIConNodeCfdi(xmlContent, certificadoCer, llavePrivadaKey
         
         let selloDigital;
         try {
+            // 🔧 CORRECCIÓN CRÍTICA: NodeCfdi siempre devuelve Buffer binario
+            console.log('🔍 NODECFDI DEBUG DETALLADO:');
+            console.log('  - Tipo:', typeof selloDigitalBinario);
+            console.log('  - Es Buffer:', Buffer.isBuffer(selloDigitalBinario));
+            console.log('  - Longitud:', selloDigitalBinario?.length);
+            console.log('  - Primeros 10 bytes:', selloDigitalBinario?.slice ? Array.from(selloDigitalBinario.slice(0, 10)) : 'N/A');
+            
             if (Buffer.isBuffer(selloDigitalBinario)) {
-                // Método 1: Buffer directo a base64
+                // ✅ Método CORRECTO: Buffer directo a base64
                 selloDigital = selloDigitalBinario.toString('base64');
                 console.log('✅ NODECFDI: Conversión Buffer → base64 exitosa');
-            } else if (typeof selloDigitalBinario === 'string') {
-                // Método 2: Detectar si es base64 válido
-                const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-                if (base64Regex.test(selloDigitalBinario) && selloDigitalBinario.length % 4 === 0) {
-                    selloDigital = selloDigitalBinario;
-                    console.log('✅ NODECFDI: String ya es base64 válido');
-                } else {
-                    // Método 3: Convertir string a Buffer y luego a base64
-                    const buffer = Buffer.from(selloDigitalBinario, 'latin1');
-                    selloDigital = buffer.toString('base64');
-                    console.log('✅ NODECFDI: Conversión string → Buffer → base64 exitosa');
-                }
+                console.log('🔍 Base64 generado (primeros 50 chars):', selloDigital.substring(0, 50));
             } else {
-                // Método 4: Forzar conversión como último recurso
-                const buffer = Buffer.from(String(selloDigitalBinario), 'latin1');
+                // ⚠️ FALLBACK: Si no es Buffer (no debería pasar con NodeCfdi)
+                console.error('⚠️ NODECFDI: Tipo inesperado de sello, aplicando fallback');
+                
+                // Intentar convertir a Buffer primero
+                let buffer;
+                if (typeof selloDigitalBinario === 'string') {
+                    // Si es string, puede ser datos binarios mal interpretados
+                    buffer = Buffer.from(selloDigitalBinario, 'binary');
+                } else {
+                    // Último recurso: convertir a string y luego a Buffer
+                    buffer = Buffer.from(String(selloDigitalBinario), 'binary');
+                }
+                
                 selloDigital = buffer.toString('base64');
-                console.log('✅ NODECFDI: Conversión forzada a base64 exitosa');
+                console.log('✅ NODECFDI: Conversión fallback a base64 exitosa');
             }
             
             // Validación final del base64
