@@ -1732,109 +1732,169 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 CFDI Dashboard Enhanced - Inicializando...');
             
+            // 🚨 FIX CRÍTICO: Verificar autenticación primero
+            const token = StorageUtils.getToken();
+            if (!token) {
+                console.log('❌ No hay token de autenticación, redirigiendo a login');
+                window.location.href = '/login.html';
+                return;
+            }
+            
             // 🚨 FIX CRÍTICO: Limpiar localStorage de emisores al inicio para evitar columnas incorrectas
             console.log('🗑️ LIMPIEZA PROACTIVA: Eliminando datos antiguos de emisores con columnas incorrectas');
             localStorage.removeItem('emisores');
             console.log('✅ localStorage de emisores limpiado proactivamente');
             
-            // 🔧 FIX CRÍTICO: Usar directamente las funciones correctas sin depender de CFDIDashboardMain
-            setTimeout(async () => {
-                try {
-                    console.log('🚀 CFDI Dashboard - Inicialización directa con funciones correctas...');
-                    
-                    // ✅ SOLUCIÓN DEFINITIVA: Usar directamente cargarEmisoresDesdeBackend() + mostrarEmisores()
-                    console.log('🚨 CORRECCIÓN DEFINITIVA: Cargando emisores desde backend con función correcta');
-                    
-                    // Cargar emisores desde backend (datos actualizados)
-                    const emisores = await cargarEmisoresDesdeBackend();
-                    
-                    if (emisores && emisores.length > 0) {
-                        console.log('✅ Emisores cargados desde backend en inicialización:', emisores.length);
-                        console.log('📊 VERIFICACIÓN: Datos del primer emisor:', {
-                            nombre: emisores[0].nombre,
-                            estado_csd: emisores[0].estado_csd,
-                            numero_certificado: emisores[0].numero_certificado,
-                            vigencia_hasta: emisores[0].vigencia_hasta
-                        });
-                        
-                        // ✅ Usar mostrarEmisores() que es la función correcta
-                        console.log('🚨 USANDO mostrarEmisores() - Función correcta con columnas completas');
-                        mostrarEmisores(emisores);
-                    } else {
-                        console.log('📋 No hay emisores para mostrar');
-                        // 🚨 FIX CRÍTICO: NO usar displayEmisoresEmpty que muestra columnas incorrectas
-                        console.log('🚨 CORRECCIÓN: NO se usará displayEmisoresEmpty para evitar columnas incorrectas');
-                        mostrarEmisores([]); // Usar mostrarEmisores con array vacío
-                    }
-                    
-                    // Cargar XMLs también
-                    const xmls = StorageUtils.getXMLs();
-                    if (xmls.length > 0) {
-                        displayXMLsSimple(xmls);
-                    } else {
-                        displayEmptyState();
-                    }
-                    
-                    console.log('🎉 Dashboard inicializado correctamente con datos del backend!');
-                    
-                } catch (error) {
-                    console.error('❌ Error en inicialización directa:', error);
-                    // Solo como último recurso usar fallback
-                    console.log('🔄 Usando fallback como último recurso...');
-                    await loadFallbackData();
+            // 🔧 FIX CRÍTICO: Inicialización inmediata y robusta
+            try {
+                console.log('🚀 CFDI Dashboard - Inicialización inmediata...');
+                
+                // 1. Cargar emisores desde backend primero
+                console.log('📡 Cargando emisores desde backend...');
+                const emisores = await cargarEmisoresDesdeBackend();
+                
+                if (emisores && emisores.length > 0) {
+                    console.log('✅ Emisores cargados:', emisores.length);
+                    mostrarEmisores(emisores);
+                } else {
+                    console.log('📋 No hay emisores, mostrando estado vacío');
+                    mostrarEmisores([]);
                 }
-            }, 500); // Wait 500ms for modules to load
+                
+                // 2. Cargar XMLs desde backend
+                console.log('📡 Cargando XMLs desde backend...');
+                await cargarXMLsDesdeBackend();
+                
+                // 3. Mostrar XMLs
+                const xmls = StorageUtils.getXMLs();
+                if (xmls && xmls.length > 0) {
+                    console.log('✅ XMLs cargados:', xmls.length);
+                    displayXMLsSimple(xmls);
+                } else {
+                    console.log('📋 No hay XMLs, mostrando estado vacío');
+                    displayEmptyState();
+                }
+                
+                // 4. Configurar listeners de eventos
+                setupEventListeners();
+                
+                console.log('🎉 Dashboard inicializado correctamente!');
+                
+            } catch (error) {
+                console.error('❌ Error en inicialización:', error);
+                // Fallback con datos locales
+                console.log('🔄 Usando fallback con datos locales...');
+                await loadFallbackData();
+            }
         });
+        
+        // Nueva función para cargar XMLs desde backend
+        async function cargarXMLsDesdeBackend() {
+            try {
+                const token = StorageUtils.getToken();
+                if (!token) {
+                    console.log('❌ No hay token para cargar XMLs');
+                    return [];
+                }
+                
+                const response = await fetch('/api/xmls', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const xmls = data.xmls || [];
+                    console.log('✅ XMLs cargados desde backend:', xmls.length);
+                    StorageUtils.setXMLs(xmls);
+                    return xmls;
+                } else {
+                    console.log('❌ Error al cargar XMLs desde backend:', response.status);
+                    return StorageUtils.getXMLs();
+                }
+            } catch (error) {
+                console.error('❌ Error al cargar XMLs:', error);
+                return StorageUtils.getXMLs();
+            }
+        }
+        
+        // Nueva función para configurar listeners de eventos
+        function setupEventListeners() {
+            console.log('🔧 Configurando listeners de eventos...');
+            
+            // Configurar listeners para modales
+            setupCSDFileListeners();
+            setupXMLFileListeners();
+            
+            // Configurar listeners para tabs
+            const tabLinks = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
+            tabLinks.forEach(link => {
+                link.addEventListener('shown.bs.tab', function(e) {
+                    const target = e.target.getAttribute('href');
+                    if (target === '#emisoresTab') {
+                        // Recargar emisores cuando se cambie a la tab
+                        setTimeout(async () => {
+                            const emisores = await cargarEmisoresDesdeBackend();
+                            mostrarEmisores(emisores || []);
+                        }, 100);
+                    } else if (target === '#xmlsTab') {
+                        // Recargar XMLs cuando se cambie a la tab
+                        setTimeout(async () => {
+                            await cargarXMLsDesdeBackend();
+                            const xmls = StorageUtils.getXMLs();
+                            displayXMLsSimple(xmls || []);
+                        }, 100);
+                    }
+                });
+            });
+            
+            console.log('✅ Listeners configurados correctamente');
+        }
         
         // Fallback function to load data manually
         async function loadFallbackData() {
             console.log('🔄 Loading data with fallback method...');
             
             try {
-                // Load XMLs using StorageUtils
+                // Try to load from localStorage first
                 const xmls = StorageUtils.getXMLs();
-                console.log('📄 XMLs loaded from localStorage:', xmls.length);
                 
-                // 🔧 FIX CRÍTICO: Cargar emisores desde BACKEND, NO localStorage
-                console.log('🚨 CORRECCIÓN FALLBACK: Cargando emisores desde backend en lugar de localStorage');
-                
-                let emisores = [];
-                try {
-                    // Intentar cargar desde backend
-                    emisores = await cargarEmisoresDesdeBackend();
-                    console.log('✅ Emisores cargados desde backend en fallback:', emisores.length);
-                } catch (backendError) {
-                    console.error('❌ Error cargando desde backend en fallback:', backendError);
-                    // 🚨 FIX CRÍTICO: NO usar localStorage para emisores (datos antiguos con columnas incorrectas)
-                    console.log('🚨 CORRECCIÓN: Limpiando localStorage de emisores - puede contener datos con columnas incorrectas');
-                    
-                    // Limpiar localStorage de emisores para evitar datos con columnas incorrectas
-                    localStorage.removeItem('emisores');
-                    console.log('🗑️ localStorage de emisores limpiado para evitar columnas incorrectas');
-                    
-                    emisores = []; // Array vacío en lugar de datos antiguos
-                }
-                
-                // Display XMLs and emisores
                 if (xmls.length > 0) {
+                    console.log('✅ Mostrando XMLs desde localStorage:', xmls.length);
                     displayXMLsSimple(xmls);
                 } else {
+                    console.log('📋 No hay XMLs en localStorage');
                     displayEmptyState();
                 }
                 
-                if (emisores && emisores.length > 0) {
-                    // 🔧 FIX CRÍTICO: Usar mostrarEmisores() para consistencia
-                    console.log('🚨 CORRECCIÓN FALLBACK: Usando mostrarEmisores() con datos del backend');
-                    mostrarEmisores(emisores);
-                } else {
-                    // 🚨 FIX CRÍTICO: NO usar displayEmisoresEmpty que muestra columnas incorrectas
-                    console.log('🚨 CORRECCIÓN: NO se usará displayEmisoresEmpty para evitar columnas incorrectas');
-                    mostrarEmisores([]); // Usar mostrarEmisores con array vacío
+                // Para emisores, siempre intentar cargar desde backend
+                try {
+                    const emisores = await cargarEmisoresDesdeBackend();
+                    if (emisores && emisores.length > 0) {
+                        console.log('✅ Emisores cargados desde backend en fallback:', emisores.length);
+                        mostrarEmisores(emisores);
+                    } else {
+                        console.log('📋 No hay emisores en backend');
+                        mostrarEmisores([]);
+                    }
+                } catch (error) {
+                    console.error('❌ Error cargando emisores en fallback:', error);
+                    mostrarEmisores([]);
                 }
                 
+                // Configurar listeners
+                setupEventListeners();
+                
+                console.log('✅ Datos de fallback cargados correctamente');
+                
             } catch (error) {
-                console.error('❌ Error in fallback loading:', error);
+                console.error('❌ Error crítico en fallback:', error);
+                // Show empty states as last resort
                 displayEmptyState();
+                mostrarEmisores([]);
             }
         }
         
