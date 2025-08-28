@@ -737,8 +737,12 @@
                 
                 // Extraer conceptos usando regex
                 const conceptoMatches = xmlContent.match(/<cfdi:Concepto[^>]*>/g) || [];
+                console.log('🔍 DEBUG: conceptoMatches encontrados:', conceptoMatches.length);
+                console.log('🔍 DEBUG: conceptoMatches array:', conceptoMatches);
                 
                 conceptoMatches.forEach((match, index) => {
+                    console.log(`🔍 DEBUG: Procesando match ${index + 1}:`, match);
+                    
                     const concepto = {
                         id: Date.now() + index,
                         cantidad: match.match(/Cantidad="([^"]*)"/)?.[1] || '1',
@@ -761,6 +765,13 @@
                             importe: 0
                         }
                     };
+                    
+                    console.log(`🔍 DEBUG: Concepto ${index + 1} extraído:`, {
+                        descripcion: concepto.descripcion,
+                        importe: concepto.importe,
+                        valorUnitario: concepto.valorUnitario,
+                        cantidad: concepto.cantidad
+                    });
                     
                     // Calcular impuesto de forma segura
                     const baseImponible = (concepto.importe || 0) - (concepto.descuento || 0);
