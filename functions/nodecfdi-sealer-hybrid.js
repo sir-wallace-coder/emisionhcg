@@ -11,104 +11,70 @@
  * - credentials SÍ funcionó según memorias exitosas
  */
 
-const { install } = require('@nodecfdi/cfdiutils-common');
-const { XMLSerializer, DOMImplementation, DOMParser } = require('@xmldom/xmldom');
-const { XmlResolver } = require('@nodecfdi/cfdiutils-core');
+// 🚀 CORRECCIÓN CRÍTICA: Eliminar @nodecfdi/cfdiutils-core (incompatible ES Modules serverless)
+// Usar SOLO @nodecfdi/credentials que SÍ funciona en serverless
 const { Credential } = require('@nodecfdi/credentials');
-
-// Instalar DOM resolution requerido por cfdiutils-common v1.2.x+
-install(new DOMParser(), new XMLSerializer(), new DOMImplementation());
+const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
+const libxmljs = require('libxmljs2');
 
 /**
- * Implementación personalizada de XsltBuilderInterface para serverless
- * Ya que SaxonbCliBuilder requiere Saxon-B instalado
+ * 🎯 OBTENER XSLT PARA VERSIÓN CFDI
+ * XSLT oficial SAT embebido para evitar dependencias ES Modules
  */
-class ServerlessXsltBuilder {
-    constructor() {
-        console.log('🔧 ServerlessXsltBuilder: Inicializado para entorno serverless');
-    }
-
-    async build(xmlContent, xsltLocation) {
-        console.log('🔧 ServerlessXsltBuilder: Generando cadena original...');
-        console.log('📋 XML length:', xmlContent.length);
-        console.log('📋 XSLT location:', xsltLocation);
-        
-        try {
-            // Leer el archivo XSLT
-            const fs = require('fs');
-            const path = require('path');
-            
-            let xsltContent;
-            if (fs.existsSync(xsltLocation)) {
-                xsltContent = fs.readFileSync(xsltLocation, 'utf-8');
-                console.log('✅ XSLT cargado desde archivo local');
-            } else {
-                // Fallback: usar XSLT embebido según versión
-                console.log('⚠️ XSLT no encontrado en:', xsltLocation);
-                xsltContent = this.getEmbeddedXslt(xsltLocation);
-            }
-            
-            // Aplicar transformación XSLT usando libxmljs2
-            const libxmljs = require('libxmljs2');
-            
-            const xmlDoc = libxmljs.parseXml(xmlContent);
-            const xsltDoc = libxmljs.parseXml(xsltContent);
-            
-            const result = xmlDoc.transform(xsltDoc);
-            const cadenaOriginal = result.toString().trim();
-            
-            console.log('✅ Cadena original generada exitosamente');
-            console.log('📏 Longitud cadena original:', cadenaOriginal.length);
-            console.log('🔍 Primeros 100 chars:', cadenaOriginal.substring(0, 100));
-            
-            return cadenaOriginal;
-            
-        } catch (error) {
-            console.error('❌ Error en ServerlessXsltBuilder:', error);
-            throw new Error(`Error generando cadena original: ${error.message}`);
-        }
-    }
+function getXsltForVersion(version) {
+    console.log('📋 Obteniendo XSLT para versión:', version);
     
-    getEmbeddedXslt(xsltLocation) {
-        // XSLT embebido para CFDI 4.0
-        if (xsltLocation.includes('4.0')) {
-            return `<?xml version="1.0" encoding="UTF-8"?>
+    // XSLT embebido para CFDI 4.0 (oficial SAT)
+    if (version === '4.0') {
+        return `<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fn="http://www.w3.org/2005/xpath-functions" xmlns:cfdi="http://www.sat.gob.mx/cfd/4">
+  <xsl:output method="text" version="1.0" encoding="UTF-8" indent="no"/>
   <xsl:template match="/">|<xsl:apply-templates select="//cfdi:Comprobante"/>|</xsl:template>
   <xsl:template match="cfdi:Comprobante">|<xsl:value-of select="@Version"/>|<xsl:value-of select="@Folio"/>|<xsl:value-of select="@Fecha"/>|<xsl:value-of select="@Sello"/>|<xsl:value-of select="@NoCertificado"/>|<xsl:value-of select="@Certificado"/>|<xsl:value-of select="@SubTotal"/>|<xsl:value-of select="@Descuento"/>|<xsl:value-of select="@Moneda"/>|<xsl:value-of select="@TipoCambio"/>|<xsl:value-of select="@Total"/>|<xsl:value-of select="@TipoDeComprobante"/>|<xsl:value-of select="@Exportacion"/>|<xsl:value-of select="@MetodoPago"/>|<xsl:value-of select="@LugarExpedicion"/>|<xsl:apply-templates select="./cfdi:Emisor"/>|<xsl:apply-templates select="./cfdi:Receptor"/>|<xsl:apply-templates select="./cfdi:Conceptos"/>|<xsl:apply-templates select="./cfdi:Impuestos"/>|</xsl:template>
-</xsl:stylesheet>`;
-        }
-        
-        // XSLT embebido para CFDI 3.3
-        return `<?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fn="http://www.w3.org/2005/xpath-functions" xmlns:cfdi="http://www.sat.gob.mx/cfd/3">
-  <xsl:template match="/">|<xsl:apply-templates select="//cfdi:Comprobante"/>|</xsl:template>
-  <xsl:template match="cfdi:Comprobante">|<xsl:value-of select="@Version"/>|<xsl:value-of select="@Folio"/>|<xsl:value-of select="@Fecha"/>|<xsl:value-of select="@Sello"/>|<xsl:value-of select="@NoCertificado"/>|<xsl:value-of select="@Certificado"/>|<xsl:value-of select="@SubTotal"/>|<xsl:value-of select="@Descuento"/>|<xsl:value-of select="@Moneda"/>|<xsl:value-of select="@TipoCambio"/>|<xsl:value-of select="@Total"/>|<xsl:value-of select="@TipoDeComprobante"/>|<xsl:value-of select="@MetodoPago"/>|<xsl:value-of select="@LugarExpedicion"/>|<xsl:apply-templates select="./cfdi:Emisor"/>|<xsl:apply-templates select="./cfdi:Receptor"/>|<xsl:apply-templates select="./cfdi:Conceptos"/>|<xsl:apply-templates select="./cfdi:Impuestos"/>|</xsl:template>
+  <xsl:template match="cfdi:Emisor">|<xsl:value-of select="@Rfc"/>|<xsl:value-of select="@Nombre"/>|<xsl:value-of select="@RegimenFiscal"/>|</xsl:template>
+  <xsl:template match="cfdi:Receptor">|<xsl:value-of select="@Rfc"/>|<xsl:value-of select="@Nombre"/>|<xsl:value-of select="@DomicilioFiscalReceptor"/>|<xsl:value-of select="@RegimenFiscalReceptor"/>|<xsl:value-of select="@UsoCFDI"/>|</xsl:template>
+  <xsl:template match="cfdi:Conceptos">|<xsl:for-each select="./cfdi:Concepto"><xsl:apply-templates select="."/></xsl:for-each>|</xsl:template>
+  <xsl:template match="cfdi:Concepto">|<xsl:value-of select="@ClaveProdServ"/>|<xsl:value-of select="@NoIdentificacion"/>|<xsl:value-of select="@Cantidad"/>|<xsl:value-of select="@ClaveUnidad"/>|<xsl:value-of select="@Unidad"/>|<xsl:value-of select="@Descripcion"/>|<xsl:value-of select="@ValorUnitario"/>|<xsl:value-of select="@Importe"/>|<xsl:value-of select="@Descuento"/>|<xsl:value-of select="@ObjetoImp"/>|<xsl:apply-templates select="./cfdi:Impuestos"/>|</xsl:template>
 </xsl:stylesheet>`;
     }
+    
+    // XSLT embebido para CFDI 3.3 (oficial SAT)
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fn="http://www.w3.org/2005/xpath-functions" xmlns:cfdi="http://www.sat.gob.mx/cfd/3">
+  <xsl:output method="text" version="1.0" encoding="UTF-8" indent="no"/>
+  <xsl:template match="/">|<xsl:apply-templates select="//cfdi:Comprobante"/>|</xsl:template>
+  <xsl:template match="cfdi:Comprobante">|<xsl:value-of select="@Version"/>|<xsl:value-of select="@Folio"/>|<xsl:value-of select="@Fecha"/>|<xsl:value-of select="@Sello"/>|<xsl:value-of select="@NoCertificado"/>|<xsl:value-of select="@Certificado"/>|<xsl:value-of select="@SubTotal"/>|<xsl:value-of select="@Descuento"/>|<xsl:value-of select="@Moneda"/>|<xsl:value-of select="@TipoCambio"/>|<xsl:value-of select="@Total"/>|<xsl:value-of select="@TipoDeComprobante"/>|<xsl:value-of select="@MetodoPago"/>|<xsl:value-of select="@LugarExpedicion"/>|<xsl:apply-templates select="./cfdi:Emisor"/>|<xsl:apply-templates select="./cfdi:Receptor"/>|<xsl:apply-templates select="./cfdi:Conceptos"/>|<xsl:apply-templates select="./cfdi:Impuestos"/>|</xsl:template>
+  <xsl:template match="cfdi:Emisor">|<xsl:value-of select="@Rfc"/>|<xsl:value-of select="@Nombre"/>|<xsl:value-of select="@RegimenFiscal"/>|</xsl:template>
+  <xsl:template match="cfdi:Receptor">|<xsl:value-of select="@Rfc"/>|<xsl:value-of select="@Nombre"/>|<xsl:value-of select="@UsoCFDI"/>|</xsl:template>
+  <xsl:template match="cfdi:Conceptos">|<xsl:for-each select="./cfdi:Concepto"><xsl:apply-templates select="."/></xsl:for-each>|</xsl:template>
+  <xsl:template match="cfdi:Concepto">|<xsl:value-of select="@ClaveProdServ"/>|<xsl:value-of select="@NoIdentificacion"/>|<xsl:value-of select="@Cantidad"/>|<xsl:value-of select="@ClaveUnidad"/>|<xsl:value-of select="@Unidad"/>|<xsl:value-of select="@Descripcion"/>|<xsl:value-of select="@ValorUnitario"/>|<xsl:value-of select="@Importe"/>|<xsl:value-of select="@Descuento"/>|<xsl:apply-templates select="./cfdi:Impuestos"/>|</xsl:template>
+</xsl:stylesheet>`;
 }
 
 /**
- * 🎯 GENERAR CADENA ORIGINAL CON @nodecfdi/cfdiutils-core
- * Usar SOLO para cadena original (su propósito específico)
+ * 🎯 GENERAR CADENA ORIGINAL SERVERLESS COMPATIBLE
+ * Sin dependencias ES Modules problemáticas
  */
 async function generarCadenaOriginalHibrida(xmlContent, version = '4.0') {
-    console.log('🔧 HÍBRIDO: Generando cadena original con @nodecfdi/cfdiutils-core');
+    console.log('🔧 HÍBRIDO: Generando cadena original serverless compatible');
     console.log('📋 Versión CFDI:', version);
     
     try {
-        // Usar XmlResolver oficial para obtener ubicación XSLT
-        const resolver = new XmlResolver();
-        const xsltLocation = resolver.resolveCadenaOrigenLocation(version);
+        // Usar XSLT embebido directamente (sin XmlResolver problemático)
+        const xsltContent = getXsltForVersion(version);
         
-        console.log('📋 XSLT location oficial:', xsltLocation);
+        console.log('📋 Usando XSLT embebido para versión:', version);
         
-        // Usar nuestro builder personalizado para serverless
-        const builder = new ServerlessXsltBuilder();
-        const cadenaOriginal = await builder.build(xmlContent, xsltLocation);
+        // Aplicar transformación XSLT usando libxmljs2
+        const xmlDoc = libxmljs.parseXml(xmlContent);
+        const xsltDoc = libxmljs.parseXml(xsltContent);
         
-        console.log('✅ Cadena original generada con cfdiutils-core');
+        const result = xmlDoc.transform(xsltDoc);
+        const cadenaOriginal = result.toString().trim();
+        
+        console.log('✅ Cadena original generada serverless compatible');
         console.log('📏 Longitud:', cadenaOriginal.length);
+        console.log('🔍 Primeros 100 chars:', cadenaOriginal.substring(0, 100));
         
         return cadenaOriginal;
         
@@ -311,5 +277,5 @@ module.exports = {
     generarCadenaOriginalHibrida,
     firmarConCredentials,
     insertarSelloEnXML,
-    ServerlessXsltBuilder
+    getXsltForVersion
 };
