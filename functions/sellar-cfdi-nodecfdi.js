@@ -3,9 +3,10 @@
  * Netlify Function para sellado local con @nodecfdi/credentials
  */
 
-// const { sellarCFDINodeCfdi } = require('./nodecfdi-sealer'); // Deshabilitado por incompatibilidad ES Modules
-// const { sellarCFDINodeCfdiFallback } = require('./nodecfdi-sealer-fallback'); // Reemplazado por implementación correcta
-const { sellarCFDIConCfdiUtilsCore } = require('./nodecfdi-sealer-proper');
+// 🚀 CORRECCIÓN QUIRÚRGICA: Usar sellador híbrido con librerías correctas
+// - @nodecfdi/cfdiutils-core → SOLO cadena original
+// - @nodecfdi/credentials → Firmado digital y manejo CSD
+const { sellarCFDIHibrido } = require('./nodecfdi-sealer-hybrid');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
 
@@ -339,9 +340,9 @@ exports.handler = async (event, context) => {
         console.log('\n🔐 INICIANDO SELLADO CON NODECFDI...');
         let resultado;
         
-        // Usar @nodecfdi/cfdiutils-core correctamente (compatible serverless)
-        console.log('🔄 Usando sellado con @nodecfdi/cfdiutils-core (versión correcta)...');
-        resultado = await sellarCFDIConCfdiUtilsCore(
+        // 🚀 USAR SELLADOR HÍBRIDO CON LIBRERÍAS CORRECTAS
+        console.log('🔄 Usando sellado híbrido (cfdiutils-core + credentials)...');
+        resultado = await sellarCFDIHibrido(
             xmlData.xml_content,
             emisor.certificado_cer,
             emisor.certificado_key,
