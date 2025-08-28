@@ -142,12 +142,30 @@ exports.handler = async (event, context) => {
         const userData = verificarToken(event.headers.authorization);
         console.log('👤 Usuario autenticado:', userData.email);
         
+        // 🔧 DEBUG CRÍTICO: Verificar qué recibe el endpoint NodeCfdi
+        console.log('🔍 DEBUG NODECFDI: event.body RAW:', event.body);
+        
         // Parsear body - compatible con ambos formatos
         const requestBody = JSON.parse(event.body);
+        console.log('🔍 DEBUG NODECFDI: requestBody parseado:', JSON.stringify(requestBody, null, 2));
+        
         const { xmlContent, xmlId, emisorId, version = '4.0' } = requestBody;
+        
+        console.log('🔍 DEBUG NODECFDI: Parámetros extraídos:', {
+            xmlContent_presente: !!xmlContent,
+            xmlId_presente: !!xmlId,
+            emisorId_valor: emisorId,
+            emisorId_tipo: typeof emisorId,
+            version_valor: version
+        });
         
         // Verificar que tenemos los parámetros necesarios
         if (!emisorId) {
+            console.error('❌ DEBUG NODECFDI: emisorId es falsy:', {
+                emisorId_valor: emisorId,
+                emisorId_tipo: typeof emisorId,
+                requestBody_completo: requestBody
+            });
             return {
                 statusCode: 400,
                 headers,
