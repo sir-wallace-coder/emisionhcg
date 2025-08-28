@@ -977,7 +977,7 @@ function generarHtmlRedocIdentico(xmlData, emisorData = {}) {
         
         <!-- Receptor -->
         <div class="receptor-section">
-            <div class="receptor-titulo">DATOS DEL CLIENTE</div>
+            <div class="receptor-titulo">DATOS DEL RECEPTOR</div>
             <div class="receptor-datos">
                 <div>
                     <div class="campo"><strong>Nombre:</strong> ${xmlData.receptor_nombre}</div>

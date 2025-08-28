@@ -2318,12 +2318,12 @@
                                 <button class="btn btn-sm btn-outline-primary" onclick="generarPDF('${xml.id}')" title="Generar PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </button>
-                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' || xml.estado === 'cancelado' ? `
                                     <button class="btn btn-sm btn-outline-warning" onclick="editarXML('${xml.id}')" title="Editar XML">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 ` : ''}
-                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' || xml.estado === 'cancelado' ? `
                                     <button class="btn btn-sm btn-outline-info" onclick="sellarXML('${xml.id}')" title="Sellar XML">
                                         <i class="fas fa-stamp"></i>
                                     </button>
@@ -2448,12 +2448,12 @@
                                 <button type="button" class="btn btn-success" onclick="descargarXML('${xml.id}')">
                                     <i class="fas fa-download"></i> Descargar XML
                                 </button>
-                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' || xml.estado === 'cancelado' ? `
                                     <button type="button" class="btn btn-warning" onclick="editarXML('${xml.id}')">
                                         <i class="fas fa-edit"></i> Editar
                                     </button>
                                 ` : ''}
-                                ${xml.estado === 'generado' || xml.estado === 'importado' ? `
+                                ${xml.estado === 'generado' || xml.estado === 'importado' || xml.estado === 'cancelado' ? `
                                     <button type="button" class="btn btn-primary" onclick="sellarXML('${xml.id}')">
                                         <i class="fas fa-stamp"></i> Sellar
                                     </button>
