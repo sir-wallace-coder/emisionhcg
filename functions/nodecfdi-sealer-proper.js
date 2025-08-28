@@ -123,8 +123,20 @@ async function firmarCadenaOriginal(cadenaOriginal, certificadoBase64, llavePriv
         console.log('📏 Longitud sello:', signature.length);
         console.log('📋 Número certificado:', numeroCertificado);
         
+        // 🔍 DEBUG DETALLADO DEL SELLO NODECFDI
+        console.log('🔍 NODECFDI DEBUG DETALLADO:');
+        console.log('- Tipo sello:', typeof signature);
+        console.log('- Es Buffer:', Buffer.isBuffer(signature));
+        console.log('- Longitud:', signature.length);
+        console.log('- Primeros 10 bytes:', signature.subarray(0, 10));
+        
+        // Convertir sello binario a Base64 (formato requerido para XML)
+        const selloBase64 = Buffer.isBuffer(signature) ? signature.toString('base64') : signature;
+        console.log('✅ Conversión Buffer → base64 exitosa');
+        console.log('🔍 Base64 generado (primeros 50 chars):', selloBase64.substring(0, 50));
+        
         return {
-            sello: signature,
+            sello: selloBase64,  // ✅ BASE64 VÁLIDO
             numeroCertificado,
             certificadoBase64
         };
