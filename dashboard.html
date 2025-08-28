@@ -1918,9 +1918,11 @@
                                 <button class="btn btn-sm btn-outline-primary" onclick="generarPDF('${xml.id}')" title="Generar PDF">
                                     <i class="fas fa-file-pdf"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-warning" onclick="editarXML('${xml.id}')" title="Editar XML">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+                                ${xml.estado !== 'sellado' ? `
+                                    <button class="btn btn-sm btn-outline-warning" onclick="editarXML('${xml.id}')" title="Editar XML">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                ` : ''}
                                 ${xml.estado !== 'sellado' ? `
                                     <button class="btn btn-sm btn-outline-info" onclick="sellarXML('${xml.id}')" title="Sellar XML">
                                         <i class="fas fa-stamp"></i>
@@ -2195,18 +2197,14 @@
             console.log('✏️ Editando XML:', xmlId);
             
             try {
-                // Cargar XML desde localStorage o BD
+                // Verificar que el XML no esté sellado antes de permitir edición
                 let xml = null;
                 
                 // Primero intentar desde localStorage
                 const xmlsData = localStorage.getItem('xmls_generados');
                 if (xmlsData) {
                     const xmls = JSON.parse(xmlsData);
-                    // 🔧 FIX CRÍTICO: Priorizar XML sellado
-                    const xmlsConMismoId = xmls.filter(x => x.id === xmlId);
-                    const xmlSellado = xmlsConMismoId.find(x => x.estado === "sellado");
-                    xml = xmlSellado || xmlsConMismoId.find(x => x.estado === "importado") || xmlsConMismoId[0];
-                    console.log("🔍 DEBUG: XML seleccionado -", xml ? xml.estado : "no encontrado", "con sello:", xml && xml.sello ? "Sí" : "No");
+                    xml = xmls.find(x => x.id === xmlId);
                 }
                 
                 // Si no se encuentra y hay usuario autenticado, cargar desde BD
@@ -2234,8 +2232,28 @@
                     return;
                 }
                 
-                // Mostrar modal de edición
-                mostrarModalEditarXML(xml);
+                // Verificar que el XML no esté sellado
+                if (xml.estado === 'sellado') {
+                    alert('⚠️ No se puede editar un XML que ya está sellado');
+                    return;
+                }
+                
+                console.log('📝 Redirigiendo a pantalla de edición con datos:', {
+                    id: xml.id,
+                    emisor: xml.emisor_rfc,
+                    receptor: xml.receptor_rfc,
+                    total: xml.total
+                });
+                
+                // Guardar datos del XML en sessionStorage para pre-poblar el formulario
+                sessionStorage.setItem('xml_editando', JSON.stringify({
+                    id: xml.id,
+                    modo: 'edicion',
+                    datos: xml
+                }));
+                
+                // Redirigir a la pantalla de creación/edición
+                window.location.href = 'generator.html?modo=edicion&id=' + xmlId;
                 
             } catch (error) {
                 console.error('❌ Error cargando XML para edición:', error);
