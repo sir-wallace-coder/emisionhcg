@@ -20,7 +20,7 @@ const FormData = require('form-data');
 const EXTERNAL_SEALER_CONFIG = {
     // URLs del servicio externo - consulta.click (endpoints reales)
     loginUrl: process.env.EXTERNAL_SEALER_LOGIN_URL || 'https://consulta.click/api/login',
-    sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://consulta.click/api/v1/cfdi-sellar',
+    sellarUrl: process.env.EXTERNAL_SEALER_URL || 'https://consulta.click/api/v1/sellado',
     
     // Credenciales para login - consulta.click usa email
     email: process.env.EXTERNAL_SEALER_EMAIL || 'admin@cfdi.test',
