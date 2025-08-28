@@ -712,7 +712,7 @@
                 
                 // Actualizar totales
                 setTimeout(() => {
-                    calcularTotales();
+                    actualizarTotales();
                 }, 500);
                 
                 console.log('✅ Formulario pre-poblado exitosamente');
@@ -745,20 +745,26 @@
                         claveUnidad: match.match(/ClaveUnidad="([^"]*)"/)?.[1] || 'H87',
                         unidad: match.match(/Unidad="([^"]*)"/)?.[1] || 'Pieza',
                         claveProdServ: match.match(/ClaveProdServ="([^"]*)"/)?.[1] || '01010101',
+                        claveProdServNombre: 'Producto/Servicio',
+                        claveProducto: match.match(/ClaveProdServ="([^"]*)"/)?.[1] || '01010101',
                         noIdentificacion: match.match(/NoIdentificacion="([^"]*)"/)?.[1] || '',
                         descripcion: match.match(/Descripcion="([^"]*)"/)?.[1] || '',
-                        valorUnitario: parseFloat(match.match(/ValorUnitario="([^"]*)"/)?.[1] || '0'),
-                        importe: parseFloat(match.match(/Importe="([^"]*)"/)?.[1] || '0'),
-                        descuento: parseFloat(match.match(/Descuento="([^"]*)"/)?.[1] || '0'),
+                        valorUnitario: parseFloat(match.match(/ValorUnitario="([^"]*)"/)?.[1] || '0') || 0,
+                        importe: parseFloat(match.match(/Importe="([^"]*)"/)?.[1] || '0') || 0,
+                        descuento: parseFloat(match.match(/Descuento="([^"]*)"/)?.[1] || '0') || 0,
                         objetoImp: match.match(/ObjetoImp="([^"]*)"/)?.[1] || '02',
-                        impuesto: '002', // IVA por defecto
-                        tipoFactor: 'Tasa',
-                        tasaOCuota: '0.160000',
-                        impuestoImporte: 0
+                        impuesto: {
+                            codigo: '002',
+                            nombre: 'IVA',
+                            tasa: 0.16,
+                            tipoFactor: 'Tasa',
+                            importe: 0
+                        }
                     };
                     
-                    // Calcular impuesto
-                    concepto.impuestoImporte = (concepto.importe - concepto.descuento) * 0.16;
+                    // Calcular impuesto de forma segura
+                    const baseImponible = (concepto.importe || 0) - (concepto.descuento || 0);
+                    concepto.impuesto.importe = baseImponible * (concepto.impuesto.tasa || 0.16);
                     
                     conceptos.push(concepto);
                 });
@@ -1226,10 +1232,10 @@
                     ${concepto.impuesto ? `
                         <div class="form-row">
                             <div class="form-group">
-                                <strong>Impuesto:</strong> ${concepto.impuesto.nombre} (${(concepto.impuesto.tasa * 100).toFixed(0)}%)
+                                <strong>Impuesto:</strong> ${concepto.impuesto.nombre || 'IVA'} (${((concepto.impuesto.tasa || 0.16) * 100).toFixed(0)}%)
                             </div>
                             <div class="form-group">
-                                <strong>Importe Impuesto:</strong> $${concepto.impuesto.importe.toFixed(2)}
+                                <strong>Importe Impuesto:</strong> $${(concepto.impuesto.importe || 0).toFixed(2)}
                             </div>
                         </div>
                     ` : ''}
