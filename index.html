@@ -13,17 +13,18 @@
             --accent-color: #06b6d4;
             --success-color: #10b981;
             --warning-color: #f59e0b;
-            --danger-color: #ef4444;
+            --error-color: #ef4444;
             --dark-color: #1f2937;
             --light-color: #f8fafc;
-            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --gradient-primary: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            --gradient-accent: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04);
+            --shadow-2xl: 0 25px 50px rgba(0,0,0,0.25);
         }
         
         * { 
@@ -32,12 +33,14 @@
             box-sizing: border-box; 
         }
         
-        body { 
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: var(--gradient-secondary);
-            min-height: 100vh;
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gradient-bg);
+            background-attachment: fixed;
+            color: white;
             overflow-x: hidden;
-            line-height: 1.6;
         }
         
         /* Corporate Header */
@@ -277,31 +280,34 @@
         
         /* Features Grid */
         .features-section {
-            margin: 60px 0;
+            margin: 80px 0;
+            text-align: center;
         }
         
-        .features-title {
-            color: #2c3e50;
-            font-size: 2.2rem;
-            font-weight: 700;
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
             margin-bottom: 50px;
-            text-align: center;
+            background: linear-gradient(135deg, #fff 0%, #e2e8f0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 40px;
-            margin-bottom: 60px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
         }
         
         .feature-card {
-            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
             border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            transition: all 0.4s ease;
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 40px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
@@ -313,8 +319,8 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.5s ease;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.6s ease;
         }
         
         .feature-card:hover::before {
@@ -322,30 +328,29 @@
         }
         
         .feature-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-2xl);
+            border-color: rgba(255, 255, 255, 0.4);
         }
         
         .feature-icon {
-            font-size: 3.5rem;
-            margin-bottom: 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 3rem;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));
         }
         
-        .feature-title {
+        .feature-card h3 {
+            font-size: 1.5rem;
             font-weight: 700;
-            color: #2c3e50;
             margin-bottom: 15px;
-            font-size: 1.3rem;
+            color: white;
         }
         
-        .feature-desc {
-            color: #6c757d;
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.8);
             font-size: 1rem;
             line-height: 1.6;
+            margin: 0;
         }
         
         /* CTA Buttons */
@@ -403,6 +408,36 @@
             padding: 1.25rem 2.5rem;
             font-size: 1.125rem;
             font-weight: 700;
+        }
+        
+        .btn-header {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-header-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-header-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-header:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
         
         /* Stats Section */
@@ -473,7 +508,19 @@
     <header class="header" id="header">
         <div class="header-container">
             <div class="logo-section">
-                <div class="logo-icon">🏢</div>
+                <div class="logo-icon">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                        <rect width="40" height="40" rx="12" fill="url(#logoGradient)"/>
+                        <path d="M10 30V10H16C19 10 21 12 21 15C21 16.5 20.2 17.8 19 18.2C20.5 18.6 21.5 20 21.5 21.5C21.5 24.5 19.5 26.5 16.5 26.5H12V30H10ZM12 17H16C17 17 18 16 18 15C18 14 17 13 16 13H12V17ZM12 24.5H16.5C18 24.5 19.5 23 19.5 21.5C19.5 20 18 18.5 16.5 18.5H12V24.5Z" fill="white"/>
+                        <path d="M24 30V10H30V12H26V18H29V20H26V28H30V30H24Z" fill="white"/>
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0" y1="0" x2="40" y2="40">
+                                <stop stop-color="#3b82f6"/>
+                                <stop offset="1" stop-color="#1e40af"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <div class="logo-text">CFDI Pro</div>
             </div>
             <nav class="nav-buttons">
@@ -522,31 +569,39 @@
                 <div class="hero-visual">
                     <div class="hero-card">
                         <div style="text-align: center; padding: 2rem 0;">
-                            <div style="font-size: 4rem; margin-bottom: 1.5rem; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                                🏢
+                            <div style="margin-bottom: 2rem;">
+                                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                                    <circle cx="60" cy="60" r="60" fill="url(#heroGradient)"/>
+                                    <circle cx="60" cy="60" r="45" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                                    <path d="M40 80V40H55C62 40 67 45 67 52C67 56 65 59 62 61C66 62 69 66 69 71C69 78 64 83 57 83H45V80H40ZM45 58H55C58 58 60 56 60 52C60 48 58 46 55 46H45V58ZM45 77H57C61 77 64 74 64 71C64 67 61 65 57 65H45V77Z" fill="white"/>
+                                    <path d="M72 80V40H88V46H78V57H85V63H78V74H88V80H72Z" fill="white"/>
+                                    <defs>
+                                        <linearGradient id="heroGradient" x1="0" y1="0" x2="120" y2="120">
+                                            <stop stop-color="#3b82f6"/>
+                                            <stop offset="0.5" stop-color="#1e40af"/>
+                                            <stop offset="1" stop-color="#1e3a8a"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
                             </div>
                             <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--dark-color); margin-bottom: 1rem;">
-                                Tecnología Empresarial
+                                Sistema Empresarial
                             </h3>
                             <p style="color: #6b7280; line-height: 1.6; margin-bottom: 2rem;">
-                                Autenticación JWT, almacenamiento seguro, gestión de emisores, certificados CSD y sellado digital profesional.
+                                Plataforma completa para CFDI con tecnología avanzada y cumplimiento total SAT.
                             </p>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                            <div style="display: flex; justify-content: space-around; text-align: center;">
                                 <div>
-                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color);">100%</div>
-                                    <div style="font-size: 0.75rem; color: #6b7280;">SAT</div>
-                                </div>
-                                <div>
-                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--success-color);">24/7</div>
-                                    <div style="font-size: 0.75rem; color: #6b7280;">Soporte</div>
-                                </div>
-                                <div>
-                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-color);">SSL</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;">✓</div>
                                     <div style="font-size: 0.75rem; color: #6b7280;">Seguro</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning-color);">∞</div>
-                                    <div style="font-size: 0.75rem; color: #6b7280;">XMLs</div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #10b981;">✓</div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">Rápido</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.5rem; font-weight: 800; color: #06b6d4;">✓</div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">Confiable</div>
                                 </div>
                             </div>
                         </div>
@@ -579,52 +634,22 @@
 
                 <!-- Features Section -->
                 <div class="features-section">
-                    <h2 class="features-title">🎆 Características Principales</h2>
+                    <h2 class="section-title">¿Por qué elegir CFDI Pro?</h2>
                     <div class="features-grid">
                         <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                            <div class="feature-title">Acceso Seguro</div>
-                            <div class="feature-desc">Sistema de autenticación con JWT, encriptación de datos y protección avanzada</div>
+                            <div class="feature-icon">🚀</div>
+                            <h3>Rápido y Eficiente</h3>
+                            <p>Genera y gestiona CFDIs en segundos con nuestra tecnología optimizada.</p>
                         </div>
                         <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-building"></i></div>
-                            <div class="feature-title">Gestión de Emisores</div>
-                            <div class="feature-desc">CRUD completo para emisores con almacenamiento seguro de certificados CSD</div>
+                            <div class="feature-icon">🔒</div>
+                            <h3>100% Seguro</h3>
+                            <p>Certificados SSL, encriptación avanzada y cumplimiento total con normativas SAT.</p>
                         </div>
                         <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-file-alt"></i></div>
-                            <div class="feature-title">Historial Completo</div>
-                            <div class="feature-desc">Almacenamiento y gestión de todos tus CFDIs con búsqueda avanzada</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-certificate"></i></div>
-                            <div class="feature-title">Certificados CSD</div>
-                            <div class="feature-desc">Subida, validación y almacenamiento seguro de certificados digitales</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
-                            <div class="feature-title">Dashboard Inteligente</div>
-                            <div class="feature-desc">Estadísticas detalladas, análisis y reportes de tu actividad fiscal</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-stamp"></i></div>
-                            <div class="feature-title">Sellado Digital</div>
-                            <div class="feature-desc">Firma automática de CFDIs con certificados CSD y validación SAT</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-file-pdf"></i></div>
-                            <div class="feature-title">Generación PDF</div>
-                            <div class="feature-desc">Representación gráfica oficial con logo corporativo y personalización</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                            <div class="feature-title">Importación Inteligente</div>
-                            <div class="feature-desc">Detección automática de estado de XMLs importados (sellado/timbrado)</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
-                            <div class="feature-title">Responsive Design</div>
-                            <div class="feature-desc">Interfaz adaptativa que funciona perfectamente en cualquier dispositivo</div>
+                            <div class="feature-icon">☁️</div>
+                            <h3>En la Nube</h3>
+                            <p>Accede desde cualquier lugar, respaldos automáticos y disponibilidad 24/7.</p>
                         </div>
                     </div>
                 </div>
@@ -654,8 +679,9 @@
                 shape.style.top = Math.random() * 100 + '%';
                 
                 // Random color from our palette
-                const colors = ['var(--primary-color)', 'var(--secondary-color)', 'var(--accent-color)', 'var(--success-color)'];
+                const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b'];
                 shape.style.color = colors[Math.floor(Math.random() * colors.length)];
+                shape.style.opacity = '0.1';
                 
                 // Random animation delay
                 shape.style.animationDelay = Math.random() * 8 + 's';
@@ -715,8 +741,8 @@
                 });
             }, observerOptions);
             
-            // Observe all feature cards and stats
-            document.querySelectorAll('.feature-card, .stat-item').forEach(el => {
+            // Observe all feature cards
+            document.querySelectorAll('.feature-card').forEach(el => {
                 el.style.opacity = '0';
                 el.style.transform = 'translateY(30px)';
                 el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
