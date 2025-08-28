@@ -168,6 +168,14 @@ async function firmarCadenaOriginal(cadenaOriginal, certificadoBase64, llavePriv
 function agregarSelloAlXML(xmlContent, sello, numeroCertificado, certificadoBase64) {
     console.log('📝 AGREGANDO SELLO AL XML...');
     
+    // 🔍 DEBUG DETALLADO DE PARÁMETROS
+    console.log('🔍 DEBUG INSERCIÓN SELLO:');
+    console.log('- XML length:', xmlContent.length);
+    console.log('- Sello length:', sello ? sello.length : 'UNDEFINED');
+    console.log('- Sello value:', sello ? sello.substring(0, 50) + '...' : 'UNDEFINED');
+    console.log('- NoCertificado:', numeroCertificado);
+    console.log('- Certificado length:', certificadoBase64 ? certificadoBase64.length : 'UNDEFINED');
+    
     try {
         // Limpiar atributos de sellado previos si existen
         let xmlLimpio = xmlContent
@@ -186,11 +194,27 @@ function agregarSelloAlXML(xmlContent, sello, numeroCertificado, certificadoBase
         // Agregar los atributos de sellado
         const nuevosAtributos = `${atributosExistentes} NoCertificado="${numeroCertificado}" Certificado="${certificadoBase64}" Sello="${sello}"`;
         
+        console.log('🔍 DEBUG REEMPLAZO:');
+        console.log('- Atributos existentes:', atributosExistentes.substring(0, 100) + '...');
+        console.log('- Nuevos atributos length:', nuevosAtributos.length);
+        console.log('- Tag original encontrado:', comprobanteMatch[0]);
+        
         // Reemplazar el tag de apertura
         const xmlSellado = xmlLimpio.replace(
             /<cfdi:Comprobante[^>]*>/,
             `<cfdi:Comprobante${nuevosAtributos}>`
         );
+        
+        // Verificar que el sello se insertó correctamente
+        const selloEnXML = xmlSellado.includes(`Sello="${sello}"`);
+        console.log('🔍 Sello insertado en XML:', selloEnXML);
+        
+        if (!selloEnXML) {
+            console.error('❌ ERROR: El sello NO se insertó en el XML');
+            console.log('🔍 Buscando atributo Sello en XML final...');
+            const selloMatch = xmlSellado.match(/Sello="([^"]*)"/); 
+            console.log('🔍 Atributo Sello encontrado:', selloMatch ? selloMatch[1].substring(0, 50) + '...' : 'NO ENCONTRADO');
+        }
         
         console.log('✅ Sello agregado al XML exitosamente');
         console.log('📏 Tamaño XML sellado:', xmlSellado.length);
