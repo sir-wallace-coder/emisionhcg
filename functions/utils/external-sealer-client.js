@@ -119,13 +119,24 @@ async function loginServicioExterno() {
         console.log('🔍 LOGIN DEBUG: Claves disponibles:', Object.keys(loginResult));
         console.log('🔍 LOGIN DEBUG: Tipo de loginResult:', typeof loginResult);
         
-        // Extraer token y tiempo de expiración (formato consulta.click)
-        const token = loginResult.access_token || loginResult.token;
-        const tokenType = loginResult.token_type || 'Bearer';
-        const expiresIn = loginResult.expires_in || 3600; // Default 1 hora
+        // Extraer token y tiempo de expiración (múltiples formatos posibles)
+        const token = loginResult.access_token || 
+                     loginResult.token || 
+                     loginResult.authToken || 
+                     loginResult.jwt || 
+                     loginResult.bearer_token ||
+                     loginResult.data?.token ||
+                     loginResult.data?.access_token;
         
+        const tokenType = loginResult.token_type || 'Bearer';
+        const expiresIn = loginResult.expires_in || loginResult.expiresIn || 3600; // Default 1 hora
+        
+        // DEBUG CRÍTICO: Mostrar todos los campos disponibles si no hay token
         if (!token) {
-            throw new Error('Token no recibido en respuesta de login');
+            console.error('❌ TOKEN DEBUG: Token no encontrado en respuesta');
+            console.error('❌ TOKEN DEBUG: Campos disponibles:', Object.keys(loginResult));
+            console.error('❌ TOKEN DEBUG: Respuesta completa:', JSON.stringify(loginResult, null, 2));
+            throw new Error(`Token no recibido en respuesta de login. Campos disponibles: ${Object.keys(loginResult).join(', ')}`);
         }
         
         // Guardar en cache
