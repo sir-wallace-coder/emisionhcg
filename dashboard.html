@@ -1332,14 +1332,7 @@
                 
                 // Recargar la lista de XMLs
                 console.log('🔄 Recargando lista de XMLs...');
-                if (typeof cargarXMLsDesdeBackend === 'function') {
-                    await cargarXMLsDesdeBackend();
-                } else if (typeof mostrarXMLs === 'function') {
-                    await mostrarXMLs();
-                } else {
-                    console.warn('⚠️ No se encontró función para recargar XMLs, recargando página...');
-                    window.location.reload();
-                }
+                await cargarXMLsDesdeBackend();
                 
             } catch (error) {
                 console.error('❌ Error eliminando XML:', error);
@@ -1965,14 +1958,38 @@
                     const xmls = data.xmls || [];
                     console.log('✅ XMLs cargados desde backend:', xmls.length);
                     StorageUtils.setXMLs(xmls);
+                    
+                    // 🎯 ACTUALIZAR VISTA - Renderizar XMLs actualizados
+                    console.log('🔄 Actualizando vista con XMLs cargados...');
+                    if (typeof mostrarXMLs === 'function') {
+                        await mostrarXMLs();
+                    } else {
+                        console.warn('⚠️ Función mostrarXMLs no encontrada, recargando página...');
+                        window.location.reload();
+                    }
+                    
                     return xmls;
                 } else {
                     console.log('❌ Error al cargar XMLs desde backend:', response.status);
-                    return StorageUtils.getXMLs();
+                    const xmlsLocal = StorageUtils.getXMLs();
+                    
+                    // 🎯 ACTUALIZAR VISTA - Incluso con datos locales
+                    if (typeof displayXMLsSimple === 'function') {
+                        displayXMLsSimple(xmlsLocal);
+                    }
+                    
+                    return xmlsLocal;
                 }
             } catch (error) {
                 console.error('❌ Error al cargar XMLs:', error);
-                return StorageUtils.getXMLs();
+                const xmlsLocal = StorageUtils.getXMLs();
+                
+                // 🎯 ACTUALIZAR VISTA - Incluso en caso de error
+                if (typeof displayXMLsSimple === 'function') {
+                    displayXMLsSimple(xmlsLocal);
+                }
+                
+                return xmlsLocal;
             }
         }
         
