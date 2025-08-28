@@ -2954,6 +2954,24 @@
         async function sellarXML(xmlId) {
             console.log('🔐 Sellando XML:', xmlId);
             
+            // 🎯 SPINNER DE CARGA - Mostrar indicador de proceso
+            const spinnerHtml = `
+                <div id="selladoSpinner" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+                     style="background: rgba(0,0,0,0.7); z-index: 9999;">
+                    <div class="bg-white p-4 rounded-3 shadow-lg text-center">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <h5 class="mb-2">🔐 Sellando XML</h5>
+                        <p class="mb-0 text-muted">Procesando con servicio externo...</p>
+                        <small class="text-muted">Este proceso puede tardar unos segundos</small>
+                    </div>
+                </div>
+            `;
+            
+            // Mostrar spinner
+            document.body.insertAdjacentHTML('beforeend', spinnerHtml);
+            
             try {
                 // Cargar XML desde localStorage o BD
                 let xml = null;
@@ -3296,6 +3314,12 @@
             } catch (error) {
                 console.error('❌ Error sellando XML:', error);
                 alert('❌ Error sellando XML: ' + error.message);
+            } finally {
+                // 🎯 SPINNER - Ocultar indicador de proceso al finalizar
+                const spinner = document.getElementById('selladoSpinner');
+                if (spinner) {
+                    spinner.remove();
+                }
             }
         }
         
