@@ -2646,7 +2646,10 @@
                     id: xml.id,
                     emisor: xml.emisor_rfc,
                     receptor: xml.receptor_rfc,
-                    total: xml.total
+                    total: xml.total,
+                    tiene_xml_content: !!xml.xml_content,
+                    xml_content_length: xml.xml_content?.length || 0,
+                    campos_disponibles: Object.keys(xml)
                 });
                 
                 // Guardar datos del XML en sessionStorage para pre-poblar el formulario

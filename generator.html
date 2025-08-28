@@ -677,6 +677,9 @@
         // Función para pre-poblar el formulario con datos del XML
         function prePopularFormulario(xmlData) {
             console.log('🔄 Pre-poblando formulario con datos:', xmlData);
+            console.log('🔍 DEBUG: Campos disponibles en xmlData:', Object.keys(xmlData));
+            console.log('🔍 DEBUG: xml_content disponible:', !!xmlData.xml_content);
+            console.log('🔍 DEBUG: xml_content length:', xmlData.xml_content?.length || 0);
             
             try {
                 // Datos básicos del comprobante
@@ -725,6 +728,9 @@
         function cargarConceptosDesdeXML(xmlContent) {
             try {
                 console.log('📋 Extrayendo conceptos del XML...');
+                console.log('🔍 DEBUG: xmlContent recibido:', !!xmlContent);
+                console.log('🔍 DEBUG: xmlContent length:', xmlContent?.length || 0);
+                console.log('🔍 DEBUG: xmlContent preview:', xmlContent?.substring(0, 200) || 'VACÍO');
                 
                 // Limpiar conceptos existentes
                 conceptos = [];
