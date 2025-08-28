@@ -1790,6 +1790,8 @@
                             <tr>
                                 <th>RFC</th>
                                 <th>Razón Social</th>
+                                <th>Dirección</th>
+                                <th>Estado</th>
                                 <th>Código Postal</th>
                                 <th>Régimen Fiscal</th>
                                 <th>Estado CSD</th>
@@ -1799,10 +1801,41 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${emisores.map(emisor => `
+                            ${emisores.map(emisor => {
+                                // Función para obtener nombre del estado por código
+                                const getNombreEstado = (codigo) => {
+                                    const estados = {
+                                        'AGU': 'Aguascalientes', 'BCN': 'Baja California', 'BCS': 'Baja California Sur',
+                                        'CAM': 'Campeche', 'CHP': 'Chiapas', 'CHH': 'Chihuahua', 'CMX': 'Ciudad de México',
+                                        'COA': 'Coahuila', 'COL': 'Colima', 'DUR': 'Durango', 'GUA': 'Guanajuato',
+                                        'GRO': 'Guerrero', 'HID': 'Hidalgo', 'JAL': 'Jalisco', 'MEX': 'México',
+                                        'MIC': 'Michoacán', 'MOR': 'Morelos', 'NAY': 'Nayarit', 'NLE': 'Nuevo León',
+                                        'OAX': 'Oaxaca', 'PUE': 'Puebla', 'QUE': 'Querétaro', 'ROO': 'Quintana Roo',
+                                        'SLP': 'San Luis Potosí', 'SIN': 'Sinaloa', 'SON': 'Sonora', 'TAB': 'Tabasco',
+                                        'TAM': 'Tamaulipas', 'TLA': 'Tlaxcala', 'VER': 'Veracruz', 'YUC': 'Yucatán', 'ZAC': 'Zacatecas'
+                                    };
+                                    return estados[codigo] || codigo || 'No especificado';
+                                };
+                                
+                                return `
                                 <tr>
                                     <td><strong>${emisor.rfc || 'Cargando...'}</strong></td>
                                     <td>${emisor.nombre || 'Cargando...'}</td>
+                                    <td>
+                                        <small class="text-muted" title="${emisor.direccion || 'Sin dirección'}">
+                                            ${emisor.direccion ? 
+                                                (emisor.direccion.length > 30 ? 
+                                                    emisor.direccion.substring(0, 30) + '...' : 
+                                                    emisor.direccion
+                                                ) : 'Sin dirección'
+                                            }
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark" title="${getNombreEstado(emisor.estado)}">
+                                            ${emisor.estado || 'N/A'}
+                                        </span>
+                                    </td>
                                     <td>${emisor.codigo_postal || 'Cargando...'}</td>
                                     <td>${emisor.regimen_fiscal || 'Cargando...'}</td>
                                     <td>
@@ -1839,8 +1872,8 @@
                                             </button>
                                         </div>
                                     </td>
-                                </tr>
-                            `).join('')}
+                                </tr>`;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
