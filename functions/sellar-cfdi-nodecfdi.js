@@ -360,7 +360,7 @@ exports.handler = async (event, context) => {
             console.log('🔄 USANDO MÉTODO ALTERNATIVO AUTOMÁTICAMENTE...');
             
             // Importar método alternativo
-            const { sellarConServicioExterno } = require('./external-sealer-client');
+            const { sellarConServicioExterno } = require('./utils/external-sealer-client');
             
             console.log('🌐 Sellando con servicio externo compatible...');
             
