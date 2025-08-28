@@ -49,7 +49,11 @@ let tokenCache = {
  */
 async function loginServicioExterno() {
     console.log('🔐 EXTERNAL LOGIN: Iniciando login en servicio externo');
-    
+    console.log('🔍 LOGIN DEBUG: Configuración completa:');
+    console.log('  - loginUrl:', EXTERNAL_SEALER_CONFIG.loginUrl);
+    console.log('  - email:', EXTERNAL_SEALER_CONFIG.email);
+    console.log('  - password length:', EXTERNAL_SEALER_CONFIG.password ? EXTERNAL_SEALER_CONFIG.password.length : 'N/A');
+    console.log('  - timeout:', EXTERNAL_SEALER_CONFIG.timeout);
 
     // Validar credenciales
     if (!EXTERNAL_SEALER_CONFIG.email || !EXTERNAL_SEALER_CONFIG.password) {
@@ -84,18 +88,36 @@ async function loginServicioExterno() {
         });
         
         console.log('📥 EXTERNAL LOGIN: Response status:', response.status);
+        console.log('📥 EXTERNAL LOGIN: Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        // Capturar respuesta como texto primero para diagnóstico
+        const responseText = await response.text();
+        console.log('📥 EXTERNAL LOGIN: Response text length:', responseText.length);
+        console.log('📥 EXTERNAL LOGIN: Response text preview:', responseText.substring(0, 500));
         
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Login falló con status ${response.status}: ${errorText}`);
+            console.error('❌ EXTERNAL LOGIN: Login falló con status:', response.status);
+            console.error('❌ EXTERNAL LOGIN: Error response completa:', responseText);
+            throw new Error(`Login falló con status ${response.status}: ${responseText}`);
         }
         
-        const loginResult = await response.json();
+        // Intentar parsear JSON
+        let loginResult;
+        try {
+            loginResult = JSON.parse(responseText);
+            console.log('✅ EXTERNAL LOGIN: JSON parseado exitosamente');
+        } catch (parseError) {
+            console.error('❌ EXTERNAL LOGIN: Error parseando JSON:', parseError.message);
+            console.error('❌ EXTERNAL LOGIN: Response que causó error:', responseText);
+            throw new Error(`Error parseando respuesta JSON: ${parseError.message}`);
+        }
+        
         console.log('✅ EXTERNAL LOGIN: Autenticación exitosa');
         
         // 🔍 DEBUG CRÍTICO: Ver respuesta completa del login
         console.log('🔍 LOGIN DEBUG: Respuesta completa del servicio:', JSON.stringify(loginResult, null, 2));
         console.log('🔍 LOGIN DEBUG: Claves disponibles:', Object.keys(loginResult));
+        console.log('🔍 LOGIN DEBUG: Tipo de loginResult:', typeof loginResult);
         
         // Extraer token y tiempo de expiración (formato consulta.click)
         const token = loginResult.access_token || loginResult.token;
@@ -127,7 +149,13 @@ async function loginServicioExterno() {
  */
 async function obtenerTokenValido() {
     // 🚨 DEBUG CRÍTICO: Estado inicial del cache
-    
+    console.log('🔍 TOKEN DEBUG: Estado inicial del cache:');
+    console.log('  - tokenCache.token existe:', !!tokenCache.token);
+    console.log('  - tokenCache.token length:', tokenCache.token ? tokenCache.token.length : 'N/A');
+    console.log('  - tokenCache.expiresAt:', tokenCache.expiresAt);
+    console.log('  - Date.now():', Date.now());
+    console.log('  - Token válido:', tokenCache.token && tokenCache.expiresAt && Date.now() < tokenCache.expiresAt);
+    console.log('  - tokenCache.isRefreshing:', tokenCache.isRefreshing);
     
     // Si hay token válido en cache, usarlo
     if (tokenCache.token && tokenCache.expiresAt && Date.now() < tokenCache.expiresAt) {
