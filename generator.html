@@ -920,9 +920,13 @@
 
         // Función para cargar catálogos en los selects
         function cargarCatalogos() {
-            // Cargar forma de pago
+            // Cargar forma de pago - ORDENADO POR CÓDIGO NUMÉRICO
             const formaPagoSelect = document.getElementById('formaPago');
-            Object.entries(catalogos.formaPago).forEach(([codigo, descripcion]) => {
+            // 🎯 CORRECCIÓN: Ordenar por código numérico para mejor UX
+            const formasPagoOrdenadas = Object.entries(catalogos.formaPago)
+                .sort(([a], [b]) => parseInt(a) - parseInt(b));
+            
+            formasPagoOrdenadas.forEach(([codigo, descripcion]) => {
                 const option = document.createElement('option');
                 option.value = codigo;
                 option.textContent = `${codigo} - ${descripcion}`;
@@ -938,9 +942,17 @@
                 claveUnidadSelect.appendChild(option);
             });
 
-            // Cargar impuestos
+            // Cargar impuestos - ORDENADO POR CÓDIGO NUMÉRICO SIN DUPLICADOS
             const impuestoSelect = document.getElementById('conceptoImpuesto');
-            Object.entries(catalogos.impuestos).forEach(([codigo, descripcion]) => {
+            // 🎯 CORRECCIÓN: Ordenar por código numérico y eliminar duplicados
+            const impuestosOrdenados = Object.entries(catalogos.impuestos)
+                .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                .filter((item, index, arr) => {
+                    // Eliminar duplicados por código
+                    return arr.findIndex(([codigo]) => codigo === item[0]) === index;
+                });
+            
+            impuestosOrdenados.forEach(([codigo, descripcion]) => {
                 const option = document.createElement('option');
                 option.value = codigo;
                 option.textContent = `${codigo} - ${descripcion}`;
