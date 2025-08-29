@@ -922,6 +922,9 @@
         function cargarCatalogos() {
             // Cargar forma de pago - ORDENADO POR CÓDIGO NUMÉRICO
             const formaPagoSelect = document.getElementById('formaPago');
+            // 🚨 FIX CRÍTICO: Limpiar select antes de cargar para evitar duplicados
+            formaPagoSelect.innerHTML = '<option value="">Seleccionar forma de pago</option>';
+            
             // 🎯 CORRECCIÓN: Ordenar por código numérico para mejor UX
             const formasPagoOrdenadas = Object.entries(catalogos.formaPago)
                 .sort(([a], [b]) => parseInt(a) - parseInt(b));
@@ -944,6 +947,20 @@
 
             // Cargar impuestos - ORDENADO POR CÓDIGO NUMÉRICO SIN DUPLICADOS
             const impuestoSelect = document.getElementById('conceptoImpuesto');
+            // 🚨 FIX CRÍTICO: Limpiar select antes de cargar para evitar duplicados
+            // Mantener solo la opción "Sin impuesto" que está en el HTML
+            const sinImpuestoOption = impuestoSelect.querySelector('option[value=""]');
+            impuestoSelect.innerHTML = '';
+            if (sinImpuestoOption) {
+                impuestoSelect.appendChild(sinImpuestoOption);
+            } else {
+                // Recrear opción "Sin impuesto" si no existe
+                const sinImpuesto = document.createElement('option');
+                sinImpuesto.value = '';
+                sinImpuesto.textContent = 'Sin impuesto';
+                impuestoSelect.appendChild(sinImpuesto);
+            }
+            
             // 🎯 CORRECCIÓN: Ordenar por código numérico y eliminar duplicados
             const impuestosOrdenados = Object.entries(catalogos.impuestos)
                 .sort(([a], [b]) => parseInt(a) - parseInt(b))
