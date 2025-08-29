@@ -1525,13 +1525,9 @@
                           `• Atributos removidos: ${result.restauracion.atributos_removidos}\n` +
                           `• Motivo: ${result.xml.motivo}`);
                     
-                    // Recargar lista de XMLs
-                    if (typeof cargarXMLs === 'function') {
-                        await cargarXMLs();
-                    } else {
-                        console.log('🔄 Recargando página para actualizar lista...');
-                        window.location.reload();
-                    }
+                    // 🎯 ACTUALIZAR VISTA - Usar función correcta como en otras acciones
+                    console.log('🔄 Actualizando vista después de cancelar XML...');
+                    await cargarXMLsDesdeBackend();
                     
                 } else {
                     console.error('❌ Error cancelando XML:', result);
@@ -1557,12 +1553,54 @@
         }
         
         function limpiarFiltros() {
-            console.log('🧹 Limpiar filtros');
-            if (typeof limpiarFiltrosXML === 'function') {
-                return limpiarFiltrosXML();
-            } else {
-                console.error('❌ Función limpiarFiltrosXML no disponible');
-                alert('Error: Sistema de filtros no disponible');
+            console.log('🧹 Limpiando todos los filtros...');
+            
+            try {
+                // Limpiar filtro de fecha
+                const filtroFecha = document.getElementById('filtroFecha');
+                if (filtroFecha) filtroFecha.value = 'todos';
+                
+                // Limpiar fechas personalizadas
+                const fechaDesde = document.getElementById('fechaDesde');
+                if (fechaDesde) fechaDesde.value = '';
+                
+                const fechaHasta = document.getElementById('fechaHasta');
+                if (fechaHasta) fechaHasta.value = '';
+                
+                // Ocultar campos de fecha personalizada
+                const fechaPersonalizadaGroup = document.getElementById('fechaPersonalizadaGroup');
+                const fechaPersonalizadaGroup2 = document.getElementById('fechaPersonalizadaGroup2');
+                if (fechaPersonalizadaGroup) fechaPersonalizadaGroup.style.display = 'none';
+                if (fechaPersonalizadaGroup2) fechaPersonalizadaGroup2.style.display = 'none';
+                
+                // Limpiar filtro de emisor
+                const filtroEmisor = document.getElementById('filtroEmisor');
+                if (filtroEmisor) filtroEmisor.value = 'todos';
+                
+                // Limpiar filtro de estado
+                const filtroEstado = document.getElementById('filtroEstado');
+                if (filtroEstado) filtroEstado.value = 'todos';
+                
+                // Limpiar filtro de versión
+                const filtroVersion = document.getElementById('filtroVersion');
+                if (filtroVersion) filtroVersion.value = 'todas';
+                
+                // Limpiar filtros de total
+                const totalMin = document.getElementById('totalMin');
+                if (totalMin) totalMin.value = '';
+                
+                const totalMax = document.getElementById('totalMax');
+                if (totalMax) totalMax.value = '';
+                
+                // 🎯 ACTUALIZAR VISTA - Usar función correcta como en otras acciones
+                console.log('🔄 Actualizando vista después de limpiar filtros...');
+                cargarXMLsDesdeBackend();
+                
+                console.log('✅ Filtros limpiados exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error limpiando filtros:', error);
+                alert('Error limpiando filtros: ' + error.message);
             }
         }
         
