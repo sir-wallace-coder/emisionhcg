@@ -259,9 +259,6 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <!-- BOTONES DE PRUEBA TEMPORALES -->
-                    <button type="button" class="btn btn-secondary" onclick="testFunction()" style="margin-right: 10px;">🔧 Test JS</button>
-                    <button type="button" class="btn btn-info" onclick="verificarFunciones()" style="margin-right: 10px;">🔍 Verificar</button>
                     <button type="button" class="btn btn-primary" onclick="agregarConcepto()">➥ Agregar Concepto</button>
                 </div>
 
@@ -1071,21 +1068,7 @@
             }
         }
 
-        // FUNCIÓN DE EMERGENCIA PARA TESTING
-        window.testFunction = function() {
-            alert('✅ JavaScript funciona correctamente!');
-            console.log('✅ Función de prueba ejecutada');
-        };
-        
-        // VERIFICACIÓN DE FUNCIONES GLOBALES
-        window.verificarFunciones = function() {
-            console.log('🔍 VERIFICANDO FUNCIONES GLOBALES:');
-            console.log('- testFunction:', typeof window.testFunction);
-            console.log('- agregarConcepto:', typeof window.agregarConcepto);
-            console.log('- generarXML:', typeof window.generarXML);
-            console.log('- conceptos array:', conceptos ? conceptos.length : 'undefined');
-            alert('✅ Verificación completa - Ver consola para detalles');
-        };
+        // Funciones de testing eliminadas - ya no son necesarias
         
         // SISTEMA DE RECEPTORES GUARDADOS
         let receptoresGuardados = JSON.parse(localStorage.getItem('receptoresGuardados') || '[]');
@@ -1488,7 +1471,15 @@
             if (!metodoPago) erroresValidacion.push('❌ Método de Pago es obligatorio');
             if (!formaPago) erroresValidacion.push('❌ Forma de Pago es obligatoria');
             
-            // 2. VALIDAR DATOS DEL EMISOR
+            // 2. VALIDAR SELECCIÓN DE EMISOR
+            console.log('🔍 Validando Selección de Emisor...');
+            const emisorSeleccionado = document.getElementById('emisorSelect').value.trim();
+            
+            if (!emisorSeleccionado) {
+                erroresValidacion.push('❌ Debe seleccionar un Emisor de la lista');
+            }
+            
+            // 2.1. VALIDAR DATOS DEL EMISOR (si está seleccionado)
             console.log('🔍 Validando Datos del Emisor...');
             const emisorRfc = document.getElementById('emisorRfc').value.trim();
             const emisorNombre = document.getElementById('emisorNombre').value.trim();
@@ -1511,10 +1502,20 @@
             
             if (!emisorRegimen) erroresValidacion.push('❌ Régimen Fiscal del Emisor es obligatorio');
             
-            // 3. VALIDAR DATOS DEL RECEPTOR
-            console.log('🔍 Validando Datos del Receptor...');
+            // 3. VALIDAR SELECCIÓN DE RECEPTOR
+            console.log('🔍 Validando Selección de Receptor...');
+            const receptorSeleccionado = document.getElementById('receptorSelect')?.value?.trim();
+            
+            // Verificar si hay un receptor seleccionado de la lista o datos manuales
             const receptorRfc = document.getElementById('receptorRfc').value.trim();
             const receptorNombre = document.getElementById('receptorNombre').value.trim();
+            
+            if (!receptorSeleccionado && (!receptorRfc || !receptorNombre)) {
+                erroresValidacion.push('❌ Debe seleccionar un Receptor de la lista o capturar los datos manualmente');
+            }
+            
+            // 3.1. VALIDAR DATOS DEL RECEPTOR (si están capturados)
+            console.log('🔍 Validando Datos del Receptor...');
             const receptorCP = document.getElementById('receptorCodigoPostal').value.trim();
             const receptorRegimen = document.getElementById('receptorRegimenFiscal').value.trim();
             const usoCfdi = document.getElementById('usoCfdi').value.trim();
