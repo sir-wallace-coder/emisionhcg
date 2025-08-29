@@ -445,6 +445,17 @@
             await verificarAutenticacion();
             await cargarEmisores();
             inicializarAplicacion();
+            
+            // 🎯 ACTIVAR LISTENERS PARA REGLAS AUTOMÁTICAS
+            // Listener para regla de pagos diferidos
+            const metodoPagoSelect = document.getElementById('metodoPago');
+            if (metodoPagoSelect) {
+                metodoPagoSelect.addEventListener('change', aplicarReglaPagosDiferidos);
+                console.log('✅ Listener para regla pagos diferidos activado');
+            }
+            
+            // Aplicar regla inicial si ya hay valor seleccionado
+            aplicarReglaPagosDiferidos();
         });
 
         // Función para verificar autenticación
@@ -1041,6 +1052,25 @@
             actualizarRegimenesFiscales();
         }
 
+        // 🎯 REGLA AUTOMÁTICA: Pagos diferidos → Forma de pago "Por Definir"
+        function aplicarReglaPagosDiferidos() {
+            const metodoPago = document.getElementById('metodoPago').value;
+            const formaPago = document.getElementById('formaPago');
+            
+            console.log('🔍 VERIFICANDO REGLA PAGOS DIFERIDOS:', metodoPago);
+            
+            if (metodoPago === 'PPD') {
+                // PPD = Pago en parcialidades o diferido
+                formaPago.value = '99'; // Por Definir
+                formaPago.disabled = true;
+                console.log('✅ REGLA APLICADA: PPD → Forma de pago "Por Definir" (99)');
+            } else {
+                // PUE = Pago en una sola exhibición
+                formaPago.disabled = false;
+                console.log('✅ REGLA: PUE → Forma de pago libre');
+            }
+        }
+
         // FUNCIÓN DE EMERGENCIA PARA TESTING
         window.testFunction = function() {
             alert('✅ JavaScript funciona correctamente!');
@@ -1326,8 +1356,18 @@
             document.getElementById('conceptoValorUnitario').value = '';
             document.getElementById('conceptoClaveUnidad').value = '';
             document.getElementById('conceptoClaveProducto').value = '';
-            document.getElementById('conceptoImpuesto').value = '';
-            document.getElementById('conceptoObjetoImp').value = '';
+            
+            // 🎯 VALORES POR DEFECTO SOLICITADOS POR USUARIO
+            // Impuesto por defecto: IVA (002)
+            document.getElementById('conceptoImpuesto').value = '002';
+            
+            // Objeto de impuesto por defecto: "Sí objeto de impuesto" (02) - solo para CFDI 4.0
+            const version = document.getElementById('versionCfdi').value;
+            if (version === '4.0') {
+                document.getElementById('conceptoObjetoImp').value = '02';
+            } else {
+                document.getElementById('conceptoObjetoImp').value = '';
+            }
         }
 
         // Función para renderizar conceptos
